@@ -1,0 +1,22 @@
+✔ completion sounds the buzzer five times after queued signals (1.622834ms)
+✔ hidden page defers pending signals until visible (0.775125ms)
+✔ sound disabled keeps visual alerts without audio permission (0.486792ms)
+✔ visual completion never waits for audio permission (0.411709ms)
+✔ test button signal uses the same five buzzer pulses and respects mute (0.661125ms)
+✔ playback failure disables sound and still delivers the visual alert (0.401708ms)
+✔ pause/resume excludes paused time, preserves milliseconds (0.485833ms)
+✔ background recovery emits completion exactly once (0.381833ms)
+✔ reload retains clock anchors and pending completion (0.079834ms)
+✔ completed timer restarts with fresh alerts (0.062ms)
+✔ system clock backward does not subtract elapsed time (0.474084ms)
+✔ custom settings survive serialized reload and retain originating ruleset (0.12975ms)
+✔ invalid match durations and timeout quota rejected (0.395209ms)
+✔ automatic team ink meets AA for a broad RGB sample (9.539375ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 58.306584
