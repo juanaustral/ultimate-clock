@@ -21,6 +21,12 @@ Versión publicada: [iona.ar/ultimateclock](https://iona.ar/ultimateclock/). La 
 - [Verificación](qa/VERIFICACION.md): recorridos, medidas y límites conocidos.
 - [Historial de cambios](CHANGELOG.md).
 
+## Vista del producto
+
+![ULTIMATE CLOCK en móvil](qa/mobile.jpg)
+
+![ULTIMATE CLOCK en escritorio](qa/desktop.jpg)
+
 ## Abrir
 
 1. Extraé el ZIP completo. No abras `index.html` desde la vista previa del ZIP: necesita los archivos que están a su lado.
