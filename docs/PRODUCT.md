@@ -63,7 +63,7 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 
 ## Resultado y evidencia
 
-- 22/22 pruebas automáticas aprobadas.
+- 23/23 pruebas automáticas aprobadas.
 - Prueba funcional completa de partido con 17 eventos registrados.
 - Verificación publicada en 320×568, 390×844 y 844×390 sin scroll ni errores de consola.
 - Capturas y trazabilidad en [`qa/VERIFICACION.md`](../qa/VERIFICACION.md).
