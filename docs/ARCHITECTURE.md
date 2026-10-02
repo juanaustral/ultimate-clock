@@ -8,6 +8,7 @@ ULTIMATE CLOCK es una aplicación web estática sin servidor de aplicación. El 
 index.html / ultimate-clock.html
         │
         ├── ultimate-clock.js  → tablero, flujo, perfiles, planilla, historial
+        ├── i18n.js             → textos en inglés (el español es la clave)
         ├── clock-engine.js     → estado temporal, anchors, validaciones
         ├── alerts.js           → AudioContext, cinco pulsos, avisos visuales
         ├── sheet-export.js     → planillas a PDF y CSV, sin dependencias

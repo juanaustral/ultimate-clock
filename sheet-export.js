@@ -4,15 +4,18 @@
   const EVENT_LABELS={goal:'Gol',timeout:'Time-out',call:'Llamada',adjustment:'Ajuste manual −1',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Mitad',incident:'Incidencia',saved:'Partido finalizado'};
   const TIMER_LABELS={clock:'Reloj de partido',pull:'Pull',call:'Llamada',timeout:'Time-out',break:'Descanso'};
 
+  /* Traducción opcional: tr(textoEnEspañol, variables). Sin tr, todo queda en español. */
+  const same=(text,vars)=>String(text??'').replace(/\{(\w+)\}/g,(m,k)=>vars&&k in vars?String(vars[k]):m);
   const fmt=value=>{const total=Math.max(0,Math.ceil(Number(value)||0));return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;};
-  const dateLabel=value=>{try{return new Intl.DateTimeFormat('es-AR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value??'');}};
+  const dateLabel=(value,locale='es-AR')=>{try{return new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value??'');}};
   const teamName=(match,index)=>index===undefined||index===null?'':(match.teams?.[index]?.name??'');
   /* Per-team call timers are saved as call-0 / call-1. */
-  const timerName=(match,id)=>{if(!id)return '';const call=/^call-(\d+)$/.exec(id);if(call){const index=Number(call[1]);return `${TIMER_LABELS.call} ${teamName(match,index)||`equipo ${index+1}`}`;}return TIMER_LABELS[id]||id;};
+  const timerName=(match,id,tr=same)=>{if(!id)return '';const call=/^call-(\d+)$/.exec(id);if(call){const index=Number(call[1]),team=teamName(match,index);return team?tr('Llamada {team}',{team}):tr('Llamada equipo {n}',{n:index+1});}return TIMER_LABELS[id]?tr(TIMER_LABELS[id]):id;};
+  const eventName=(type,tr=same)=>EVENT_LABELS[type]?tr(EVENT_LABELS[type]):type;
 
   /* Same text the saved-sheet modal shows for each event. */
-  function describeEvent(match,e){
-    return [EVENT_LABELS[e.type]||e.type,teamName(match,e.team),timerName(match,e.timer),e.label,e.note,e.scorer&&`gol: ${e.scorer}`,e.assist&&`pase: ${e.assist}`,e.mode].filter(Boolean).join(' · ');
+  function describeEvent(match,e,tr=same){
+    return [eventName(e.type,tr),teamName(match,e.team),timerName(match,e.timer,tr),e.label&&tr(e.label),e.note,e.scorer&&tr('gol: {name}',{name:e.scorer}),e.assist&&tr('pase: {name}',{name:e.assist}),e.mode&&tr(e.mode)].filter(Boolean).join(' · ');
   }
 
   /* RFC 4180 cell; cells that a spreadsheet would run as a formula get a leading apostrophe. */
@@ -22,9 +25,9 @@
     return /[",\r\n]/.test(text)?`"${text.replace(/"/g,'""')}"`:text;
   }
 
-  function toCSV(match){
-    const header=['fecha_hora','tiempo_juego','evento','equipo','cronometro','detalle','nota','gol','pase','modo'];
-    const rows=(match.events||[]).map(e=>[e.at||'',fmt(e.elapsed||0),EVENT_LABELS[e.type]||e.type,teamName(match,e.team),timerName(match,e.timer),e.label||'',e.note||'',e.scorer||'',e.assist||'',e.mode||'']);
+  function toCSV(match,{t:tr=same}={}){
+    const header=['fecha_hora','tiempo_juego','evento','equipo','cronometro','detalle','nota','gol','pase','modo'].map(key=>tr(key));
+    const rows=(match.events||[]).map(e=>[e.at||'',fmt(e.elapsed||0),eventName(e.type,tr),teamName(match,e.team),timerName(match,e.timer,tr),e.label?tr(e.label):'',e.note||'',e.scorer||'',e.assist||'',e.mode?tr(e.mode):'']);
     /* BOM so spreadsheet apps read accents as UTF-8. */
     return '﻿'+[header,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n';
   }
@@ -57,22 +60,22 @@
     return lines;
   }
 
-  function sheetLines(match,{rulesetLabel}={}){
+  function sheetLines(match,{rulesetLabel,t:tr=same,locale='es-AR'}={}){
     const teams=match.teams||[];
     const lines=[
       {text:`${teamName(match,0)} ${teams[0]?.score??0} — ${teams[1]?.score??0} ${teamName(match,1)}`,size:18,bold:true},
-      {text:[match.savedAt&&dateLabel(match.savedAt),rulesetLabel||match.ruleset,match.themeName].filter(Boolean).join(' · '),size:10},
+      {text:[match.savedAt&&dateLabel(match.savedAt,locale),rulesetLabel||match.ruleset,match.themeName&&tr(match.themeName)].filter(Boolean).join(' · '),size:10},
       {text:'',size:6},
-      {text:`Duración: ${fmt(match.clock?.elapsed)}    Time-outs: ${(match.events||[]).filter(e=>e.type==='timeout').length}    Eventos: ${(match.events||[]).length}`,size:11},
-      {text:`Colores: ${teams.map(t=>`${t.name} ${t.color}`).join(' · ')}`,size:10},
+      {text:tr('Duración: {time}    Time-outs: {timeouts}    Eventos: {events}',{time:fmt(match.clock?.elapsed),timeouts:(match.events||[]).filter(e=>e.type==='timeout').length,events:(match.events||[]).length}),size:11},
+      {text:`${tr('Colores:')} ${teams.map(t=>`${t.name} ${t.color}`).join(' · ')}`,size:10},
       {text:'',size:6},
-      {text:'Eventos',size:13,bold:true}
+      {text:tr('Eventos'),size:13,bold:true}
     ];
     const events=match.events||[];
-    if(!events.length)lines.push({text:'Sin eventos',size:10});
+    if(!events.length)lines.push({text:tr('Sin eventos'),size:10});
     for(const e of events){
-      const [first,...rest]=wrap(describeEvent(match,e),80);
-      lines.push({text:`${fmt(e.elapsed||0)}  ${e.at?dateLabel(e.at):''}`,size:8,gray:true,keep:true});
+      const [first,...rest]=wrap(describeEvent(match,e,tr),80);
+      lines.push({text:`${fmt(e.elapsed||0)}  ${e.at?dateLabel(e.at,locale):''}`,size:8,gray:true,keep:true});
       lines.push({text:first,size:10});
       for(const more of rest)lines.push({text:more,size:10});
     }
@@ -91,7 +94,8 @@
       y-=lead;
       if(line.text)pages.at(-1).push(`BT /${line.bold?'F2':'F1'} ${line.size} Tf ${line.gray?'0.4 g ':'0 g '}${M} ${y} Td (${pdfText(line.text)}) Tj ET`);
     });
-    pages.forEach((ops,i)=>ops.push(`BT /F1 8 Tf 0.4 g ${W-M-60} ${M-20} Td (${pdfText(`Página ${i+1} de ${pages.length}`)}) Tj ET`));
+    const tr=options.t||same;
+    pages.forEach((ops,i)=>ops.push(`BT /F1 8 Tf 0.4 g ${W-M-60} ${M-20} Td (${pdfText(tr('Página {n} de {total}',{n:i+1,total:pages.length}))}) Tj ET`));
 
     const objects=[];
     const add=body=>{objects.push(body);return objects.length;};
@@ -105,7 +109,7 @@
     });
     objects[catalog-1]=`<< /Type /Catalog /Pages ${pagesRef} 0 R >>`;
     objects[pagesRef-1]=`<< /Type /Pages /Kids [${kids.map(k=>`${k} 0 R`).join(' ')}] /Count ${kids.length} >>`;
-    const info=add(`<< /Title (${pdfText(`Planilla ${teamName(match,0)} vs ${teamName(match,1)}`)}) /Producer (Ultimate Clock) >>`);
+    const info=add(`<< /Title (${pdfText(tr('Planilla {a} vs {b}',{a:teamName(match,0),b:teamName(match,1)}))}) /Producer (Ultimate Clock) >>`);
 
     /* Every character is one byte (0-255), so string length equals byte offset. */
     let pdf='%PDF-1.4\n%\xe2\xe3\xcf\xd3\n';

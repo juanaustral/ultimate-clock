@@ -69,11 +69,14 @@ Fuentes consultadas el 27/09/2026: [reglas y recursos WFDF](https://rules.wfdf.s
 - Los relojes usan marcas de tiempo, así que recuperan el tiempo transcurrido tras suspender la pestaña. El navegador puede volver a pedir una interacción para habilitar audio después de recargar o reanudar. El botón de sonido muestra el estado real del contexto de audio; los avisos visuales no dependen de él.
 - La interfaz tiene temas Claro y Oscuro, controles táctiles amplios, foco en diálogos y reducción de movimiento. En la edición de equipo, **MÁS COLORES** abre el selector libre del dispositivo.
 - Al abrir la app se elige un perfil y luego se toca **USAR ESTE PERFIL**. **CÓMO USAR LA APP** abre un recorrido guiado de seis pasos sobre el tablero; se puede volver a abrir desde **MENU**.
-- El pie enlaza a IONA.AR y a Ultimate Frisbee Mendoza. **APOYÁ ESTE PROYECTO** abre el perfil de Cafecito de Juan (https://cafecito.app/juanaustral).
+- El pie dice "Un proyecto de IONA.AR para ULTIMATE FRISBEE MENDOZA" y **♥ APOYÁ ESTE PROYECTO**, que abre el perfil de Cafecito de Juan (https://cafecito.app/juanaustral). Es una franja oscura en los dos modos; en teléfonos angostos usa dos renglones.
+- **CÓMO USAR LA APP** va en verde, en el menú y en el selector de inicio.
+- Idiomas: español e inglés. Se elige en el selector de inicio y en MENU; se recuerda en el dispositivo. Sin elección previa, usa el idioma del navegador (español por defecto). `?lang=en` en la URL abre la app en inglés.
 
 ## Estructura
 
 - `index.html` y `ultimate-clock.html`: entradas equivalentes.
+- `i18n.js`: textos en inglés. El español es la clave de cada texto; los datos guardados quedan en español y se traducen al mostrarlos o exportarlos.
 - `clock-engine.js`: motor temporal y validación de configuración.
 - `alerts.js`: audio y avisos.
 - `sheet-export.js`: exportación de planillas a PDF y CSV, sin dependencias.
@@ -102,6 +105,7 @@ El script respalda la versión publicada en `/opt/iona-web/backups/ultimateclock
 - `index.html` y `ultimate-clock.html` tienen título y descripción, URL canónica (`https://iona.ar/ultimateclock/`), Open Graph y Twitter Card con `og-image.png` (1200×630), datos estructurados `WebApplication` (JSON-LD) y metadatos para instalarla en iOS y Android.
 - `manifest.webmanifest` incluye íconos PNG 192/512, ícono `maskable`, `apple-touch-icon.png` y capturas (`screenshot-narrow.png`, `screenshot-wide.png`) para la ventana de instalación.
 - Si cambia el diseño, regenerá las capturas y `og-image.png` para que no queden desactualizadas.
+- Las etiquetas y descripciones para buscadores están en español; la versión en inglés se arma en el navegador (no tiene URL propia indexable).
 
 ## Licencia
 

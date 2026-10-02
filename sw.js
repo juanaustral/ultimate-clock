@@ -1,5 +1,5 @@
-const CACHE='ultimate-clock-offline-v24';
-const FILES=['./','./index.html','./ultimate-clock.html','./ultimate-clock.css','./clock-engine.js','./tokens.css','./alerts.js','./sheet-export.js','./ultimate-clock.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon-32.png'];
+const CACHE='ultimate-clock-offline-v25';
+const FILES=['./','./index.html','./ultimate-clock.html','./ultimate-clock.css','./clock-engine.js','./tokens.css','./i18n.js','./alerts.js','./sheet-export.js','./ultimate-clock.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon-32.png'];
 /* cache:'reload' skips the HTTP cache so a new version never stores stale files. */
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('ultimate-clock-offline-')&&key!==CACHE).map(key=>caches.delete(key))))])));
