@@ -616,7 +616,7 @@
       const current=profileChoices().some(p=>p.id===selectedProfileId)?selectedProfileId:state.settings.ruleset;
       selectedProfileId=current;
       title=t('Perfil de tiempo');
-      body=`<div class="welcome-flow">${steps}<p>${esc(t('Elegí los tiempos para este partido antes de empezar.'))}</p><div class="profile-choices">${profileChoices().map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}"><strong>${esc(p.name)}</strong><span>${esc(t(p.id===current?'SELECCIONADO':'ELEGIR'))}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile">${esc(t('EMPEZAR'))}</button><button class="button profile-new" type="button" data-action="new-profile">${esc(t('TIEMPOS PERSONALIZADOS'))}</button>${back}</div></div>`;
+      body=`<div class="welcome-flow">${steps}<p>${esc(t('Elegí los tiempos para este partido antes de empezar.'))}</p><div class="profile-choices">${profileChoices().map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}"><strong>${esc(p.name)}</strong><span>${esc(t(p.id===current?'SELECCIONADO':'ELEGIR'))}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile" autofocus>${esc(t('EMPEZAR'))}</button><button class="button profile-new" type="button" data-action="new-profile">${esc(t('TIEMPOS PERSONALIZADOS'))}</button>${back}</div></div>`;
     } else {
       title=t('Tiempos personalizados');
       body=`<form data-form="welcome-profile" class="welcome-flow" novalidate>${steps}<div class="field"><label for="profile-name">${esc(t('Nombre del perfil'))}</label><input id="profile-name" name="name" maxlength="40" autocomplete="off" placeholder="${esc(t('Ej.: Torneo local'))}" required></div><div class="duration-grid">${durationRows(profileConfig(selectedProfileId)).map(([key,label,value,unit])=>durationField(key,label,value,unit,false,true)).join('')}</div><button class="button button-primary" type="submit">${esc(t('GUARDAR PERFIL Y EMPEZAR'))}</button>${back}${storageNote(t('Este perfil se guarda en la sesión de este navegador y quedará disponible en la lista de perfiles. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierde.'))}</form>`;
@@ -795,7 +795,7 @@
     let profile=state.customRulesets.find(p=>p.id===form.dataset.profile);
     if(profile){profile.name=name;profile.config=clone(config);}else{profile={id:uid('profile'),name,config:clone(config)};state.customRulesets.push(profile);}
     if(!active){state.settings.ruleset=profile.id;state.settings.baseRuleset='wfdf';state.settings.overrides=clone(config);activeMatch().ruleset=profile.id;updateTimerConfig(activeMatch());}
-    draftRuleset=false;saveState();renderSettings();showToast(t(active?'Perfil {name} guardado para el próximo partido.':'Perfil {name} guardado.',{name}));
+    draftRuleset=false;saveState();renderDashboard();showToast(t(active?'Perfil {name} guardado para el próximo partido.':'Perfil {name} guardado.',{name}));
   }
   function saveWelcomeProfile(form) {
     if(hasStarted()||isLocked()){closeModal();return;}

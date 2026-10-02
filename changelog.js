@@ -2,8 +2,9 @@
    y agrega arriba una entrada breve en español e inglés. */
 (function (root) {
   'use strict';
-  const VERSION = 33;
+  const VERSION = 34;
   const ENTRIES = [
+    {version:34,date:'2026-10-02',es:['En el inicio solo se marca el perfil elegido.','Al guardar los tiempos en Configuración se vuelve al tablero.'],en:['Only the chosen profile is highlighted at the start.','Saving times in Settings returns to the board.']},
     {version:33,date:'2026-10-02',es:['El inicio ahora tiene tres pantallas: equipos, perfil de tiempo y tiempos personalizados.','Los tiempos personalizados se guardan como perfil y quedan en la lista.'],en:['The start screen now has three steps: teams, time profile and custom times.','Custom times are saved as a profile and stay in the list.']},
     {version:32,date:'2026-10-02',es:['Corregidos los títulos de equipo en el cuadro de equipos.'],en:['Fixed the team titles in the teams box.']},
     {version:31,date:'2026-10-02',es:['Al anotar un gol se abre el cuadro para escribir quién hizo el gol y el pase.','Cada partido nuevo pide el nombre y el color de los dos equipos.'],en:['Scoring a goal opens a box to type the scorer and the assist.','Every new game asks for both teams’ names and colors.']},
