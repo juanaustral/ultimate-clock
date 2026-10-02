@@ -156,6 +156,7 @@
     /* WhatsApp */
     'ENVIAR POR WHATSAPP':'SEND BY WHATSAPP','Empate':'Draw','Ganó {team}':'{team} won','Resumen':'Summary','Goles':'Goals','Llamados':'Calls',
     'pase de {name}':'assist by {name}','Gol de {team}':'Goal by {team}','Punto descontado a {team}':'Point taken from {team}','Time-out de {team}':'Timeout by {team}',
+    'Novedades':'What’s new','Novedades de la versión':'What’s new in this version','Estás usando la versión {v}.':'You are using version {v}.',
     'Segundo tiempo':'Second half','Final':'Final','Momentos':'Key moments','Hecho con Ultimate Clock':'Made with Ultimate Clock'
   };
   const languages=['es','en'];

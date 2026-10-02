@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 2026-10-02 · v29 · Emojis por categoría, orden horizontal y versión
+
+- WhatsApp: cada categoría de llamado e incidencia tiene su emoji (🤼 Falta, ⛔ Violación, 🚧 Pick, 👣 Travel, ⏳ Stall, ❓ Gol discutido, 🩹 Lesión, 🤝 Tiempo de Espíritu, 🧘 TFR, 🟨 PMF, 📝 Otra).
+- Solo en horizontal: Pull y Time Out debajo del reloj; a la derecha, cada equipo con su Llamado debajo.
+- Número de versión en el pie (`changelog.js`, igual al número de caché); al tocarlo se abre Novedades con un resumen corto por versión.
+- Para publicar: subir `VERSION` en `changelog.js`, la caché de `sw.js` y agregar arriba una entrada en español e inglés (un test lo verifica).
+
 ## 2026-10-02 · Bienvenida, aviso de datos y WhatsApp
 
 - El pop-up de inicio da la bienvenida y explica la app en una línea, con logo, antes de elegir el perfil de tiempo.

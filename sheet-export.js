@@ -123,6 +123,8 @@
   }
 
   /* WhatsApp message: *bold*, _italic_ and emojis; one line per key moment with the running score. */
+  /* One emoji per call category and incident type, keyed by the saved Spanish label. */
+  const CATEGORY_EMOJI={'Falta':'🤼','Violación':'⛔','Pick':'🚧','Travel':'👣','Stall':'⏳','Gol discutido':'❓','Lesión':'🩹','Tiempo de Espíritu':'🤝','TFR':'🧘','PMF':'🟨','Otra':'📝'};
   const waSafe=value=>String(value??'').replace(/[*_~`]/g,'').replace(/\s+/g,' ').trim();
   function toWhatsApp(match,{rulesetLabel,t:tr=same,locale='es-AR',url='iona.ar/ultimateclock'}={}){
     const teams=match.teams||[],events=match.events||[];
@@ -146,15 +148,15 @@
       }
       else if(e.type==='adjustment'&&team){score[e.team]=Math.max(0,score[e.team]-1);moments.push(`${time} ➖ ${tr('Punto descontado a {team}',{team})} (${score[0]}–${score[1]})`);}
       else if(e.type==='timeout'&&team)moments.push(`${time} ⏸️ ${tr('Time-out de {team}',{team})}`);
-      else if(e.type==='call'&&team)moments.push(`${time} 📣 ${tr('Llamado de {team}',{team})}${e.label?` · _${waSafe(tr(e.label))}_`:''}`);
+      else if(e.type==='call'&&team)moments.push(`${time} 📣 ${tr('Llamado de {team}',{team})}${e.label?` · ${CATEGORY_EMOJI[e.label]||'🏷️'} _${waSafe(tr(e.label))}_`:''}`);
       else if(e.type==='half')moments.push(String(e.label||'').startsWith('Inicio de segunda')?`${time} ▶️ *${tr('Segundo tiempo')}*`:`${time} 🌗 *${tr('Medio tiempo')}*`);
-      else if(e.type==='incident')moments.push(`${time} ⚠️ ${waSafe(tr(e.label||'Incidencia'))}${e.note?` · _${waSafe(e.note)}_`:''}`);
+      else if(e.type==='incident')moments.push(`${time} ${CATEGORY_EMOJI[e.label]||'⚠️'} ${waSafe(tr(e.label||'Incidencia'))}${e.note?` · _${waSafe(e.note)}_`:''}`);
       else if(e.type==='saved')moments.push(`${time} 🏁 *${tr('Final')}*`);
     }
     lines.push('',`🎬 *${tr('Momentos')}*`,...(moments.length?moments:[`_${tr('Sin eventos')}_`]),'',`_${tr('Hecho con Ultimate Clock')} · ${url}_`);
     return lines.join('\n');
   }
 
-  const api={EVENT_LABELS,TIMER_LABELS,describeEvent,toCSV,toPDF,toWhatsApp,csvCell,pdfText};
+  const api={EVENT_LABELS,TIMER_LABELS,CATEGORY_EMOJI,describeEvent,toCSV,toPDF,toWhatsApp,csvCell,pdfText};
   if(typeof module!=='undefined')module.exports=api;else root.SheetExport=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

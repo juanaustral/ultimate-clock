@@ -691,6 +691,10 @@
     openModal(t('Equipo {n}',{n:teamIndex + 1}), `<form data-form="team" data-team="${teamIndex}"><div class="field"><label for="team-name">${esc(t('Nombre del equipo'))}</label><input id="team-name" name="name" value="${esc(team.name)}" maxlength="30" autocomplete="off"></div><div class="team-color-options">${['#1b47e2','#f59e0b','#16a34a','#c62525','#16171b','#ffffff'].map(c=>`<button type="button" class="color-preset" style="background:${c};color:${E.ink(c)}" data-action="team-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}">●</button>`).join('')}</div><button class="button more-colors" type="button" data-action="more-colors">${esc(t('MÁS COLORES'))}</button><div class="field extended-colors" id="extendedColors" hidden><label for="team-color">${esc(t('Elegí cualquier color'))}</label><input id="team-color" name="color" type="color" value="${esc(team.color)}"></div><div class="color-preview" id="colorPreview" style="background:${esc(team.color)};color:${ink}">${esc(t('Vista previa del equipo'))}</div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar equipo'))}</button></div></form>`);
   }
 
+  function openChangelog() {
+    const {VERSION,ENTRIES}=UCChangelog,date=new Intl.DateTimeFormat(lang==='en'?'en-US':'es-AR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+    openModal(t('Novedades'),`<p class="changelog-current">${esc(t('Estás usando la versión {v}.',{v:VERSION}))}</p><ol class="changelog">${ENTRIES.map(e=>`<li><div class="changelog-head">${e.version?`<strong>v${e.version}</strong>`:''}<time datetime="${e.date}">${esc(date.format(new Date(e.date)))}</time></div><ul>${(e[lang]||e.es).map(item=>`<li>${esc(item)}</li>`).join('')}</ul></li>`).join('')}</ol>`);
+  }
   function openReset() {
     openModal(t("Reiniciar contadores"), `<p>${esc(t('¿Reiniciar todos los contadores? Se reinician tiempos, puntajes y eventos sin guardar del partido actual. El historial guardado y los perfiles no se borrarán.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="confirm-reset">${esc(t('Reiniciar contadores'))}</button></div>`);
   }
@@ -738,7 +742,8 @@
 
   function extraAction(action,element) {
     const m=activeMatch();
-    if(action==='sheet'){renderLiveSheet();}
+    if(action==='changelog')openChangelog();
+    else if(action==='sheet'){renderLiveSheet();}
     else if(action==='goal-picker')openGoalPicker();
     else if(action==='timeout-picker')openTimeoutPicker();
     else if(action==='quick-call')openCallPicker();
@@ -951,6 +956,7 @@
   applyTheme(state.settings.theme,false);
   if(state.activeMatch?.status==='active')relabelDefaultTeams();
   applyStaticText();
+  document.querySelector('.footer-version').textContent=`v${UCChangelog.VERSION}`;
   updateAudioControls();
   updateFullscreenControl();
   renderDashboard();

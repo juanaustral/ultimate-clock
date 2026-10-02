@@ -67,10 +67,17 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 .footer-ufm{color:#c4b5fd}
 .footer-donate{display:flex;align-items:center;gap:.4em;flex:none;min-height:var(--foot);color:#8ea6ff}
 .footer-heart{color:#ff6b81;font-size:1.25em;line-height:1}
+.footer-version{flex:none;min-height:var(--foot);padding:0 4px;font:inherit;letter-spacing:.06em;color:#aab0bc;text-decoration:underline;text-underline-offset:2px}
+.changelog-current{font-weight:700}
+.changelog{display:grid;gap:12px;padding:0;list-style:none}
+.changelog-head{display:flex;align-items:baseline;gap:8px;font-size:13px;color:var(--muted)}
+.changelog-head strong{font:800 15px var(--font-display);color:var(--accent)}
+.changelog ul{margin:4px 0 0;padding-left:18px;font-size:14px;line-height:1.4}
 
 /* ── Tablero ──────────────────────────────────────────────
    Vertical:   [Reloj] / [Equipo 1 | Equipo 2] / [Llamada 1 | Llamada 2] / [Pull | Time Out]
-   Horizontal: [Reloj | Llamada 1 | Llamada 2] / [Equipo 1 | Equipo 2 | Pull | Time Out] */
+   Horizontal: [Reloj | Equipo 1 | Equipo 2] / [Pull | Time Out | Llamado 1 | Llamado 2]
+               (cada equipo con su llamado debajo; un solo grid, los dos contenedores se disuelven) */
 .dashboard-screen,.main-grid,.timer-grid{display:grid;gap:var(--gap);min-height:0;min-width:0}
 .dashboard-screen{height:100%;grid-template-rows:minmax(0,1.85fr) minmax(0,2fr)}
 .main-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,.8fr) minmax(0,1.05fr);grid-template-areas:"clock clock" "t1 t2"}
@@ -78,9 +85,8 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 .team-1{grid-area:t1}.team-2{grid-area:t2}.main-grid>.clock-card{grid-area:clock}
 .timer-pull{grid-area:pull}.timeout-card{grid-area:timeout}.timer-call-0{grid-area:call0}.timer-call-1{grid-area:call1}
 @media (orientation:landscape){
-  .dashboard-screen{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
-  .main-grid{grid-template-rows:minmax(0,.92fr) minmax(0,1fr)}
-  .timer-grid{grid-template-rows:minmax(0,.92fr) minmax(0,1fr)}
+  .main-grid,.timer-grid{display:contents}
+  .dashboard-screen{grid-template-columns:repeat(2,minmax(0,.56fr)) repeat(2,minmax(0,.5fr));grid-template-rows:minmax(0,1fr) minmax(0,.92fr);grid-template-areas:"clock clock t1 t2" "pull timeout call0 call1"}
 }
 
 /* ── Instrumento (tarjeta base) ── */
@@ -368,7 +374,7 @@ html[data-theme="dark"] .toast{background:#2a2e36}
 @media (max-width:420px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-row{grid-template-columns:1fr}.site-footer{gap:10px;font-size:8px;letter-spacing:.02em}}
 @media (max-width:480px){.site-footer{gap:8px;letter-spacing:0}}
 /* En teléfonos angostos el pie usa dos renglones: crédito arriba y apoyo abajo. */
-@media (max-width:430px){:root{--foot:38px}.site-footer{flex-direction:column;justify-content:center;gap:5px}.footer-donate{min-height:0}}
+@media (max-width:430px){:root{--foot:38px}.site-footer{display:grid;grid-template-columns:1fr auto 1fr;grid-template-areas:"credit credit credit" ". donate version";align-content:center;justify-items:center;row-gap:5px;column-gap:6px}.footer-credit{grid-area:credit;max-width:100%}.footer-donate{grid-area:donate;min-height:0}.footer-version{grid-area:version;justify-self:end;min-height:0;min-width:0;padding:0 2px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.is-ending .timer-display,.is-ending .timeout-display{text-decoration:underline 4px var(--danger)}.instrument.alert{box-shadow:0 0 0 6px var(--danger)}}
 html[data-theme="dark"] .clock-card{border-color:var(--line)}
 /* Welcome + profile modal fits without scrolling on short phones */
