@@ -29,7 +29,7 @@
     'El medio tiempo todavía no está disponible.':'Halftime is not available yet.','La segunda mitad ya está activa.':'The second half is already on.',
     'El medio tiempo todavía está en curso.':'Halftime is still running.',
     /* Llamados */
-    'Categoría de llamado':'Call type','Falta':'Foul','Violación':'Violation','Pick':'Pick','Travel':'Travel','Stall':'Stall',
+    'Categoría de llamado':'Call type','Falta':'Foul','Violación':'Violation','Pick':'Pick','Travel':'Travel','Conteo':'Stall','Stall':'Stall',
     'Gol discutido':'Disputed goal','Lesión':'Injury','Tiempo de Espíritu':'Spirit timeout',
     'Contacto antirreglamentario entre jugadores. La resolución depende de si el llamado se acepta o se disputa.':'Illegal contact between players. How play restarts depends on whether the call is accepted or contested.',
     'Incumplimiento de una regla distinto de una falta; el reglamento define cómo reanudar el juego.':'A rule infraction other than a foul; the rules define how play restarts.',
@@ -40,7 +40,7 @@
     'Detención por seguridad. Las sustituciones y los time outs asociados dependen del reglamento.':'A stoppage for safety. Substitutions and related time outs depend on the rules.',
     'Detención para tratar problemas de Espíritu de Juego; tiene condiciones propias y no equivale a una falta común.':'A stoppage to address Spirit of the Game issues; it has its own conditions and is not a regular foul.',
     'El reloj registra el llamado; no aplica sanciones ni reemplaza las reglas.':'The clock logs the call; it does not apply penalties or replace the rules.',
-    'Consultar reglamento ↗':'Read the rules ↗','Cancelar':'Cancel','INICIAR LLAMADO':'START CALL',
+    'Consultar reglamento ↗':'Read the rules ↗','Cancelar':'Cancel','INICIAR LLAMADO':'START CALL','CANCELAR LLAMADO':'CANCEL CALL','REGISTRAR':'RECORD',
     /* Time out */
     'Terminá el time-out activo antes de registrar otro.':'Finish the current time out before logging another.',
     'Este equipo no tiene time-outs disponibles.':'This team has no time outs left.','Iniciar time out':'Start time out',
@@ -146,11 +146,12 @@
     'ULTIMATE CLOCK, tablero':'ULTIMATE CLOCK, board','Opciones del partido':'Game options','Modo visual':'Display mode',
     'MODO CLARO':'LIGHT MODE','MODO OSCURO':'DARK MODE','IDIOMA':'LANGUAGE','PARTIDO':'GAME','＋ NUEVO PARTIDO':'＋ NEW GAME','PLANILLA':'SCORESHEET',
     'Guardar partido':'Save game','GUARDAR':'SAVE','SONIDO Y PANTALLA':'SOUND AND SCREEN','PROBAR SONIDO':'TEST SOUND',
-    'Abrir configuración':'Open settings','CONFIGURAR':'SETTINGS','AYUDA':'HELP','Información de la app':'App information','INFO':'INFO',
+    'Abrir configuración':'Open settings','CONFIGURAR':'SETTINGS','EDITAR TIEMPOS':'EDIT TIMES','Editar tiempos':'Edit times','AYUDA':'HELP','Información de la app':'App information','INFO':'INFO',
     'REINICIAR CONTADORES':'RESET COUNTERS','Créditos y apoyo':'Credits and support','UN PROYECTO DE':'A PROJECT BY','PARA':'FOR',
     'Apoyá este proyecto':'Support this project',
     'Si el tablero no aparece:':'If the board does not appear:',
     /* Bienvenida y guardado */
+    'Completá el nombre y todos los tiempos con números enteros positivos.':'Fill in the name and every time with positive whole numbers.','ELIMINAR':'DELETE','¿ELIMINAR?':'DELETE?','ELIMINAR PERFIL':'DELETE PROFILE','Eliminar perfil':'Delete profile','Eliminar el perfil {name}':'Delete the {name} profile','Perfil {name} eliminado.':'Profile {name} deleted.','¿Eliminar el perfil {name}? Las planillas guardadas no se borran.':'Delete the {name} profile? Saved scoresheets are kept.','Este perfil se usa en el partido actual. Prepará otro partido para eliminarlo.':'This profile is used by the current game. Set up another game to delete it.',
     'PASO {n} DE {total}':'STEP {n} OF {total}','SIGUIENTE':'NEXT','ATRÁS':'BACK','Perfil de tiempo':'Time profile','EMPEZAR':'START','TIEMPOS PERSONALIZADOS':'CUSTOM TIMES','Tiempos personalizados':'Custom times','GUARDAR PERFIL Y EMPEZAR':'SAVE PROFILE AND START',
     'Este perfil se guarda en la sesión de este navegador y quedará disponible en la lista de perfiles. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierde.':'This profile is saved in this browser session and will be available in the profile list. Clearing its data, using private mode or switching devices loses it.',
     'Te damos la bienvenida':'Welcome',

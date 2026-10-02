@@ -407,3 +407,10 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .welcome-flow>.welcome-back,form.welcome-flow .welcome-back{min-height:44px;background:var(--bg-2)}
 .welcome-flow .duration-grid{margin-top:0}
 .welcome-flow .modal-actions .button-primary{min-height:56px;font-size:15px}
+.profile-row{display:flex;gap:6px}
+.profile-row .profile-choice{flex:1;min-width:0}
+.profile-delete{flex:none;min-width:84px;padding:0 10px;font:800 11px var(--font-body);letter-spacing:.06em;color:var(--danger);background:var(--bg-2);box-shadow:inset 0 0 0 1.5px var(--line)}
+.profile-delete.confirm{background:var(--danger);color:#fff;box-shadow:none}
+.settings-delete{width:100%;margin-top:6px}
+/* INFO con el mismo color que APOYÁ ESTE PROYECTO del pie. */
+.header-actions [data-action="info"]{background:#8ea6ff;color:#0f1115;border-color:#8ea6ff}
