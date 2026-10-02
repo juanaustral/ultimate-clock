@@ -3,7 +3,7 @@
 > Tablero táctil local-first para operar un partido de Ultimate Frisbee.
 
 [![Demo en vivo](https://img.shields.io/badge/demo-iona.ar%2Fultimateclock-111111)](https://iona.ar/ultimateclock/)
-[![Pruebas](https://img.shields.io/badge/tests-22%2F22-1f8a70)](qa/pruebas.txt)
+[![Pruebas](https://img.shields.io/badge/tests-23%2F23-1f8a70)](qa/pruebas.txt)
 [![Licencia](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](#licencia)
 
 ULTIMATE CLOCK es un proyecto de **Juan Martínez García / IONA**. Está pensado para una mesa de tiempo que necesita leer y accionar el partido desde un teléfono, tableta o pantalla de cancha sin depender de una cuenta ni de un backend.

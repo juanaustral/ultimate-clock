@@ -1,4 +1,4 @@
-const CACHE='ultimate-clock-offline-v18';
+const CACHE='ultimate-clock-offline-v19';
 const FILES=['./','./index.html','./ultimate-clock.html','./ultimate-clock.css','./clock-engine.js','./tokens.css','./alerts.js','./sheet-export.js','./ultimate-clock.js','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES))));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('ultimate-clock-offline-')&&key!==CACHE).map(key=>caches.delete(key))))])));
