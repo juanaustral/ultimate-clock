@@ -28,7 +28,7 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 3. **Cancha primero.** El tablero ocupa el alto disponible, funciona en vertical y horizontal y mantiene controles táctiles de al menos 44 × 44 px.
 4. **Estado explícito.** Cada reloj comunica si está listo, corriendo, cumplido o reiniciado.
 5. **Reglas configurables.** WFDF, USA Ultimate y perfiles personalizados conviven sin presentar un valor configurable como regla universal.
-6. **Datos bajo control de la persona.** Las planillas se guardan en el navegador y pueden exportarse como JSON.
+6. **Datos bajo control de la persona.** Las planillas se guardan en el navegador y pueden exportarse como PDF, CSV o JSON.
 
 ## Flujo principal
 
@@ -50,7 +50,7 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 - Goles con corrección, pase y anotador.
 - Llamadas por equipo con ocho categorías.
 - Cupo de Time Out por equipo y por mitad.
-- Planilla, historial local y exportación JSON.
+- Planilla, historial local y exportación PDF, CSV y JSON.
 - Tutorial guiado, tema claro/oscuro, pantalla completa y diseño responsive.
 
 ### Fuera de alcance
@@ -63,7 +63,7 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 
 ## Resultado y evidencia
 
-- 14/14 pruebas automáticas aprobadas.
+- 22/22 pruebas automáticas aprobadas.
 - Prueba funcional completa de partido con 17 eventos registrados.
 - Verificación publicada en 320×568, 390×844 y 844×390 sin scroll ni errores de consola.
 - Capturas y trazabilidad en [`qa/VERIFICACION.md`](../qa/VERIFICACION.md).

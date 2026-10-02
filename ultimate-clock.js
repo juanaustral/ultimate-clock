@@ -177,7 +177,8 @@
   function logEvent(type, detail={}) { const m=activeMatch(); m.events.push({type,at:nowIso(),elapsed:m.clock.elapsed,...detail}); }
   function isLocked() {const m=activeMatch();return m.status==='saved';}
   function hasStarted() {const m=activeMatch();return m.clock.elapsed>0||m.clock.running||m.events.length>0;}
-  function exportData(data,name) {const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  function download(content,type,name) {const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  function exportData(data,name) {download(JSON.stringify(data,null,2),'application/json',name);}
 
   function themeName(id) {
     return BUILT_IN_THEMES.find(theme => theme.id === id)?.name || state.customThemes.find(theme => theme.id === id)?.name || "Personalizado";
@@ -651,9 +652,8 @@
   }
 
   function openSheet(match) {
-    const labels={goal:'Gol',timeout:'Time-out',call:'Llamada',adjustment:'Ajuste manual −1',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Mitad',incident:'Incidencia',saved:'Partido finalizado'};
-    const events=match.events.map(e=>`<li><time>${dateLabel(e.at)}<br>${fmt(e.elapsed||0)}</time><span>${esc(labels[e.type]||e.type)}${e.team!==undefined?` · ${esc(match.teams[e.team].name)}`:''}${e.timer?` · ${esc(({clock:"Reloj de partido",pull:"Pull",call:"Llamada",timeout:"Time-out",break:"Descanso"})[e.timer]||e.timer)}`:''}${e.label?` · ${esc(e.label)}`:''}${e.note?` · ${esc(e.note)}`:''}${e.scorer?` · gol: ${esc(e.scorer)}`:''}${e.assist?` · pase: ${esc(e.assist)}`:''}${e.mode?` · ${esc(e.mode)}`:''}</span></li>`).join('');
-    openModal('Planilla guardada',`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset))} · ${esc(match.themeName||'Claro')}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>Duración</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>Time-outs</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>Eventos</span></div></div><p>Colores: ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>Configuración del partido</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||'<li>Sin eventos</li>'}</ul><div class="modal-actions"><button class="button" data-action="export-sheet" data-match="${esc(match.id)}">Descargar JSON</button><button class="button button-primary" data-action="new-match">Nuevo partido</button></div>`);
+    const events=match.events.map(e=>`<li><time>${dateLabel(e.at)}<br>${fmt(e.elapsed||0)}</time><span>${esc(SheetExport.describeEvent(match,e))}</span></li>`).join('');
+    openModal('Planilla guardada',`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset))} · ${esc(match.themeName||'Claro')}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>Duración</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>Time-outs</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>Eventos</span></div></div><p>Colores: ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>Configuración del partido</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||'<li>Sin eventos</li>'}</ul><div class="modal-actions"><button class="button" data-action="export-sheet" data-format="pdf" data-match="${esc(match.id)}">Descargar PDF</button><button class="button" data-action="export-sheet" data-format="csv" data-match="${esc(match.id)}">Descargar CSV</button><button class="button" data-action="export-sheet" data-format="json" data-match="${esc(match.id)}">Descargar JSON</button><button class="button button-primary" data-action="new-match">Nuevo partido</button></div>`);
   }
 
   function saveMatch() {
@@ -725,7 +725,7 @@
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
     else if(action==='save-and-new'){if(saveMatch())resetMatch();}
-    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match);if(sheet)exportData(sheet,`ultimate-clock-${sheet.id}.json`);}
+    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match),format=element.dataset.format,name=`ultimate-clock-${sheet?.id}`;if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset)}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet),'text/csv;charset=utf-8',`${name}.csv`);else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,'ultimate-clock-respaldo.json');
     else if(action==='retry-storage'){
       if(storageInvalid){showToast('Descargá primero el respaldo. El formato anterior se conserva sin sobrescribir.');return true;}
