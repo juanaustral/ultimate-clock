@@ -151,6 +151,8 @@
     'Apoyá este proyecto':'Support this project',
     'Si el tablero no aparece:':'If the board does not appear:',
     /* Bienvenida y guardado */
+    'PASO {n} DE {total}':'STEP {n} OF {total}','SIGUIENTE':'NEXT','ATRÁS':'BACK','Perfil de tiempo':'Time profile','EMPEZAR':'START','TIEMPOS PERSONALIZADOS':'CUSTOM TIMES','Tiempos personalizados':'Custom times','GUARDAR PERFIL Y EMPEZAR':'SAVE PROFILE AND START',
+    'Este perfil se guarda en la sesión de este navegador y quedará disponible en la lista de perfiles. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierde.':'This profile is saved in this browser session and will be available in the profile list. Clearing its data, using private mode or switching devices loses it.',
     'Te damos la bienvenida':'Welcome',
     'Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.':'Game clock, goals, calls, pull, time outs and scoresheet for your game. Free and offline.',
     'Perfiles y planillas se guardan solo en este navegador. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierden. En iPhone, agregá la app a la pantalla de inicio. Exportá lo que quieras conservar.':'Profiles and scoresheets are stored only in this browser. Clearing its data, using private mode or switching devices loses them. On iPhone, add the app to your Home Screen. Export what you want to keep.',

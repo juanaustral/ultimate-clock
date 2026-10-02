@@ -48,7 +48,7 @@ h1,h2,h3,p{margin:0}
 .modal .lang-switch{margin-bottom:12px}
 .header-actions .menu-help:hover{background:var(--help);filter:brightness(1.12)}
 /* Ayuda con color propio (verde), en el menú y en el selector de inicio. */
-.header-actions .menu-help,.profile-actions .profile-guide{background:var(--help);color:#fff;border-color:var(--help)}
+.header-actions .menu-help{background:var(--help);color:#fff;border-color:var(--help)}
 .menu-group-label{grid-column:1/-1;margin:8px 2px 0;font:800 10px/1 var(--font-body);letter-spacing:.14em;color:var(--muted)}
 .icon-button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:var(--touch);padding:6px 10px;background:var(--bg-2);font:700 12px/1.15 var(--font-body);letter-spacing:.03em;text-transform:uppercase;text-align:center}
 .icon-button:hover{background:var(--line)}
@@ -398,3 +398,12 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 @media (max-height:620px){.welcome-hero p{display:none}.welcome-hero .logo{width:36px;height:36px}.profile-choice,.profile-continue{min-height:44px}.modal-body .storage-note{font-size:11px!important;padding-top:8px}}
 @media (orientation:landscape){.teams-setup{grid-template-columns:repeat(2,minmax(0,1fr))}.teams-setup>p,.teams-setup .modal-actions{grid-column:1/-1}.team-setup-colors{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (orientation:landscape) and (max-height:480px){.teams-setup>p{display:none}}
+
+/* Pop up de inicio en tres pantallas */
+.welcome-step{font:800 10px/1 var(--font-body);letter-spacing:.14em;color:var(--muted)}
+.welcome-hero+.lang-switch+.welcome-step{margin-top:2px}
+.profile-new{background:var(--ufm);color:#fff;min-height:56px;grid-column:1/-1;font-size:15px}
+.profile-actions .welcome-back{grid-column:1/-1;min-height:44px;background:var(--bg-2)}
+.welcome-flow>.welcome-back,form.welcome-flow .welcome-back{min-height:44px;background:var(--bg-2)}
+.welcome-flow .duration-grid{margin-top:0}
+.welcome-flow .modal-actions .button-primary{min-height:56px;font-size:15px}

@@ -575,7 +575,7 @@
     const editing=draftRuleset||!!currentProfile;
     const editLocked=locked&&!draftRuleset;
     const options=`<option value="wfdf" ${!draftRuleset&&state.settings.ruleset==='wfdf'?'selected':''}>WFDF 2025–2028</option><option value="usau" ${!draftRuleset&&state.settings.ruleset==='usau'?'selected':''}>USA Ultimate 2026–2027</option><option value="create" ${draftRuleset?'selected':''}>${esc(t('PERSONALIZADO · Crear perfil'))}</option>${state.customRulesets.map(p=>`<option value="${esc(p.id)}" ${!draftRuleset&&state.settings.ruleset===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}`;
-    const durations=[['gameCap',t('Tiempo total del partido'),Math.round(config.gameCap/6)/10,'min'],['halfCap',t('Primer tiempo'),Math.round(config.halfCap/6)/10,'min'],['halftime',t('Medio tiempo'),Math.round(config.halftime/6)/10,'min'],['call','Llamado',config.call.restart,'s'],['timeout','Time out',config.timeoutDuration,'s'],['timeoutsPerTeam',t('Time outs por equipo y por tiempo'),config.timeoutsPerTeam,'']];
+    const durations=durationRows(config);
     app.innerHTML=`<section class="settings-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('CONFIGURACIÓN'))}</span><h1>${esc(t('Preparar partido'))}</h1></div></div>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Reglamento'))}</h2></div><div class="settings-row"><div class="field"><label for="ruleset">${esc(t('Perfil'))}</label><select id="ruleset" data-setting="ruleset" ${locked?'disabled':''}>${options}</select></div><div class="field"><label for="sound">${esc(t('Avisos'))}</label><select id="sound" data-setting="sound"><option value="on" ${state.settings.sound?'selected':''}>${esc(t('Sonido y aviso visual'))}</option><option value="off" ${!state.settings.sound?'selected':''}>${esc(t('Solo aviso visual'))}</option></select></div></div><p>${esc(t('WFDF y USA Ultimate cargan sus tiempos de referencia. Los límites de duración del partido pueden depender del torneo: confirmalos antes de jugar.'))}</p></section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Tiempos totales'))}</h2><span>${esc(t(editing?'PERFIL PERSONALIZADO':'PERFIL DE REFERENCIA'))}</span></div><p>${esc(t('Un valor por reloj. Cada cuenta de Pull, Llamado, Time out y Medio tiempo corre hasta cero y termina con cinco alarmas.'))}</p>${editing?`<form data-form="ruleset-profile" data-profile="${esc(draftRuleset?'':currentProfile?.id||'')}"><div class="field"><label for="profile-name">${esc(t('Nombre del perfil'))}</label><input id="profile-name" name="name" maxlength="40" value="${esc(draftRuleset?'':currentProfile?.name||'')}" placeholder="${esc(t('Ej.: Torneo local'))}" required ${editLocked?'disabled':''}></div><div class="duration-grid">${durations.map(([key,label,value,unit])=>durationField(key,label,value,unit,editLocked)).join('')}</div><button class="button button-primary settings-save" ${editLocked?'disabled':''}>${esc(t(draftRuleset?'GUARDAR PERFIL PERSONALIZADO':currentProfile?'GUARDAR CAMBIOS':'GUARDAR PERFIL PERSONALIZADO'))}</button></form>`:`<div class="duration-grid">${durations.map(([key,label,value,unit])=>`<div class="duration-readout"><span>${esc(label)}</span><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`).join('')}</div><p>${esc(t('Elegí “PERSONALIZADO · Crear perfil” para cambiar los valores y guardarlos en el desplegable.'))}</p>`}</section>
@@ -583,19 +583,54 @@
       <p class="settings-source">${esc(t('Referencias:'))} <a href="https://rules.wfdf.sport/" target="_blank" rel="noreferrer">WFDF</a> · <a href="https://usaultimate.org/rules/" target="_blank" rel="noreferrer">USA Ultimate</a>.</p>
     </section>`;
   }
-  function durationField(key,label,value,unit,locked){return `<div class="field duration-field"><label for="duration-${key}">${esc(label)}${unit?` · ${unit}`:''}</label><input id="duration-${key}" name="${key}" type="number" inputmode="${unit==='min'?'decimal':'numeric'}" min="${unit==='min'?0.1:1}" max="${key==='timeoutsPerTeam'?20:1440}" step="${unit==='min'?0.1:1}" value="${value}" required ${locked?'disabled':''}></div>`;}
+  function durationField(key,label,value,unit,locked,plain=false){const decimal=unit==='min';return `<div class="field duration-field"><label for="duration-${key}">${esc(label)}${unit?` · ${unit}`:''}</label><input id="duration-${key}" name="${key}" ${plain?`type="text" inputmode="${decimal?'decimal':'numeric'}" data-numeric="${decimal?'decimal':'int'}" autocomplete="off"`:`type="number" inputmode="${decimal?'decimal':'numeric'}" min="${decimal?0.1:1}" max="${key==='timeoutsPerTeam'?20:1440}" step="${decimal?0.1:1}"`} value="${value}" required ${locked?'disabled':''}></div>`;}
+  function durationRows(config){return [['gameCap',t('Tiempo total del partido'),Math.round(config.gameCap/6)/10,'min'],['halfCap',t('Primer tiempo'),Math.round(config.halfCap/6)/10,'min'],['halftime',t('Medio tiempo'),Math.round(config.halftime/6)/10,'min'],['call','Llamado',config.call.restart,'s'],['timeout','Time out',config.timeoutDuration,'s'],['timeoutsPerTeam',t('Time outs por equipo y por tiempo'),config.timeoutsPerTeam,'']];}
 
   function langSwitch() {
     return `<div class="mode-switch lang-switch" role="group" aria-label="Idioma / Language">${[['es','ESPAÑOL'],['en','ENGLISH']].map(([id,label])=>`<button type="button" data-action="set-lang" data-lang="${id}" lang="${id}" aria-pressed="${lang===id}">${label}</button>`).join('')}</div>`;
   }
-  function openProfileSelector(keepSelection=false) {
-    const locked=hasStarted()||isLocked(),current=keepSelection&&selectedProfileId?selectedProfileId:state.settings.ruleset;
-    selectedProfileId=current;
-    const profiles=[{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];
-    openModal(t('Te damos la bienvenida'),`<div class="welcome-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p></div></div>${langSwitch()}<p>${esc(t(locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'))}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${esc(t(p.id===current?'SELECCIONADO':'ELEGIR'))}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile" autofocus>${esc(t('USAR ESTE PERFIL'))}</button><button class="button profile-new" type="button" data-action="new-profile">${esc(t('CREAR NUEVO PERFIL'))}</button><button class="button profile-guide" type="button" data-action="start-tutorial">${esc(t('CÓMO USAR LA APP'))}</button></div>${storageNote()}`);
+  /* Pop up de inicio en tres pantallas: 1 equipos, 2 perfil de tiempo, 3 tiempos personalizados. */
+  const WELCOME_STEPS=['teams','profile','custom'];
+  let welcomeStep='teams';
+  function profileChoices() {return [{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];}
+  function profileConfig(id) {const profile=state.customRulesets.find(p=>p.id===id);return clone(profile?profile.config:E.defaults[id]||E.defaults.wfdf);}
+  function teamSetupMarkup(teams) {
+    return teams.map((team,i)=>`<div class="team-setup" role="group" aria-labelledby="team-setup-${i}" style="${teamStyle(team)}"><span class="team-setup-label" id="team-setup-${i}">${esc(t('Equipo {n}',{n:i+1}))}</span><input name="name-${i}" value="${esc(team.name)}" maxlength="30" autocomplete="off" aria-label="${esc(t('Nombre del equipo {n}',{n:i+1}))}" ${i===0?'autofocus':''}><div class="team-setup-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c===team.color?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="setup-color" data-team="${i}" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c===team.color}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color-${i}" value="${esc(team.color)}" data-setup-team="${i}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div>`).join('');
   }
-  function storageNote() {
-    return `<p class="storage-note"><span aria-hidden="true">🔒</span> ${esc(t('Perfiles y planillas se guardan solo en este navegador. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierden. En iPhone, agregá la app a la pantalla de inicio. Exportá lo que quieras conservar.'))}</p>`;
+  function applyTeamsForm(form) {
+    const data=new FormData(form);
+    activeMatch().teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});
+    saveState();
+  }
+  function openWelcome(step=welcomeStep) {
+    if(hasStarted()||isLocked())return;
+    welcomeStep=WELCOME_STEPS.includes(step)?step:'teams';
+    const index=WELCOME_STEPS.indexOf(welcomeStep),m=activeMatch();
+    const steps=`<p class="welcome-step" aria-hidden="true">${esc(t('PASO {n} DE {total}',{n:index+1,total:WELCOME_STEPS.length}))}</p>`;
+    const back=`<button class="button welcome-back" type="button" data-action="welcome-back">← ${esc(t('ATRÁS'))}</button>`;
+    let title,body;
+    if(welcomeStep==='teams'){
+      title=t('Te damos la bienvenida');
+      body=`<div class="welcome-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p></div></div>${langSwitch()}${steps}<form data-form="welcome-teams" class="teams-setup welcome-flow"><p>${esc(t('Escribí el nombre y elegí el color de cada equipo.'))}</p>${teamSetupMarkup(m.teams)}<div class="modal-actions"><button class="button button-primary" type="submit">${esc(t('SIGUIENTE'))} →</button></div></form>`;
+    } else if(welcomeStep==='profile') {
+      const current=profileChoices().some(p=>p.id===selectedProfileId)?selectedProfileId:state.settings.ruleset;
+      selectedProfileId=current;
+      title=t('Perfil de tiempo');
+      body=`<div class="welcome-flow">${steps}<p>${esc(t('Elegí los tiempos para este partido antes de empezar.'))}</p><div class="profile-choices">${profileChoices().map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}"><strong>${esc(p.name)}</strong><span>${esc(t(p.id===current?'SELECCIONADO':'ELEGIR'))}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile">${esc(t('EMPEZAR'))}</button><button class="button profile-new" type="button" data-action="new-profile">${esc(t('TIEMPOS PERSONALIZADOS'))}</button>${back}</div></div>`;
+    } else {
+      title=t('Tiempos personalizados');
+      body=`<form data-form="welcome-profile" class="welcome-flow" novalidate>${steps}<div class="field"><label for="profile-name">${esc(t('Nombre del perfil'))}</label><input id="profile-name" name="name" maxlength="40" autocomplete="off" placeholder="${esc(t('Ej.: Torneo local'))}" required></div><div class="duration-grid">${durationRows(profileConfig(selectedProfileId)).map(([key,label,value,unit])=>durationField(key,label,value,unit,false,true)).join('')}</div><button class="button button-primary" type="submit">${esc(t('GUARDAR PERFIL Y EMPEZAR'))}</button>${back}${storageNote(t('Este perfil se guarda en la sesión de este navegador y quedará disponible en la lista de perfiles. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierde.'))}</form>`;
+    }
+    openModal(title,body);
+  }
+  function startWithProfile(id) {
+    const profile=state.customRulesets.find(p=>p.id===id);
+    if(!profile&&!['wfdf','usau'].includes(id))return;
+    state.settings.ruleset=id;state.settings.baseRuleset=profile?'wfdf':id;state.settings.overrides=profile?clone(profile.config):{};
+    activeMatch().ruleset=id;updateTimerConfig(activeMatch());saveState();renderDashboard();enterFullscreen();closeModal();
+  }
+  function storageNote(text=t('Perfiles y planillas se guardan solo en este navegador. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierden. En iPhone, agregá la app a la pantalla de inicio. Exportá lo que quieras conservar.')) {
+    return `<p class="storage-note"><span aria-hidden="true">🔒</span> ${esc(text)}</p>`;
   }
 
   function closeTutorial(){
@@ -696,7 +731,7 @@
   function openTeamsSetup() {
     if(hasStarted()||isLocked())return;
     const teams=activeMatch().teams;
-    openModal(t('Equipos del partido'),`<form data-form="teams" class="teams-setup"><p>${esc(t('Escribí el nombre y elegí el color de cada equipo.'))}</p>${teams.map((team,i)=>`<div class="team-setup" role="group" aria-labelledby="team-setup-${i}" style="${teamStyle(team)}"><span class="team-setup-label" id="team-setup-${i}">${esc(t('Equipo {n}',{n:i+1}))}</span><input name="name-${i}" value="${esc(team.name)}" maxlength="30" autocomplete="off" aria-label="${esc(t('Nombre del equipo {n}',{n:i+1}))}" ${i===0?'autofocus':''}><div class="team-setup-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c===team.color?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="setup-color" data-team="${i}" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c===team.color}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color-${i}" value="${esc(team.color)}" data-setup-team="${i}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div>`).join('')}<div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('OMITIR'))}</button><button class="button button-primary" type="submit">${esc(t('LISTO'))}</button></div></form>`);
+    openModal(t('Equipos del partido'),`<form data-form="teams" class="teams-setup"><p>${esc(t('Escribí el nombre y elegí el color de cada equipo.'))}</p>${teamSetupMarkup(teams)}<div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('OMITIR'))}</button><button class="button button-primary" type="submit">${esc(t('LISTO'))}</button></div></form>`);
   }
   function setSetupColor(index,color) {
     const fieldset=document.querySelectorAll('.team-setup')[index],input=fieldset?.querySelector(`[name="color-${index}"]`);if(!input)return;
@@ -743,19 +778,31 @@
     showToast(t("Contadores reiniciados."));
   }
 
+  function profileFromForm(form,base) {
+    const data=new FormData(form),name=String(data.get('name')||'').trim();
+    const value=key=>Number(String(data.get(key)).replace(',','.'));
+    const fields=['gameCap','halfCap','halftime','call','timeout','timeoutsPerTeam'];
+    if(!name||fields.some(key=>!Number.isFinite(value(key))||value(key)<(key==='gameCap'||key==='halfCap'||key==='halftime'?0.1:1))||['call','timeout','timeoutsPerTeam'].some(key=>!Number.isInteger(value(key)))){showToast(t('Completá el nombre y todos los tiempos con números positivos.'));return null;}
+    const config=clone(base);config.label=name;config.gameCap=Math.round(value('gameCap')*60);config.halfCap=Math.round(value('halfCap')*60);config.halftime=Math.round(value('halftime')*60);config.call.restart=value('call');config.timeoutDuration=value('timeout');config.timeoutLimit=value('timeout');config.timeoutsPerTeam=value('timeoutsPerTeam');config.interruption='continue';
+    const error=E.validate(config);if(error){showToast(t(error));return null;}
+    return {name,config};
+  }
   function saveRulesetProfile(form) {
     const active=hasStarted()||isLocked();
     if(active&&form.dataset.profile){showToast(t('Prepará un nuevo partido para cambiar los tiempos.'));return;}
-    const data=new FormData(form),name=String(data.get('name')||'').trim();
-    const value=key=>Number(data.get(key));
-    const fields=['gameCap','halfCap','halftime','call','timeout','timeoutsPerTeam'];
-    if(!name||fields.some(key=>!Number.isFinite(value(key))||value(key)<(key==='gameCap'||key==='halfCap'||key==='halftime'?0.1:1))||['call','timeout','timeoutsPerTeam'].some(key=>!Number.isInteger(value(key)))){showToast(t('Completá el nombre y todos los tiempos con números positivos.'));return;}
-    const config=clone(getRuleset());config.label=name;config.gameCap=Math.round(value('gameCap')*60);config.halfCap=Math.round(value('halfCap')*60);config.halftime=Math.round(value('halftime')*60);config.call.restart=value('call');config.timeoutDuration=value('timeout');config.timeoutLimit=value('timeout');config.timeoutsPerTeam=value('timeoutsPerTeam');config.interruption='continue';
-    const error=E.validate(config);if(error){showToast(t(error));return;}
+    const made=profileFromForm(form,getRuleset());if(!made)return;
+    const {name,config}=made;
     let profile=state.customRulesets.find(p=>p.id===form.dataset.profile);
     if(profile){profile.name=name;profile.config=clone(config);}else{profile={id:uid('profile'),name,config:clone(config)};state.customRulesets.push(profile);}
     if(!active){state.settings.ruleset=profile.id;state.settings.baseRuleset='wfdf';state.settings.overrides=clone(config);activeMatch().ruleset=profile.id;updateTimerConfig(activeMatch());}
     draftRuleset=false;saveState();renderSettings();showToast(t(active?'Perfil {name} guardado para el próximo partido.':'Perfil {name} guardado.',{name}));
+  }
+  function saveWelcomeProfile(form) {
+    if(hasStarted()||isLocked()){closeModal();return;}
+    const made=profileFromForm(form,profileConfig(selectedProfileId));if(!made)return;
+    const profile={id:uid('profile'),name:made.name,config:clone(made.config)};
+    state.customRulesets.push(profile);selectedProfileId=profile.id;
+    startWithProfile(profile.id);showToast(t('Perfil {name} guardado.',{name:made.name}));
   }
 
   function extraAction(action,element) {
@@ -806,6 +853,8 @@
     const data=new FormData(form),m=activeMatch(),type=form.dataset.form;
     if(type==='incident'){logEvent('incident',{label:String(data.get('type')),note:String(data.get('note')||'').trim()});closeModal();saveState();renderLiveSheet();showToast(t('Incidencia anotada.'));return true;}
     if(type==='ruleset-profile'){saveRulesetProfile(form);return true;}
+    if(type==='welcome-teams'){if(!hasStarted()&&!isLocked()){applyTeamsForm(form);openWelcome('profile');}else closeModal();return true;}
+    if(type==='welcome-profile'){saveWelcomeProfile(form);return true;}
     if(type==='teams'){if(!hasStarted()&&!isLocked())m.teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});closeModal();saveState();renderDashboard();showToast(t('Equipos listos.'));return true;}
     if(!['call','timeout'].includes(type))return false;
     if(isLocked()){closeModal();return true;}
@@ -834,20 +883,15 @@
       document.body.classList.toggle('menu-open',open);
     }
     if(action==='select-profile'){
-      const id=actionElement.dataset.profile,profile=state.customRulesets.find(p=>p.id===id);
-      if(!profile&&!['wfdf','usau'].includes(id))return;
-      if((hasStarted()||isLocked())&&id!==state.settings.ruleset){showToast(t('El perfil del partido actual no se puede cambiar.'));return;}
+      const id=actionElement.dataset.profile;
+      if(!profileChoices().some(p=>p.id===id))return;
       selectedProfileId=id;
       modalRoot.querySelectorAll('.profile-choice').forEach(button=>{const active=button.dataset.profile===id;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));button.querySelector('span').textContent=t(active?'SELECCIONADO':'ELEGIR');});
       return;
     }
-    if(action==='use-profile'){
-      const id=selectedProfileId,profile=state.customRulesets.find(p=>p.id===id);
-      if(!profile&&!['wfdf','usau'].includes(id))return;
-      if(!hasStarted()&&!isLocked()){state.settings.ruleset=id;state.settings.baseRuleset=profile?'wfdf':id;state.settings.overrides=profile?clone(profile.config):{};activeMatch().ruleset=id;updateTimerConfig(activeMatch());saveState();renderDashboard();enterFullscreen();closeModal();openTeamsSetup();return;}
-      closeModal();return;
-    }
-    if(action==='new-profile'){draftRuleset=true;closeModal();renderSettings();document.getElementById('profile-name')?.focus();return;}
+    if(action==='use-profile'){if(!hasStarted()&&!isLocked())startWithProfile(selectedProfileId);else closeModal();return;}
+    if(action==='new-profile'){openWelcome('custom');return;}
+    if(action==='welcome-back'){openWelcome(welcomeStep==='custom'?'profile':'teams');return;}
     if (action === "settings") { closeModal(); renderSettings(); }
     if (action === "info") openInfo();
     if (action === "reset") openReset();
@@ -912,6 +956,12 @@
   /* Tapping a team name selects it, so typing replaces "Equipo 1". */
   document.addEventListener("focusin", event => { if (event.target.matches?.('.team-setup input[name^="name-"]')) event.target.select(); });
   document.addEventListener("input", event => {
+    if (event.target.dataset.numeric) {
+      const el=event.target,int=el.dataset.numeric==='int';
+      let v=el.value.replace(int?/\D/g:/[^0-9.,]/g,'');
+      if(!int){const i=v.search(/[.,]/);if(i>=0)v=v.slice(0,i+1)+v.slice(i+1).replace(/[.,]/g,'');}
+      if(v!==el.value)el.value=v;
+    }
     if (event.target.dataset.setupTeam) setSetupColor(Number(event.target.dataset.setupTeam), event.target.value);
     if (event.target.id === "team-color") {
       const preview = document.getElementById("colorPreview");
@@ -954,11 +1004,12 @@
   }
   function setLang(next) {
     if(!UCI18N.languages.includes(next)||next===lang)return;
+    const teamsForm=modalRoot.querySelector('[data-form="welcome-teams"]');if(teamsForm)applyTeamsForm(teamsForm);
     lang=next;state.settings.lang=next;relabelDefaultTeams();saveState();applyStaticText();
-    const profileOpen=!!modalRoot.querySelector('.profile-choices');
+    const profileOpen=!!modalRoot.querySelector('.welcome-flow');
     const view=app.firstElementChild?.className||'';
     if(view.includes('settings-screen'))renderSettings();else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();
-    if(profileOpen)openProfileSelector(true);else closeModal();
+    if(profileOpen)openWelcome();else closeModal();
     if(tutorialIndex>=0)showTutorialStep(tutorialIndex);
     announce(t('Idioma: español'));
   }
@@ -983,7 +1034,7 @@
   updateAudioControls();
   updateFullscreenControl();
   renderDashboard();
-  if(!hasStarted()&&!isLocked())openProfileSelector();
+  if(!hasStarted()&&!isLocked())openWelcome('teams');
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();
   let otherTabLocked=false;
