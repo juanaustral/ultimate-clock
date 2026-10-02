@@ -2,8 +2,9 @@
    y agrega arriba una entrada breve en español e inglés. */
 (function (root) {
   'use strict';
-  const VERSION = 36;
+  const VERSION = 37;
   const ENTRIES = [
+    {version:37,date:'2026-10-02',es:['El time out ya no pausa el reloj del partido.'],en:['A time out no longer pauses the game clock.']},
     {version:36,date:'2026-10-02',es:['Los botones de Time Out vuelven a funcionar.','El time out detiene el reloj del partido.','El llamado se puede reiniciar mientras corre.'],en:['The Time Out buttons work again.','A time out stops the game clock.','A call can be reset while it runs.']},
     {version:35,date:'2026-10-02',es:['Los perfiles de tiempo guardados se pueden eliminar desde el inicio y desde Editar tiempos.','Los tiempos se cargan en números enteros.','El Pull se puede reiniciar mientras corre.','El llamado arranca al tocarlo y la categoría se elige mientras corre; Stall pasa a llamarse Conteo.','En el menú, CONFIGURAR pasa a EDITAR TIEMPOS.'],en:['Saved time profiles can be deleted from the start screen and from Edit times.','Times are entered as whole numbers.','The pull can be reset while it runs.','A call starts as soon as you tap it and you pick its type while it runs.','In the menu, SETTINGS is now EDIT TIMES.']},
     {version:34,date:'2026-10-02',es:['En el inicio solo se marca el perfil elegido.','Al guardar los tiempos en Configuración se vuelve al tablero.'],en:['Only the chosen profile is highlighted at the start.','Saving times in Settings returns to the board.']},
