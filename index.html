@@ -4,18 +4,45 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f8f9fb">
-    <meta name="description" content="Ultimate Clock: tablero de cronómetros para partidos de Ultimate Frisbee.">
-    <title>ULTIMATE CLOCK</title>
+    <title>Ultimate Clock — Reloj y planilla para partidos de Ultimate Frisbee</title>
+    <meta name="description" content="App gratis para llevar partidos de Ultimate Frisbee desde el celular o la tablet: reloj del partido, goles, llamadas, pull, time outs y planilla exportable. Sin publicidad y funciona sin internet.">
+    <meta name="author" content="Juan Martínez García">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://iona.ar/ultimateclock/">
+    <meta name="application-name" content="Ultimate Clock">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Ultimate Clock">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="es_AR">
+    <meta property="og:site_name" content="IONA">
+    <meta property="og:title" content="Ultimate Clock">
+    <meta property="og:description" content="Reloj, goles, llamadas, pull, time outs y planilla para partidos de Ultimate Frisbee. Gratis, sin publicidad y funciona sin internet.">
+    <meta property="og:url" content="https://iona.ar/ultimateclock/">
+    <meta property="og:image" content="https://iona.ar/ultimateclock/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Ultimate Clock: tablero con reloj del partido, goles de cada equipo, llamadas, pull y time out.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Ultimate Clock">
+    <meta name="twitter:description" content="Reloj, goles, llamadas, pull, time outs y planilla para partidos de Ultimate Frisbee. Gratis y sin internet.">
+    <meta name="twitter:image" content="https://iona.ar/ultimateclock/og-image.png">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Ultimate Clock", "url": "https://iona.ar/ultimateclock/", "description": "App gratis para llevar partidos de Ultimate Frisbee desde el celular o la tablet: reloj del partido, goles, llamadas, pull, time outs y planilla exportable. Sin publicidad y funciona sin internet.", "applicationCategory": "SportsApplication", "operatingSystem": "Web, iOS, Android", "browserRequirements": "Requiere un navegador moderno con JavaScript", "inLanguage": "es", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "ARS"}, "image": "https://iona.ar/ultimateclock/og-image.png", "screenshot": "https://iona.ar/ultimateclock/screenshot-wide.png", "author": {"@type": "Person", "name": "Juan Martínez García", "url": "https://juanmartinezgarcia.com/"}, "publisher": {"@type": "Organization", "name": "IONA", "url": "https://iona.ar/"}}</script>
     <link rel="stylesheet" href="tokens.css">
     <link rel="stylesheet" href="ultimate-clock.css">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="manifest" href="manifest.webmanifest">
     <script src="clock-engine.js" defer></script>
     <script src="alerts.js" defer></script>
     <script src="sheet-export.js" defer></script>
     <script src="ultimate-clock.js" defer></script>
   </head>
   <body>
+    <noscript><p style="padding:16px;font-family:system-ui,sans-serif">Ultimate Clock es una app para llevar partidos de Ultimate Frisbee: reloj del partido, goles, llamadas, pull, time outs y planilla. Necesita JavaScript activado.</p></noscript>
     <div class="app-shell">
       <header class="topbar">
         <a class="brand" href="#tablero" aria-label="ULTIMATE CLOCK, tablero"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg><span class="brand-copy"><strong>ULTIMATE CLOCK</strong></span></a>

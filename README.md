@@ -97,6 +97,12 @@ bash /tmp/publicar-vps.sh
 
 El script respalda la versión publicada en `/opt/iona-web/backups/ultimateclock-pre-<fecha>.tar.gz`, copia solo los archivos de la app y compara el SHA-256 de cada archivo servido con el del repositorio. Si algo difiere, termina con error e indica cómo restaurar el respaldo. No cambia Caddy ni DNS. Antes de publicar, subí la versión de caché en `sw.js` para que los teléfonos que ya tienen la app instalada reciban la nueva.
 
+## SEO e instalación
+
+- `index.html` y `ultimate-clock.html` tienen título y descripción, URL canónica (`https://iona.ar/ultimateclock/`), Open Graph y Twitter Card con `og-image.png` (1200×630), datos estructurados `WebApplication` (JSON-LD) y metadatos para instalarla en iOS y Android.
+- `manifest.webmanifest` incluye íconos PNG 192/512, ícono `maskable`, `apple-touch-icon.png` y capturas (`screenshot-narrow.png`, `screenshot-wide.png`) para la ventana de instalación.
+- Si cambia el diseño, regenerá las capturas y `og-image.png` para que no queden desactualizadas.
+
 ## Licencia
 
 Ultimate Clock se publica bajo la [PolyForm Noncommercial License 1.0.0](LICENSE.md). Podés leer, usar, modificar y compartir el código con cualquier fin no comercial. El uso comercial requiere permiso de Juan Martínez García / IONA.

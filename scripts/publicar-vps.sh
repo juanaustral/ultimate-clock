@@ -13,7 +13,7 @@ REPO="${REPO:-https://github.com/juanaustral/ultimate-clock}"
 DEST="${DEST:-/opt/iona-web/site/ultimateclock}"
 BACKUPS="${BACKUPS:-/opt/iona-web/backups}"
 URL="${URL:-https://iona.ar/ultimateclock}"
-FILES=(index.html ultimate-clock.html tokens.css ultimate-clock.css clock-engine.js alerts.js sheet-export.js ultimate-clock.js icon.svg manifest.webmanifest sw.js)
+FILES=(index.html ultimate-clock.html tokens.css ultimate-clock.css clock-engine.js alerts.js sheet-export.js ultimate-clock.js icon.svg manifest.webmanifest sw.js icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png favicon-32.png og-image.png screenshot-narrow.png screenshot-wide.png)
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 WORK="$(mktemp -d)"
