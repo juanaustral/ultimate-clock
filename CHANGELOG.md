@@ -2,6 +2,11 @@
 
 ## 2026-10-02 · Rediseño "Línea de banda"
 
+- Logo nuevo (disco y cronómetro) en encabezado, menú, Info e ícono.
+- PLANILLA reúne el partido actual, los botones EXPORTAR y las planillas guardadas; se quitó Historial.
+- Menú con ＋ NUEVO PARTIDO primero y en color, y MODO CLARO / MODO OSCURO.
+- Info con VISITÁ MI SITIO WEB y DONÁ PARA APOYAR EL PROYECTO.
+- Archivos exportados con nombre legible: `planilla-equipo-a-vs-equipo-b-AAAA-MM-DD`.
 - Tablero nuevo que entra sin scroll ni recortes en teléfono y tablet, vertical y horizontal: equipos lado a lado, reloj debajo y cuentas secundarias en una grilla 2×2 (en horizontal, todo en dos filas).
 - Las cuentas se llenan de color mientras corren; los números escalan con su tarjeta.
 - Descanso dentro de la tarjeta del reloj, Llamada con categorías a la vista y aviso de gol arriba.

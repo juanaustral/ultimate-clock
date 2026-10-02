@@ -2,7 +2,10 @@
 
 Referencia: prototipo Stitch `stitch_document_based_app_builder.zip` aportado por Juan. Desde octubre de 2026 rige el sistema "Línea de banda", con auditoría, principios y distribución en `docs/DISENO-2026-10.md`.
 
-- Un único encabezado muestra ULTIMATE CLOCK y el botón MENU. Ese botón abre Claro/Oscuro y tres grupos: PARTIDO (Planilla, Historial, Guardar, Nuevo partido), SONIDO Y PANTALLA (Activar/Probar sonido, Pantalla completa, Configurar) y AYUDA (Cómo usar la app, Info). REINICIAR CONTADORES queda aparte, al final y en rojo.
+- Un único encabezado muestra el logo, ULTIMATE CLOCK y el botón MENU. El menú abre con el logo, MODO CLARO / MODO OSCURO y tres grupos: PARTIDO (＋ NUEVO PARTIDO primero y en color, Planilla, Guardar), SONIDO Y PANTALLA (Activar/Probar sonido, Pantalla completa, Configurar) y AYUDA (Cómo usar la app, Info). REINICIAR CONTADORES queda aparte, al final y en rojo.
+- PLANILLA reúne el partido actual (registro rápido, eventos y botones EXPORTAR PDF · CSV · JSON) y las planillas guardadas; ya no hay una pantalla Historial aparte.
+- Info muestra el logo, VISITÁ MI SITIO WEB (iona.ar) y DONÁ PARA APOYAR EL PROYECTO. Mientras no haya enlace de cobro (`DONATION_URL` en `ultimate-clock.js`), el botón de donar explica que todavía no está disponible.
+- Logo: un disco con la corona de un cronómetro y el tiempo transcurrido en blanco. Se usa en el encabezado, el menú, Info y el ícono de la app (`icon.svg`).
 - El botón + suma el gol al instante; el aviso superior ofrece PASE Y GOL y DESHACER durante 6 s. Las cuentas marcan los últimos 10 s y la pantalla se mantiene encendida mientras corre un reloj.
 - El tablero ocupa exactamente la pantalla, sin scroll, en teléfono y tablet. En vertical: Equipo 1 | Equipo 2, debajo el reloj, luego Pull | Time Out y Llamada 1 | Llamada 2. En horizontal: Equipo 1 | Equipo 2 | Pull | Time Out arriba y Reloj | Llamada 1 | Llamada 2 abajo. El pie se oculta en horizontal de menos de 480 px de alto.
 - El reloj del partido domina el tablero y es el único pausado/reanudable. Pull, Llamadas y Time Out son neutros en reposo y se llenan de color mientras corren (azul el Pull, el color del equipo en Llamadas y Time Out); al cumplirse muestran un borde rojo.

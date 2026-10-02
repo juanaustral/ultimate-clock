@@ -23,7 +23,7 @@
     {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Esta cuenta no se pausa y suena cinco veces al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
     {target:'.timer-call-0',title:'Llamadas por equipo',text:'Cada equipo tiene su propia Llamada. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.'},
     {target:'.timeout-card',title:'Time Out',text:'Elegí el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
-    {target:'.menu-button',title:'Menú y planilla',text:'Desde MENU abrís la planilla, el historial y la configuración. Ahí también activás y probás el sonido antes del partido.'}
+    {target:'.menu-button',title:'Menú y planilla',text:'Desde MENU empezás un partido nuevo, abrís la planilla (con las guardadas y los botones para exportar) y la configuración. Ahí también activás y probás el sonido antes del partido.'}
   ];
 
   const THEME_VARS = [
@@ -38,6 +38,12 @@
     light: { bg: "#f8f9fb", panel: "#ffffff", ink: "#191c1e", accent: "#1b47e2", "accent-2": "#16171b" },
     dark: { bg: "#0b0c0e", panel: "#16171b", ink: "#f7f8fa", accent: "#4971ff", "accent-2": "#0b0c0e" }
   };
+
+  /* Logo: un disco visto de frente con la corona de un cronómetro y el tiempo transcurrido en blanco. */
+  const LOGO_SVG = '<svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg>';
+  /* Completar con el enlace de cobro cuando esté definido; mientras tanto el botón explica que todavía no hay enlace. */
+  const DONATION_URL = '';
+  const WEBSITE_URL = 'https://iona.ar/';
 
   const TEAM_DEFAULTS = [
     { name: "Equipo 1", color: "#1b47e2" },
@@ -511,14 +517,28 @@
     const kind={goal:'Gol',timeout:'Time-out',call:'Llamada',adjustment:'Ajuste manual',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Descanso / mitad',incident:'Incidencia',saved:'Guardado'}[event.type]||esc(event.type);
     return `${kind}${team}${event.label?` · ${esc(event.label)}`:''}${names}${event.mode?` · ${esc(event.mode)}`:''}${event.note?` · ${esc(event.note)}`:''}`;
   }
+  /* planilla-equipo-1-vs-equipo-2-2026-10-02 */
+  function exportName(match) {
+    const slug=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'equipo';
+    return `planilla-${slug(match.teams[0].name)}-vs-${slug(match.teams[1].name)}-${String(match.savedAt||match.createdAt||nowIso()).slice(0,10)}`;
+  }
+  function exportButtons(match,label) {
+    return `<div class="export-actions" role="group" aria-label="${esc(label)}">${['pdf','csv','json'].map(format=>`<button class="button${format==='pdf'?' button-primary':''}" type="button" data-action="export-sheet" data-format="${format}" data-match="${esc(match.id)}">${format.toUpperCase()}</button>`).join('')}</div>`;
+  }
+  function savedSheetsMarkup() {
+    const items=state.savedMatches;
+    return `<section class="event-section saved-section"><div class="section-heading"><h2>Planillas guardadas</h2><span>${items.length} · DATOS LOCALES</span></div>${items.length?`<div class="history-list">${items.map(match=>`<button class="history-item" type="button" data-history="${esc(match.id)}"><span><span class="history-teams">${esc(match.teams[0].name)} <small>vs</small> ${esc(match.teams[1].name)}</span><span class="history-date">${dateLabel(match.savedAt||match.createdAt)} · ${esc(rulesetLabel(match.ruleset))}</span></span><strong class="history-score">${match.teams[0].score} — ${match.teams[1].score}</strong></button>`).join('')}</div>`:'<p class="empty-events">Al tocar Guardar, la planilla del partido queda acá para abrirla y exportarla.</p>'}</section>`;
+  }
   function renderLiveSheet() {
     const m=activeMatch(),events=[...m.events].reverse();
-    app.innerHTML=`<section class="sheet-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>Tablero</span></button><div><span class="screen-eyebrow">PARTIDO ACTUAL</span><h1>Planilla en vivo</h1></div><button class="screen-utility" data-action="history">Historial</button></div>
+    app.innerHTML=`<section class="sheet-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>Tablero</span></button><div><span class="screen-eyebrow">${m.status==='saved'?'PARTIDO CERRADO':'PARTIDO ACTUAL'}</span><h1>Planilla</h1></div></div>
       <div class="sheet-live-strip"><span>${m.status==='saved'?'CERRADO':m.clock.running?'EN CURSO':m.clock.elapsed>0?'PAUSADO':'PREPARADO'} · ${m.half}º TIEMPO</span><strong class="sheet-live-clock">${fmt(Math.floor(m.clock.elapsed))}</strong><small>${esc(rulesetLabel(m.ruleset))}</small></div>
-      <div class="sheet-score-grid">${m.teams.map((team,index)=>`<div class="sheet-score-team sheet-score-${index+1}"><strong>${esc(team.name)}</strong><b>${team.score}</b><small>TIME OUTS RESTANTES ${Math.max(0,m.config.timeoutsPerTeam-m.timeoutState.usages[index])}/${m.config.timeoutsPerTeam}</small></div>`).join('')}</div>
+      <div class="sheet-score-grid">${m.teams.map((team,index)=>`<div class="sheet-score-team sheet-score-${index+1}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><b>${team.score}</b><small>TIME OUTS ${Math.max(0,m.config.timeoutsPerTeam-m.timeoutState.usages[index])}/${m.config.timeoutsPerTeam}</small></div>`).join('')}</div>
       ${m.status==='active'?`<section class="quick-entry"><div class="section-heading"><h2>Registro rápido</h2><span>ESTE DISPOSITIVO</span></div><div class="quick-grid"><button class="quick-primary" data-action="goal-picker">＋ Gol</button><button data-action="quick-call">⚠ Llamada</button><button data-action="timeout-picker">◷ Time-out</button><button data-action="incident">△ Incidencia</button></div></section>`:''}
-      <section class="event-section"><div class="section-heading"><h2>Historial de planilla</h2><span>${events.length} ${events.length===1?'REGISTRO':'REGISTROS'}</span></div>${events.length?`<ol class="event-feed">${events.map(e=>`<li><time>${fmt(e.elapsed||0)}</time><span>${eventDescription(e,m)}</span></li>`).join('')}</ol>`:'<p class="empty-events">Todavía no hay eventos. Usá el registro rápido para comenzar.</p>'}</section>
-      <div class="sheet-actions"><button class="button button-primary" data-action="save">${m.status==='saved'?'Ver historial':'Guardar planilla'}</button><button class="button" data-action="back-dashboard">Volver al tablero</button></div></section>`;
+      <section class="event-section"><div class="section-heading"><h2>Eventos</h2><span>${events.length} ${events.length===1?'REGISTRO':'REGISTROS'}</span></div>${events.length?`<ol class="event-feed">${events.map(e=>`<li><time>${fmt(e.elapsed||0)}</time><span>${eventDescription(e,m)}</span></li>`).join('')}</ol>`:'<p class="empty-events">Todavía no hay eventos. Usá el registro rápido para comenzar.</p>'}</section>
+      <section class="event-section"><div class="section-heading"><h2>Exportar este partido</h2><span>PDF · CSV · JSON</span></div>${exportButtons(m,'Exportar la planilla de este partido')}</section>
+      <div class="sheet-actions">${m.status==='saved'?'<button class="button button-primary" data-action="new-match">Nuevo partido</button>':'<button class="button button-primary" data-action="save">Guardar planilla</button>'}<button class="button" data-action="back-dashboard">Volver al tablero</button></div>
+      ${savedSheetsMarkup()}</section>`;
     updateDisplays();
   }
   function openGoalPicker() {openModal('Registrar gol',`<p>Elegí qué equipo anotó.</p><div class="picker-options">${activeMatch().teams.map((team,index)=>`<button class="button" data-action="goal" data-team="${index}" data-origin="sheet">${esc(team.name)}</button>`).join('')}</div>`);}
@@ -601,11 +621,6 @@
     showTutorialStep(0);
   }
 
-  function renderHistory() {
-    const items = state.savedMatches;
-    app.innerHTML = `<section class="history-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>Tablero</span></button><div><span class="screen-eyebrow">PLANILLAS GUARDADAS</span><h1>Historial</h1></div><span class="screen-context">DATOS LOCALES</span></div>${items.length ? `<div class="history-list">${items.map(match => `<button class="history-item" type="button" data-history="${esc(match.id)}"><span><span class="history-teams">${esc(match.teams[0].name)} <small>vs</small> ${esc(match.teams[1].name)}</span><span class="history-date">${dateLabel(match.savedAt || match.createdAt)} · ${esc(rulesetLabel(match.ruleset))}</span></span><strong class="history-score">${match.teams[0].score} — ${match.teams[1].score}</strong></button>`).join("")}</div>` : `<div class="history-empty"><p class="section-kicker">Todavía no hay partidos guardados.</p><h2 class="page-title">La planilla aparece acá al tocar guardar.</h2><div class="form-actions"><button class="button button-primary" type="button" data-action="back-dashboard">Comenzar un partido</button></div></div>`}</section>`;
-  }
-
   function openModal(title,body) {
     if(tutorialIndex>=0)closeTutorial();
     const previous=document.activeElement;closeModal();modalRoot._returnFocus=previous;
@@ -617,7 +632,8 @@
   function closeModal() {modalRoot.querySelector('dialog')?.close();modalRoot.innerHTML='';if(modalRoot._returnFocus?.isConnected)modalRoot._returnFocus.focus();}
 
   function openInfo() {
-    openModal("Sobre Ultimate Clock", `<div class="info-hero"><span class="info-mark">UC</span><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="info-primary" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a><a href="https://iona.ar/" target="_blank" rel="noopener noreferrer">Conocé más proyectos ↗</a></div>`);
+    const donate=DONATION_URL?`<a class="button info-donate" href="${esc(DONATION_URL)}" target="_blank" rel="noopener noreferrer">♥ DONÁ PARA APOYAR EL PROYECTO ↗</a>`:`<button class="button info-donate" type="button" data-action="donation-info">♥ DONÁ PARA APOYAR EL PROYECTO</button>`;
+    openModal("Sobre Ultimate Clock", `<div class="info-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="button button-primary" href="${WEBSITE_URL}" target="_blank" rel="noopener noreferrer">VISITÁ MI SITIO WEB ↗</a>${donate}<a class="info-secondary" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a></div>`);
   }
 
   function addGoal(teamIndex,origin='dashboard') {
@@ -657,16 +673,16 @@
 
   function openSheet(match) {
     const events=match.events.map(e=>`<li><time>${dateLabel(e.at)}<br>${fmt(e.elapsed||0)}</time><span>${esc(SheetExport.describeEvent(match,e))}</span></li>`).join('');
-    openModal('Planilla guardada',`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset))} · ${esc(match.themeName||'Claro')}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>Duración</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>Time-outs</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>Eventos</span></div></div><p>Colores: ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>Configuración del partido</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||'<li>Sin eventos</li>'}</ul><div class="modal-actions"><button class="button" data-action="export-sheet" data-format="pdf" data-match="${esc(match.id)}">Descargar PDF</button><button class="button" data-action="export-sheet" data-format="csv" data-match="${esc(match.id)}">Descargar CSV</button><button class="button" data-action="export-sheet" data-format="json" data-match="${esc(match.id)}">Descargar JSON</button><button class="button button-primary" data-action="new-match">Nuevo partido</button></div>`);
+    openModal('Planilla guardada',`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset))} · ${esc(match.themeName||'Claro')}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>Duración</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>Time-outs</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>Eventos</span></div></div><p>Colores: ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>Configuración del partido</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||'<li>Sin eventos</li>'}</ul><h3 class="section-kicker">EXPORTAR</h3>${exportButtons(match,'Exportar esta planilla')}`);
   }
 
   function saveMatch() {
-    const m=activeMatch();if(m.status==='saved'){showToast('Este partido ya está guardado.');renderHistory();return true;}
+    const m=activeMatch();if(m.status==='saved'){showToast('Este partido ya está guardado.');renderLiveSheet();return true;}
     if(Object.values(m.timers).some(t=>t.running)||m.breakTimer.running){closeModal();showToast('Esperá a que terminen las cuentas activas antes de guardar.');return false;}
     updateClock();for(const t of [...Object.values(m.timers),m.breakTimer]){updateRunningValue(t);t.running=false;t.startedAt=null;}
     m.clock.running=false;m.clock.startedAt=null;m.clock.status='Finalizado';logEvent('saved');m.status='saved';m.savedAt=nowIso();m.themeName=themeName(state.settings.theme);m.themeSnapshot=currentThemeVars();
     state.savedMatches.unshift(clone(m));
-    const persisted=saveState();showToast(persisted?'Planilla guardada. Partido cerrado.':'Planilla en memoria. Descargá un respaldo para conservarla.');renderHistory();
+    const persisted=saveState();showToast(persisted?'Planilla guardada. Partido cerrado.':'Planilla en memoria. Descargá un respaldo para conservarla.');renderLiveSheet();
     return true;
   }
 
@@ -704,7 +720,7 @@
     else if(action==='quick-call')openCallPicker();
     else if(action==='pick-call-team')openCall(Number(element.dataset.team));
     else if(action==='incident')openIncident();
-    else if(action==='quick-theme'){const view=app.firstElementChild?.className||'';applyTheme(element.dataset.theme);if(view.includes('settings-screen'))renderSettings();else if(view.includes('sheet-screen'))renderLiveSheet();else if(view.includes('history-screen'))renderHistory();else renderDashboard();}
+    else if(action==='quick-theme'){const view=app.firstElementChild?.className||'';applyTheme(element.dataset.theme);if(view.includes('settings-screen'))renderSettings();else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();}
     else if(action==='enable-audio'){
       if(ClockAlerts.ready){state.settings.sound=false;ClockAlerts.setSound(false);saveState();updateAudioControls();showToast('Sonido desactivado.');}
       else ClockAlerts.unlock().then(ok=>{state.settings.sound=ok;ClockAlerts.setSound(ok);saveState();updateAudioControls();showToast(ok?'Sonido activado.':'No se pudo activar el sonido en este navegador.');});
@@ -729,7 +745,7 @@
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
     else if(action==='save-and-new'){if(saveMatch())resetMatch();}
-    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match),format=element.dataset.format,name=`ultimate-clock-${sheet?.id}`;if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset)}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet),'text/csv;charset=utf-8',`${name}.csv`);else exportData(sheet,`${name}.json`);}
+    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset)}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet),'text/csv;charset=utf-8',`${name}.csv`);else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,'ultimate-clock-respaldo.json');
     else if(action==='retry-storage'){
       if(storageInvalid){showToast('Descargá primero el respaldo. El formato anterior se conserva sin sobrescribir.');return true;}
@@ -758,7 +774,7 @@
     if(action==='tour-prev'){showTutorialStep(tutorialIndex-1);return;}
     if(action==='tour-next'){showTutorialStep(tutorialIndex+1);return;}
     if(action==='reload'){location.reload();return;}
-    if(action==='donation-info'){openModal('APOYÁ ESTE PROYECTO', '<p>El enlace para donar todavía no está disponible. Gracias por querer apoyar el desarrollo de Ultimate Clock.</p>');return;}
+    if(action==='donation-info'){if(DONATION_URL){window.open(DONATION_URL,'_blank','noopener');return;}openModal('APOYÁ ESTE PROYECTO', '<p>El enlace para donar todavía no está disponible. Gracias por querer apoyar el desarrollo de Ultimate Clock.</p>');return;}
     if(isLocked()&&['goal','goal-details','undo-goal','minus','confirm-minus','edit-team','toggle-clock','toggle-timer','timeout','start-break','second-half'].includes(action)){showToast('Partido cerrado. Elegí Nuevo partido.');return;}
     if(extraAction(action,actionElement))return;
     if (action === "toggle-menu") {
@@ -786,7 +802,7 @@
     if (action === "info") openInfo();
     if (action === "reset") openReset();
     if (action === "save") saveMatch();
-    if (action === "history") renderHistory();
+    if (action === "history") renderLiveSheet();
     if (action === "back-dashboard") { renderDashboard(); }
     if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal('Preparar un nuevo partido','<p>El partido actual aún no está en el historial. Guardalo antes de continuar.</p><div class="modal-actions"><button class="button" data-action="close-modal">Cancelar</button><button class="button button-primary" data-action="save-and-new">Guardar y crear nuevo</button></div>');}else {resetMatch();}}
     if (action === "close-modal") closeModal();

@@ -41,13 +41,13 @@ No necesita instalar paquetes ni crear cuentas. Los datos se guardan en el naveg
 
 Al abrir la app aparece **PERFIL DE TIEMPO** con WFDF, USA Ultimate, los perfiles guardados y **NUEVO PERFIL**, que lleva directamente al formulario de creación. Si el partido ya comenzó, su perfil no se puede cambiar; se puede crear otro para el próximo partido.
 
-El botón **MENU** reúne todas las opciones del encabezado, incluidos Planilla, Historial, Configurar, Guardar, Info, **ACTIVAR/DESACTIVAR SONIDO**, **PROBAR SONIDO** y el tema Claro/Oscuro. Al abrirlo se oscurece y difumina el fondo. En vertical, el tablero ordena Equipo 1 → Tiempo → Equipo 2 y mantiene los otros relojes a la vista.
+El botón **MENU** reúne todas las opciones del encabezado: primero **＋ NUEVO PARTIDO** (en color), luego Planilla, Guardar, **ACTIVAR/DESACTIVAR SONIDO**, **PROBAR SONIDO**, Pantalla completa, Configurar, Cómo usar la app, Info y **MODO CLARO / MODO OSCURO**. Al abrirlo se oscurece y difumina el fondo. En vertical, los dos equipos van lado a lado arriba, el reloj debajo y las cuentas abajo; todo entra en la pantalla sin scroll.
 
 1. Antes del partido elegí WFDF, USA Ultimate o creá un perfil PERSONALIZADO con nombre. Configurá tiempo total, primer tiempo, medio tiempo, pull, llamada, time out y cupo de timeouts por equipo y mitad.
 2. Tocá **ACTIVAR SONIDO** y luego **PROBAR SONIDO** para escuchar cinco alarmas agudas y ajustar el volumen del dispositivo. El botón pasa a **DESACTIVAR SONIDO** cuando el navegador habilitó el audio. El reloj total es el único que se puede pausar. Pull, llamada, time out y medio tiempo corren hasta cero; cada finalización emite cinco alarmas agudas y un aviso visual intenso. **REINICIAR** en Pull o Llamada devuelve la cuenta a Listo sin arrancarla.
 3. Al cumplirse el primer tiempo, iniciá el medio tiempo desde el aviso. Al terminar el descanso, iniciá la segunda mitad; se renueva el cupo de timeouts de cada equipo.
 4. Registrá goles, llamadas, timeouts e incidencias desde el tablero o la planilla. En horizontal, Pull queda al centro y cada Llamada del lado de su equipo. Un solo widget de TIME OUT contiene dos botones con los colores y cupos restantes de los equipos. La planilla identifica qué equipo hizo cada llamado.
-5. Guardá el partido al terminar. La planilla cerrada se conserva en Historial y se puede exportar como PDF (para imprimir o compartir), CSV (para planillas de cálculo) o JSON (respaldo completo). La app espera a que finalicen las cuentas no pausables antes de guardar.
+5. Guardá el partido al terminar. La pestaña **Planilla** muestra el partido actual con los botones **EXPORTAR** (PDF para imprimir o compartir, CSV para planillas de cálculo y JSON como respaldo completo) y, debajo, las planillas guardadas, que también se pueden abrir y exportar. La app espera a que finalicen las cuentas no pausables antes de guardar.
 
 El botón Reiniciar contadores reinicia solo el partido actual después de confirmación. Conserva el historial y los perfiles personalizados. Nuevo partido conserva los nombres y colores de los equipos.
 

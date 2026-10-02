@@ -37,7 +37,7 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 3. Activar y probar el sonido del dispositivo.
 4. Operar el reloj principal y registrar goles, llamadas y Time Outs.
 5. Completar la transición de primer tiempo, descanso y segunda mitad.
-6. Guardar la planilla y consultarla desde Historial.
+6. Guardar la planilla, exportarla y consultarla desde Planilla (planillas guardadas).
 
 ## Alcance actual
 
