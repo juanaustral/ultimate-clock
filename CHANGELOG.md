@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## 2026-10-02 · v30 · Pull de 90 s con avisos
+
+- El pull dura siempre 90 s en todos los perfiles (se quitó del formulario de perfiles).
+- Avisos visuales y sonoros: 1 silbato a los 45 s, 2 a los 60 s, 3 a los 75 s y 4 al final. La tarjeta muestra 1º, 2º y 3º AVISO y el teléfono vibra la misma cantidad de veces.
+- Marcas de 45, 60 y 75 s sobre la línea de cuenta regresiva del pull.
+
 ## 2026-10-02 · v29 · Emojis por categoría, orden horizontal y versión
 
 - WhatsApp: cada categoría de llamado e incidencia tiene su emoji (🤼 Falta, ⛔ Violación, 🚧 Pick, 👣 Travel, ⏳ Stall, ❓ Gol discutido, 🩹 Lesión, 🤝 Tiempo de Espíritu, 🧘 TFR, 🟨 PMF, 📝 Otra).

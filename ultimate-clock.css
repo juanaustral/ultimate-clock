@@ -144,6 +144,12 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 }
 .progress-track{grid-area:bar;height:6px;border-radius:999px;background:var(--bg-2);overflow:hidden}
 .progress-fill{display:block;height:100%;width:var(--progress,0%);border-radius:inherit;background:var(--signal);transition:width .25s linear}
+/* Pull: marcas de los avisos de 45, 60 y 75 s sobre la línea de cuenta regresiva. */
+.timer-pull .progress-track{position:relative;overflow:visible}
+.timer-pull .progress-fill{overflow:hidden}
+.progress-mark{position:absolute;top:-4px;bottom:-4px;left:var(--at);width:3px;margin-left:-1.5px;border-radius:2px;background:var(--ink);opacity:.7}
+.is-running .progress-mark{background:currentColor;opacity:.9}
+.progress-mark.passed{top:-6px;bottom:-6px;width:5px;margin-left:-2.5px;background:var(--danger);opacity:1}
 
 /* Llamadas: neutras con el color del equipo como franja; al correr se llenan del color del equipo. */
 .timer-call{border-top:6px solid var(--team-color)}

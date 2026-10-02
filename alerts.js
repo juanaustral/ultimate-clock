@@ -12,9 +12,25 @@
     }catch{return false;}
   }
 
-  function play(kind){
+  /* Referee whistle: two detuned high tones with a fast trill, one blast per count. */
+  function whistle(count){
+    for(let i=0;i<count;i++){
+      const start=ctx.currentTime+i*.42,duration=.3,gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
+      lfo.frequency.value=28;depth.gain.value=90;lfo.connect(depth);
+      gain.gain.setValueAtTime(.001,start);
+      gain.gain.exponentialRampToValueAtTime(.3,start+.02);
+      gain.gain.setValueAtTime(.3,start+duration-.05);
+      gain.gain.exponentialRampToValueAtTime(.001,start+duration);
+      gain.connect(ctx.destination);
+      for(const freq of [2650,2720]){const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;depth.connect(osc.frequency);osc.connect(gain);osc.start(start);osc.stop(start+duration+.02);}
+      lfo.start(start);lfo.stop(start+duration+.02);
+    }
+  }
+
+  function play(kind,count=0){
     if(!sound||!ctx||ctx.state!=='running')return false;
     try{
+      if(count){whistle(count);return true;}
       const completion=kind==='complete';
       for(let i=0;i<(completion?5:1);i++){
         const osc=ctx.createOscillator(),gain=ctx.createGain();
@@ -41,14 +57,14 @@
     busy=true;
     const item=queue.shift();
     item.visual();
-    play(item.kind);
-    setTimeout(()=>{busy=false;drain();},item.kind==='complete'?1200:500);
+    play(item.kind,item.count);
+    setTimeout(()=>{busy=false;drain();},item.count?item.count*420+400:item.kind==='complete'?1200:500);
   }
 
   root.ClockAlerts={
     unlock,
     test(){return play('complete');},
-    enqueue(kind,visual){queue.push({kind,visual});drain();},
+    enqueue(kind,visual,count=0){queue.push({kind,visual,count});drain();},
     setSound(value){sound=Boolean(value);},
     clear(){queue=[];},
     get ready(){return sound&&!!ctx&&ctx.state==='running';}

@@ -7,6 +7,9 @@
     usau: { label:'USA Ultimate 2026–2027', gameCap:5400, halfCap:3000, halftime:420, timeoutDuration:70, timeoutLimit:70, timeoutsPerTeam:2, pull:{line:50,ready:60,release:80}, call:{captain:15,contested:30,restart:45}, ratio:25, repull:30, interruption:'continue' }
   };
   defaults.custom = {...copy(defaults.wfdf), label:'Personalizado'};
+  /* El pull dura siempre 90 s: avisos con 1, 2 y 3 silbatos a los 45, 60 y 75 s y 4 silbatos al final. */
+  const PULL = { duration:90, marks:[{at:45,label:'Primer aviso'},{at:60,label:'Segundo aviso'},{at:75,label:'Tercer aviso'},{at:90,label:'Tiempo cumplido'}] };
+  const pullThresholds = () => PULL.marks.map((mark,i) => ({...mark, whistles:i+1}));
   function configuration(settings) {
     const base = copy(defaults[settings.baseRuleset || settings.ruleset] || defaults.wfdf);
     const over = settings.overrides || {};
@@ -39,6 +42,6 @@
   }
   function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
   function ink(bg){return contrast(bg,'#ffffff')>=contrast(bg,'#000000')?'#ffffff':'#000000';}
-  const api={defaults,configuration,validate,elapsed,advance,toggle,contrast,ink,copy};
+  const api={defaults,PULL,pullThresholds,configuration,validate,elapsed,advance,toggle,contrast,ink,copy};
   if(typeof module!=='undefined')module.exports=api;else root.ClockEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
