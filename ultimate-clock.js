@@ -41,8 +41,8 @@
 
   /* Logo: un disco visto de frente con la corona de un cronómetro y el tiempo transcurrido en blanco. */
   const LOGO_SVG = '<svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg>';
-  /* Completar con el enlace de cobro cuando esté definido; mientras tanto el botón explica que todavía no hay enlace. */
-  const DONATION_URL = ''; // Pendiente: Juan todavía no tiene el link de donación.
+  /* Enlace de donación (perfil de Cafecito de Juan). Si queda vacío, el botón explica que todavía no hay enlace. */
+  const DONATION_URL = 'https://cafecito.app/juanaustral';
   const WEBSITE_URL = 'https://juanmartinezgarcia.com/';
 
   const TEAM_DEFAULTS = [

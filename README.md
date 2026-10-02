@@ -69,7 +69,7 @@ Fuentes consultadas el 27/09/2026: [reglas y recursos WFDF](https://rules.wfdf.s
 - Los relojes usan marcas de tiempo, así que recuperan el tiempo transcurrido tras suspender la pestaña. El navegador puede volver a pedir una interacción para habilitar audio después de recargar o reanudar. El botón de sonido muestra el estado real del contexto de audio; los avisos visuales no dependen de él.
 - La interfaz tiene temas Claro y Oscuro, controles táctiles amplios, foco en diálogos y reducción de movimiento. En la edición de equipo, **MÁS COLORES** abre el selector libre del dispositivo.
 - Al abrir la app se elige un perfil y luego se toca **USAR ESTE PERFIL**. **CÓMO USAR LA APP** abre un recorrido guiado de seis pasos sobre el tablero; se puede volver a abrir desde **MENU**.
-- El pie enlaza a IONA.AR y a Ultimate Frisbee Mendoza. **APOYÁ ESTE PROYECTO** conserva por ahora `href="#"` y muestra un aviso: todavía no existe un enlace de donación.
+- El pie enlaza a IONA.AR y a Ultimate Frisbee Mendoza. **APOYÁ ESTE PROYECTO** abre el perfil de Cafecito de Juan (https://cafecito.app/juanaustral).
 
 ## Estructura
 

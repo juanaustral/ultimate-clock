@@ -59,7 +59,6 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 - Resolución automática de disputas o sanciones.
 - Cuenta de usuario o backend de datos.
 - Certificación reglamentaria de los tiempos de un torneo.
-- Enlace de donación real: el botón queda preparado, pero todavía usa `#`.
 
 ## Resultado y evidencia
 

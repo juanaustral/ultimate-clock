@@ -1,4 +1,4 @@
-const CACHE='ultimate-clock-offline-v22';
+const CACHE='ultimate-clock-offline-v23';
 const FILES=['./','./index.html','./ultimate-clock.html','./ultimate-clock.css','./clock-engine.js','./tokens.css','./alerts.js','./sheet-export.js','./ultimate-clock.js','./manifest.webmanifest','./icon.svg'];
 /* cache:'reload' skips the HTTP cache so a new version never stores stale files. */
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
