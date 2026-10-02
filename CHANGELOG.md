@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## 2026-10-02 · v31 · Gol con pase y equipos al empezar
+
+- Cada gol abre el cuadro de pase y gol; ahí también están DESHACER GOL y OMITIR.
+- Al empezar un partido (después de elegir el perfil, en ＋ NUEVO PARTIDO y en Guardar y crear nuevo) se piden nombre y color de los dos equipos en un solo cuadro, con los anteriores ya cargados.
+
 ## 2026-10-02 · v30 · Pull de 90 s con avisos
 
 - El pull dura siempre 90 s en todos los perfiles (se quitó del formulario de perfiles).

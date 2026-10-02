@@ -22,7 +22,7 @@
 
   const TUTORIAL_STEPS = [
     {target:'.clock-card',title:'Tiempo del partido',text:'Iniciá el reloj principal cuando empieza el juego. Es el único que podés pausar. Al cumplirse el primer tiempo aparecerá el aviso para iniciar el descanso.'},
-    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante; desde el aviso podés anotar pase y gol o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.'},
+    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante y se abre un cuadro para anotar quién dio el pase y quién hizo el gol, o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.'},
     {target:'.timer-call-0',title:'Llamados por equipo',text:'Cada equipo tiene su propio Llamado. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.'},
     {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Dura 90 s y no se pausa: avisa con 1, 2 y 3 silbatos a los 45, 60 y 75 s y con 4 al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
     {target:'.timeout-card',title:'Time Out',text:'Tocá INICIAR en el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
@@ -670,7 +670,7 @@
     const goal={id:uid('goal'),elapsed:m.clock.elapsed,at:nowIso(),assist:'',scorer:''};
     team.score+=1;team.goals.push(goal);logEvent('goal',{team:teamIndex,goal:goal.id,assist:'',scorer:''});
     closeModal();saveState();rerender(origin);announce(t('Gol de {team}. {a} a {b}',{team:team.name,a:m.teams[0].score,b:m.teams[1].score}));
-    showToast(t('Gol de {team}.',{team:team.name}),[{label:t('PASE Y GOL'),action:'goal-details',data:{team:teamIndex,goal:goal.id,origin}},{label:t('DESHACER'),action:'undo-goal',data:{team:teamIndex,goal:goal.id,origin}}]);
+    openGoal(teamIndex,goal.id,origin,true);
   }
   function undoGoal(teamIndex,goalId,origin) {
     const m=activeMatch(),team=m.teams[teamIndex],at=team?.goals.findIndex(g=>g.id===goalId);
@@ -679,10 +679,11 @@
     saveState();rerender(origin);showToast(t('Gol de {team} deshecho.',{team:team.name}));
   }
   function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
-  function openGoal(teamIndex,goalId,origin='dashboard') {
+  /* fresh: opened right after the goal, so it also offers to undo it. */
+  function openGoal(teamIndex,goalId,origin='dashboard',fresh=false) {
     const team = activeMatch().teams[teamIndex],goal=team?.goals.find(g=>g.id===goalId);
     if(!goal)return;
-    openModal(t("Detalle del gol"), `<p class="goal-note">${t('Gol de <strong>{team}</strong> a los {time}. Los dos campos son opcionales.',{team:esc(team.name),time:fmt(goal.elapsed)})}</p><form data-form="goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}"><div class="field"><label for="assist">${esc(t('Pase'))}</label><input id="assist" name="assist" autocomplete="off" value="${esc(goal.assist)}" placeholder="${esc(t('Quién dio el pase gol'))}" autofocus></div><div class="field"><label for="scorer">${esc(t('Gol'))}</label><input id="scorer" name="scorer" autocomplete="off" value="${esc(goal.scorer)}" placeholder="${esc(t('Quién recibió y anotó'))}"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar detalle'))}</button></div></form>`);
+    openModal(t("Detalle del gol"), `<p class="goal-note">${t('Gol de <strong>{team}</strong> a los {time}. Los dos campos son opcionales.',{team:esc(team.name),time:fmt(goal.elapsed)})}</p><form data-form="goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}"><div class="field"><label for="assist">${esc(t('Pase'))}</label><input id="assist" name="assist" autocomplete="off" value="${esc(goal.assist)}" placeholder="${esc(t('Quién dio el pase gol'))}" autofocus></div><div class="field"><label for="scorer">${esc(t('Gol'))}</label><input id="scorer" name="scorer" autocomplete="off" value="${esc(goal.scorer)}" placeholder="${esc(t('Quién recibió y anotó'))}"></div><div class="modal-actions">${fresh?`<button class="button button-danger" type="button" data-action="undo-goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}">${esc(t('DESHACER GOL'))}</button>`:''}<button class="button" type="button" data-action="close-modal">${esc(t(fresh?'OMITIR':'Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar detalle'))}</button></div></form>`);
   }
 
   function openMinus(teamIndex) {
@@ -690,6 +691,18 @@
     openModal(t("Corregir puntaje"), `<p>${t('¿Querés restar un punto a <strong>{team}</strong>? La corrección queda registrada como ajuste manual.',{team:esc(team.name)})}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="confirm-minus" data-team="${teamIndex}">${esc(t('Restar punto'))}</button></div>`);
   }
 
+  /* Every new game asks for both teams' names and colors, prefilled with the previous ones. */
+  const TEAM_PRESETS=['#1b47e2','#f59e0b','#16a34a','#c62525','#16171b','#ffffff'];
+  function openTeamsSetup() {
+    if(hasStarted()||isLocked())return;
+    const teams=activeMatch().teams;
+    openModal(t('Equipos del partido'),`<form data-form="teams" class="teams-setup"><p>${esc(t('Escribí el nombre y elegí el color de cada equipo.'))}</p>${teams.map((team,i)=>`<fieldset class="team-setup" style="${teamStyle(team)}"><legend>${esc(t('Equipo {n}',{n:i+1}))}</legend><input name="name-${i}" value="${esc(team.name)}" maxlength="30" autocomplete="off" aria-label="${esc(t('Nombre del equipo {n}',{n:i+1}))}" ${i===0?'autofocus':''}><div class="team-setup-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c===team.color?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="setup-color" data-team="${i}" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c===team.color}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color-${i}" value="${esc(team.color)}" data-setup-team="${i}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></fieldset>`).join('')}<div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('OMITIR'))}</button><button class="button button-primary" type="submit">${esc(t('LISTO'))}</button></div></form>`);
+  }
+  function setSetupColor(index,color) {
+    const fieldset=document.querySelectorAll('.team-setup')[index],input=fieldset?.querySelector(`[name="color-${index}"]`);if(!input)return;
+    input.value=color;fieldset.style.setProperty('--team-color',color);fieldset.style.setProperty('--team-ink',contrastColor(color));
+    fieldset.querySelectorAll('.color-preset').forEach(b=>{const on=b.dataset.color===color.toLowerCase();b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+  }
   function openTeamEditor(teamIndex) {
     const team = activeMatch().teams[teamIndex];
     const ink = contrastColor(team.color);
@@ -767,6 +780,7 @@
       });
     }
     else if(action==='fullscreen'){enterFullscreen();updateFullscreenControl();}
+    else if(action==='setup-color')setSetupColor(Number(element.dataset.team),element.dataset.color);
     else if(action==='team-color'){const input=document.getElementById('team-color');input.value=element.dataset.color;input.dispatchEvent(new Event('input',{bubbles:true}));}
     else if(action==='more-colors'){const field=document.getElementById('extendedColors');field.hidden=false;document.getElementById('team-color').click();}
     else if(action==='start-break'){
@@ -778,7 +792,7 @@
       updateRunningValue(m.breakTimer);if(!m.breakTimer.completed){showToast(t('El medio tiempo todavía está en curso.'));return true;}
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
-    else if(action==='save-and-new'){if(saveMatch())resetMatch();}
+    else if(action==='save-and-new'){if(saveMatch()){resetMatch();openTeamsSetup();}}
     else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset),t,locale:lang==='en'?'en-US':'es-AR'}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet,{t}),'text/csv;charset=utf-8',`${name}.csv`);else if(format==='whatsapp')shareWhatsApp(SheetExport.toWhatsApp(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset),t,locale:lang==='en'?'en-US':'es-AR'}));else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,`ultimate-clock-${t('respaldo')}.json`);
     else if(action==='retry-storage'){
@@ -792,6 +806,7 @@
     const data=new FormData(form),m=activeMatch(),type=form.dataset.form;
     if(type==='incident'){logEvent('incident',{label:String(data.get('type')),note:String(data.get('note')||'').trim()});closeModal();saveState();renderLiveSheet();showToast(t('Incidencia anotada.'));return true;}
     if(type==='ruleset-profile'){saveRulesetProfile(form);return true;}
+    if(type==='teams'){if(!hasStarted()&&!isLocked())m.teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});closeModal();saveState();renderDashboard();showToast(t('Equipos listos.'));return true;}
     if(!['call','timeout'].includes(type))return false;
     if(isLocked()){closeModal();return true;}
     unlockAudio();
@@ -829,7 +844,7 @@
     if(action==='use-profile'){
       const id=selectedProfileId,profile=state.customRulesets.find(p=>p.id===id);
       if(!profile&&!['wfdf','usau'].includes(id))return;
-      if(!hasStarted()&&!isLocked()){state.settings.ruleset=id;state.settings.baseRuleset=profile?'wfdf':id;state.settings.overrides=profile?clone(profile.config):{};activeMatch().ruleset=id;updateTimerConfig(activeMatch());saveState();renderDashboard();enterFullscreen();}
+      if(!hasStarted()&&!isLocked()){state.settings.ruleset=id;state.settings.baseRuleset=profile?'wfdf':id;state.settings.overrides=profile?clone(profile.config):{};activeMatch().ruleset=id;updateTimerConfig(activeMatch());saveState();renderDashboard();enterFullscreen();closeModal();openTeamsSetup();return;}
       closeModal();return;
     }
     if(action==='new-profile'){draftRuleset=true;closeModal();renderSettings();document.getElementById('profile-name')?.focus();return;}
@@ -839,7 +854,7 @@
     if (action === "save") saveMatch();
     if (action === "history") renderLiveSheet();
     if (action === "back-dashboard") { renderDashboard(); }
-    if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {resetMatch();}}
+    if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {resetMatch();openTeamsSetup();}}
     if (action === "close-modal") closeModal();
     if (action === "confirm-reset") resetMatch();
     if (action === "confirm-minus") {
@@ -849,7 +864,7 @@
     }
     if (action === "goal") addGoal(Number(actionElement.dataset.team),actionElement.dataset.origin||'dashboard');
     if (action === "goal-details") { hideToast(); openGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
-    if (action === "undo-goal") { hideToast(); undoGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
+    if (action === "undo-goal") { hideToast(); closeModal(); undoGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
     if (action === "minus") openMinus(Number(actionElement.dataset.team));
     if (action === "edit-team") openTeamEditor(Number(actionElement.dataset.team));
     if (action === "toggle-clock") toggleTimer("clock");
@@ -894,7 +909,10 @@
     }
   });
 
+  /* Tapping a team name selects it, so typing replaces "Equipo 1". */
+  document.addEventListener("focusin", event => { if (event.target.matches?.('.team-setup input[name^="name-"]')) event.target.select(); });
   document.addEventListener("input", event => {
+    if (event.target.dataset.setupTeam) setSetupColor(Number(event.target.dataset.setupTeam), event.target.value);
     if (event.target.id === "team-color") {
       const preview = document.getElementById("colorPreview");
       if (preview) { preview.style.background = event.target.value; preview.style.color = contrastColor(event.target.value); preview.textContent=t('Vista previa del equipo'); }

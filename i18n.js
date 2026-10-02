@@ -115,7 +115,7 @@
     /* Tutorial */
     'PASO {n} DE {total}':'STEP {n} OF {total}','Cerrar tutorial':'Close tutorial','ANTERIOR':'BACK','TERMINAR':'FINISH','SIGUIENTE →':'NEXT →','Cerrar':'Close',
     'Tiempo del partido':'Game time','Iniciá el reloj principal cuando empieza el juego. Es el único que podés pausar. Al cumplirse el primer tiempo aparecerá el aviso para iniciar el descanso.':'Start the main clock when the game begins. It is the only one you can pause. When the first half ends, a prompt appears to start halftime.',
-    'Equipos y goles':'Teams and goals','Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante; desde el aviso podés anotar pase y gol o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.':'Tap the name to change it or pick a color. + adds a goal right away; from the notice you can log the assist and scorer or undo it. The − button corrects the score and logs the adjustment.',
+    'Equipos y goles':'Teams and goals','Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante y se abre un cuadro para anotar quién dio el pase y quién hizo el gol, o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.':'Tap the name to change it or pick a color. + adds a goal right away and opens a box to log who made the assist and who scored, or to undo it. The − button corrects the score and logs the adjustment.',
     'Llamados por equipo':'Calls per team','Cada equipo tiene su propio Llamado. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.':'Each team has its own Call timer. Tap START, choose the type, and the app logs which team made the call. The countdown runs to the end.',
     'Tocá INICIAR al preparar el lanzamiento. Dura 90 s y no se pausa: avisa con 1, 2 y 3 silbatos a los 45, 60 y 75 s y con 4 al terminar. REINICIAR la devuelve a LISTO sin arrancarla.':'Tap START when the pull is being set up. It lasts 90 s and cannot be paused: it signals with 1, 2 and 3 whistles at 45, 60 and 75 s and with 4 at the end. RESET puts it back to READY without starting it.',
     'Primer aviso':'First warning','Segundo aviso':'Second warning','Tercer aviso':'Third warning','{n}º AVISO':'WARNING {n}',
@@ -158,7 +158,9 @@
     'ENVIAR POR WHATSAPP':'SEND BY WHATSAPP','Empate':'Draw','Ganó {team}':'{team} won','Resumen':'Summary','Goles':'Goals','Llamados':'Calls',
     'pase de {name}':'assist by {name}','Gol de {team}':'Goal by {team}','Punto descontado a {team}':'Point taken from {team}','Time-out de {team}':'Timeout by {team}',
     'Novedades':'What’s new','Novedades de la versión':'What’s new in this version','Estás usando la versión {v}.':'You are using version {v}.',
-    'Segundo tiempo':'Second half','Final':'Final','Momentos':'Key moments','Hecho con Ultimate Clock':'Made with Ultimate Clock'
+    'Segundo tiempo':'Second half',
+    'DESHACER GOL':'UNDO GOAL','OMITIR':'SKIP','LISTO':'DONE','Equipos del partido':'Teams for this game','Escribí el nombre y elegí el color de cada equipo.':'Type each team’s name and pick its color.',
+    'Nombre del equipo {n}':'Team {n} name','Equipos listos.':'Teams ready.','Final':'Final','Momentos':'Key moments','Hecho con Ultimate Clock':'Made with Ultimate Clock'
   };
   const languages=['es','en'];
   function t(lang,text,vars){
