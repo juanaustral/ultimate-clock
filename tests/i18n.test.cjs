@@ -24,3 +24,9 @@ test('t fills variables and falls back to Spanish',()=>{
   assert.equal(I.t('es','Gol de {team}.',{team:'Ñandúes'}),'Gol de Ñandúes.');
   assert.equal(I.t('en','Texto sin traducir'),'Texto sin traducir');
 });
+/* Una variable llamada t tapa la función de traducción y rompe el cuadro que la use (pasó con Time Out). */
+test('no variable shadows the t() translation function',()=>{
+  const js=read('ultimate-clock.js');
+  const shadows=[...js.matchAll(/(?:\b(?:const|let|var)\s+|,\s*)t\s*=(?![=>])/g)].map(m=>js.slice(m.index,m.index+50).split('\n')[0]);
+  assert.deepEqual(shadows,['const t=(text,vars)=>UCI18N.t(lang,text,vars);']);
+});
