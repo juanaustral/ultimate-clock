@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## 2026-10-02 · v32
+
+- Los títulos EQUIPO 1 y EQUIPO 2 del cuadro de equipos ya no se superponen con el borde (se reemplazó `legend` por una etiqueta común).
+
 ## 2026-10-02 · v31 · Gol con pase y equipos al empezar
 
 - Cada gol abre el cuadro de pase y gol; ahí también están DESHACER GOL y OMITIR.

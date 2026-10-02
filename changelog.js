@@ -2,8 +2,9 @@
    y agrega arriba una entrada breve en español e inglés. */
 (function (root) {
   'use strict';
-  const VERSION = 31;
+  const VERSION = 32;
   const ENTRIES = [
+    {version:32,date:'2026-10-02',es:['Corregidos los títulos de equipo en el cuadro de equipos.'],en:['Fixed the team titles in the teams box.']},
     {version:31,date:'2026-10-02',es:['Al anotar un gol se abre el cuadro para escribir quién hizo el gol y el pase.','Cada partido nuevo pide el nombre y el color de los dos equipos.'],en:['Scoring a goal opens a box to type the scorer and the assist.','Every new game asks for both teams’ names and colors.']},
     {version:30,date:'2026-10-02',es:['El pull dura 90 s y avisa con 1, 2 y 3 silbatos a los 45, 60 y 75 s, y con 4 al final.','Marcas de los avisos en la línea del pull.'],en:['The pull lasts 90 s and signals with 1, 2 and 3 whistles at 45, 60 and 75 s, and 4 at the end.','Warning marks on the pull countdown line.']},
     {version:29,date:'2026-10-02',es:['Cada tipo de llamado tiene su emoji en WhatsApp.','En horizontal, Pull y Time Out van bajo el reloj y cada equipo tiene su llamado debajo.','Número de versión y novedades en el pie.'],en:['Each call type has its own emoji in WhatsApp.','In landscape, Pull and Time Out sit under the clock and each team has its call below.','Version number and what’s new in the footer.']},

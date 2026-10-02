@@ -315,8 +315,8 @@ body.flash-complete::after{content:"";position:fixed;inset:0;z-index:50;pointer-
 .team-color-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .color-preset{aspect-ratio:1;min-height:44px;font-size:18px;box-shadow:inset 0 0 0 1px #0003}
 .teams-setup p{font-size:14px}
-.team-setup{display:grid;gap:8px;margin:0;padding:10px 12px 12px;border:0;border-radius:var(--radius-sm);background:var(--team-color);color:var(--team-ink)}
-.team-setup legend{float:left;font:800 12px var(--font-body);letter-spacing:.08em;text-transform:uppercase}
+.team-setup{display:grid;gap:8px;padding:10px 12px 12px;border-radius:var(--radius-sm);background:var(--team-color);color:var(--team-ink)}
+.team-setup-label{font:800 12px/1.2 var(--font-body);letter-spacing:.08em;text-transform:uppercase}
 .team-setup input[type=text],.team-setup input:not([type]){width:100%;min-height:44px;padding:0 12px;border:0;border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:700 16px var(--font-body)}
 .team-setup-colors{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .team-setup .color-preset{min-height:36px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--team-ink) 35%,transparent)}
