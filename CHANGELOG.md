@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## 2026-10-02 · Revisión de código y UX
+
+- Gol con un toque: el aviso ofrece PASE Y GOL y DESHACER.
+- Pantalla encendida mientras corre un reloj, vibración al finalizar y aviso visual en los últimos 10 s.
+- Menú agrupado (Partido, Sonido y pantalla, Ayuda) con REINICIAR CONTADORES separado.
+- Corregido: cuenta congelada en 00:01 al terminar, pérdida del partido en Guardar y crear nuevo, avisos repetidos con dos pestañas, selector de perfil al recargar a mitad de partido y ajuste −1 sin tiempo de juego.
+- Más liviano: sin guardado continuo, CSS sin reglas muertas, `tokens.css` sin `@import` y service worker que abre desde la caché (v19).
+- Detalle en `docs/REVISION-2026-10-02.md`.
+
 ## 2026-09-30
 
 - Se cambiaron los subtítulos de los marcadores a **GOLES**.

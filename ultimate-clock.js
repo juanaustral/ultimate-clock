@@ -18,7 +18,7 @@
   ];
 
   const TUTORIAL_STEPS = [
-    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Sumá un gol con +; el botón − corrige el puntaje y deja registro del ajuste.'},
+    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante; desde el aviso podés anotar pase y gol o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.'},
     {target:'.clock-card',title:'Tiempo del partido',text:'Iniciá el reloj principal cuando empieza el juego. Es el único que podés pausar. Al cumplirse el primer tiempo aparecerá el aviso para iniciar el descanso.'},
     {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Esta cuenta no se pausa y suena cinco veces al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
     {target:'.timer-call-0',title:'Llamadas por equipo',text:'Cada equipo tiene su propia Llamada. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.'},
@@ -69,20 +69,8 @@
   const dateLabel = value => new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const nowIso = () => new Date().toISOString();
 
-  function relativeLuminance(hex) {
-    const clean = String(hex).replace("#", "");
-    const full = clean.length === 3 ? clean.split("").map(x => x + x).join("") : clean;
-    const rgb = [0, 2, 4].map(index => parseInt(full.slice(index, index + 2), 16) / 255);
-    const linear = rgb.map(channel => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
-    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-  }
-
-  function contrastColor(hex) {
-    const lum = relativeLuminance(hex);
-    const whiteRatio = (1.05) / (lum + 0.05);
-    const blackRatio = (lum + 0.05) / 0.05;
-    return whiteRatio >= blackRatio ? "#ffffff" : "#000000";
-  }
+  const contrastColor = hex => E.ink(hex);
+  const isHexColor = value => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(value));
 
   function getRuleset() { return E.configuration(state.settings); }
   function rulesetLabel(id) {return state?.customRulesets?.find(profile=>profile.id===id)?.name||RULESETS[id]?.label||'Personalizado';}
@@ -172,6 +160,7 @@
     m.callTypes=Array.isArray(m.callTypes)&&m.callTypes.length===2?m.callTypes:[m.callType||'Falta','Falta'];
     for(const timer of [m.timers.pull,m.timers.call,m.timers.call2,m.timers.timeout,m.breakTimer])timer.thresholds=[{at:timer.duration,label:'Tiempo cumplido'}];
     m.pendingHalfPrompt ||= false;m.pendingSecondHalfPrompt ||= false;
+    m.teams.forEach((team,i)=>{if(!isHexColor(team.color))team.color=TEAM_DEFAULTS[i].color;});
     return stored;
   }
 
@@ -228,12 +217,20 @@
     document.querySelectorAll('[data-action="quick-theme"]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.theme===state.settings.theme)));
   }
 
-  function showToast(message) {
+  /* actions: [{label, action, data}] rendered as buttons handled by the global click listener. */
+  function showToast(message, actions = []) {
     toast.textContent = message;
+    for (const item of actions) {
+      const button = document.createElement("button");
+      button.type = "button"; button.className = "toast-action"; button.textContent = item.label; button.dataset.action = item.action;
+      Object.entries(item.data || {}).forEach(([key, value]) => { button.dataset[key] = value; });
+      toast.append(button);
+    }
     toast.hidden = false;
     window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => { toast.hidden = true; }, 3200);
+    showToast.timer = window.setTimeout(hideToast, actions.length ? 6000 : 3200);
   }
+  function hideToast() { window.clearTimeout(showToast.timer); toast.hidden = true; toast.textContent = ""; }
 
   function announce(message) {
     liveRegion.textContent = "";
@@ -259,6 +256,14 @@
     button.textContent=active?'SALIR DE PANTALLA COMPLETA':'PANTALLA COMPLETA';
     button.setAttribute('aria-label',button.textContent);
   }
+  /* Keeps the screen on while any clock runs, so the phone does not sleep on the sideline. */
+  let wakeLock=null,wakeWanted=false;
+  function updateWakeLock(running){
+    if(running===wakeWanted||!('wakeLock' in navigator))return;
+    wakeWanted=running;
+    if(running&&!document.hidden)navigator.wakeLock.request('screen').then(lock=>{if(wakeWanted)wakeLock=lock;else lock.release();}).catch(()=>{});
+    else if(!running){wakeLock?.release().catch(()=>{});wakeLock=null;}
+  }
   async function unlockAudio(){
     if(!state.settings.sound)return false;
     const ready=await ClockAlerts.unlock();
@@ -274,6 +279,7 @@
     document.body.classList.remove("flash-threshold", "flash-complete");
     void document.body.offsetWidth;
     document.body.classList.add(kind === "complete" ? "flash-complete" : "flash-threshold");
+    if (kind === "complete") try { navigator.vibrate?.([220, 120, 220, 120, 420]); } catch {}
     const card = document.querySelector(`[data-timer-card="${timerId}"]`);
     if (card) {
       card.classList.remove("alert");
@@ -285,6 +291,7 @@
   function triggerTimerAlert(timer, threshold, kind = "threshold") {
     logEvent('limit',{timer:timer.id,label:threshold.label,limit:threshold.at});
     queueAlert(kind,timer.id,`${timer.label}: ${threshold.label}`);
+    saveState();
   }
 
   function elapsedFor(item) {return E.elapsed(item);}
@@ -302,10 +309,10 @@
     clock.elapsed=E.elapsed(clock);clock.startedAt=Date.now();
     if(match.half===1&&!clock.halfAlerted&&clock.elapsed>=clock.halfCap){
       clock.elapsed=clock.halfCap;clock.running=false;clock.startedAt=null;clock.halfAlerted=true;clock.status='Primer tiempo cumplido';match.pendingHalfPrompt=true;
-      logEvent('limit',{timer:'clock',label:'Primer tiempo cumplido',limit:clock.halfCap});queueAlert('complete','clock','Primer tiempo cumplido');
+      logEvent('limit',{timer:'clock',label:'Primer tiempo cumplido',limit:clock.halfCap});queueAlert('complete','clock','Primer tiempo cumplido');saveState();
     }else if(match.half===2&&!clock.capAlerted&&clock.elapsed>=clock.gameCap){
       clock.elapsed=clock.gameCap;clock.running=false;clock.startedAt=null;clock.capAlerted=true;clock.status='Tiempo total cumplido';
-      logEvent('limit',{timer:'clock',label:'Tiempo total cumplido',limit:clock.gameCap});queueAlert('complete','clock','Tiempo total cumplido');
+      logEvent('limit',{timer:'clock',label:'Tiempo total cumplido',limit:clock.gameCap});queueAlert('complete','clock','Tiempo total cumplido');saveState();
     }
     return true;
   }
@@ -316,18 +323,22 @@
     else if(match.pendingSecondHalfPrompt){match.pendingSecondHalfPrompt=false;saveState();openModal('MEDIO TIEMPO CUMPLIDO',`<div class="milestone-modal"><div class="milestone-clock">00:00</div><p>El descanso terminó. El reloj del partido se reanudará al comenzar la segunda mitad.</p><button class="button button-primary" data-action="second-half">INICIAR SEGUNDO TIEMPO</button></div>`);}
   }
 
+  /* Timers keep start anchors, so the state saved on each discrete change is
+     enough to recover after a reload; ticks only repaint. */
   let lastPaint = 0;
-  let lastPersist = 0;
   function tick(timestamp) {
     try {
       const match=state.activeMatch;
       if(match?.status==='active'){
+        const timers=[match.clock,...Object.values(match.timers),match.breakTimer],runningBefore=timers.filter(t=>t.running).length;
         let changed=updateClock();
-        for(const timer of [...Object.values(match.timers),match.breakTimer])changed=updateRunningValue(timer)||changed;
-        if(changed){if(timestamp-lastPaint>80){updateDisplays();lastPaint=timestamp;}if(timestamp-lastPersist>1000){saveState();lastPersist=timestamp;}}
-        if((match.pendingHalfPrompt||match.pendingSecondHalfPrompt)&&!modalRoot.querySelector('dialog[open]'))renderDashboard();
-        showPendingTimePrompt();
-      }
+        for(const timer of timers.slice(1))changed=updateRunningValue(timer)||changed;
+        /* A timer that just finished always repaints, or its last frame could be skipped by the throttle. */
+        const stopped=timers.filter(t=>t.running).length<runningBefore;
+        if(changed&&(stopped||timestamp-lastPaint>80)){updateDisplays();lastPaint=timestamp;}
+        if((match.pendingHalfPrompt||match.pendingSecondHalfPrompt)&&!modalRoot.querySelector('dialog[open]')){if(app.querySelector('.dashboard-screen'))renderDashboard();showPendingTimePrompt();}
+        updateWakeLock(changed);
+      }else updateWakeLock(false);
     } finally {window.requestAnimationFrame(tick);}
   }
   window.requestAnimationFrame(tick);
@@ -456,8 +467,8 @@
     set('clock',fmt(Math.floor(clock.elapsed)));set('game-remaining',fmt(clock.gameCap-clock.elapsed));set('half-remaining',match.half===1?fmt(clock.halfCap-clock.elapsed):fmt(clock.gameCap-clock.elapsed));
     const clockCard=document.querySelector('[data-timer-card="clock"]'),cs=clockState(clock),clockStatus=document.querySelector('[data-display="clock-status"]');
     if(clockStatus){clockStatus.textContent=cs.label;clockStatus.className=`status-line ${cs.className}`;}
-    if(clockCard){clockCard.classList.toggle('is-running',clock.running);clockCard.classList.toggle('is-paused',!clock.running&&clock.elapsed>0);clockCard.classList.toggle('is-complete',clock.capAlerted);const button=clockCard.querySelector('.clock-actions [data-action="toggle-clock"]');if(button){button.textContent=isLocked()?'FINALIZADO':clock.running?'Ⅱ PAUSAR':clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR';button.disabled=isLocked()||clock.capAlerted||(match.half===1&&clock.halfAlerted);}}
-    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));set(`${id}-phase`,timer.completed?'CUMPLIDO':timer.running?'EN CURSO':'LISTO');const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);const button=card.querySelector('[data-action="toggle-timer"]');button.textContent=timer.completed?'REINICIAR':'INICIAR';button.disabled=timer.running||isLocked();setProgress(card,timer.elapsed,timer.duration);}
+    if(clockCard){clockCard.classList.toggle('is-running',clock.running);clockCard.classList.toggle('is-paused',!clock.running&&clock.elapsed>0);clockCard.classList.toggle('is-complete',cs.className==='complete');const button=clockCard.querySelector('.clock-actions [data-action="toggle-clock"]');if(button){button.textContent=isLocked()?'FINALIZADO':clock.running?'Ⅱ PAUSAR':clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR';button.disabled=isLocked()||clock.capAlerted||(match.half===1&&clock.halfAlerted);}}
+    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));set(`${id}-phase`,timer.completed?'CUMPLIDO':timer.running?'EN CURSO':'LISTO');const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);card.classList.toggle('is-ending',isEnding(timer));const button=card.querySelector('[data-action="toggle-timer"]');button.textContent=timer.completed?'REINICIAR':'INICIAR';button.disabled=timer.running||isLocked();setProgress(card,timer.elapsed,timer.duration);}
     const timeout=match.timers.timeout,timeoutCard=document.querySelector('[data-timer-card="timeout"]');
     if(timeoutCard){
       const active=match.timeoutState.activeTeam,ts=timerState(timeout),phase=timeoutCard.querySelector('[data-display="timeout-phase"]');
@@ -465,6 +476,7 @@
       phase.textContent=active===null?'DISPONIBLE':ts.label;
       phase.className=`timeout-phase status-line ${active===null?'':ts.className}`;
       timeoutCard.classList.toggle('is-active',timeout.running);
+      timeoutCard.classList.toggle('is-ending',isEnding(timeout));
       setProgress(timeoutCard,timeout.elapsed,timeout.duration);
       timeoutCard.querySelectorAll('[data-action="timeout"]').forEach((button,index)=>{
         const remaining=Math.max(0,match.config.timeoutsPerTeam-match.timeoutState.usages[index]);
@@ -477,6 +489,7 @@
     const breakCard=document.querySelector('[data-timer-card="break"]');if(breakCard){set('break',fmt(match.breakTimer.duration-match.breakTimer.elapsed));setProgress(breakCard,match.breakTimer.elapsed,match.breakTimer.duration);}
     const liveClock=document.querySelector('.sheet-live-clock');if(liveClock)liveClock.textContent=fmt(Math.floor(clock.elapsed));
   }
+  const isEnding = timer => timer.running && timer.duration - timer.elapsed <= 10;
   function setProgress(card,elapsed,duration){const bar=card.querySelector('.progress-track');if(!bar)return;const percent=Math.max(0,Math.min(100,Math.round(100*elapsed/duration)));bar.setAttribute('aria-valuenow',String(percent));bar.querySelector('.progress-fill').style.setProperty('--progress',`${percent}%`);}
 
   function eventDescription(event,match) {
@@ -513,7 +526,7 @@
     const durations=[['gameCap','Tiempo total del partido',Math.round(config.gameCap/6)/10,'min'],['halfCap','Primer tiempo',Math.round(config.halfCap/6)/10,'min'],['halftime','Medio tiempo',Math.round(config.halftime/6)/10,'min'],['pull','Pull',config.pull.release,'s'],['call','Llamada',config.call.restart,'s'],['timeout','Time out',config.timeoutDuration,'s'],['timeoutsPerTeam','Time outs por equipo y por tiempo',config.timeoutsPerTeam,'']];
     app.innerHTML=`<section class="settings-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← Tablero</button><div><span class="screen-eyebrow">CONFIGURACIÓN</span><h1>Preparar partido</h1></div></div>
       <section class="settings-section"><div class="section-heading"><h2>Reglamento</h2></div><div class="settings-row"><div class="field"><label for="ruleset">Perfil</label><select id="ruleset" data-setting="ruleset" ${locked?'disabled':''}>${options}</select></div><div class="field"><label for="sound">Avisos</label><select id="sound" data-setting="sound"><option value="on" ${state.settings.sound?'selected':''}>Sonido y aviso visual</option><option value="off" ${!state.settings.sound?'selected':''}>Solo aviso visual</option></select></div></div><p>WFDF y USA Ultimate cargan sus tiempos de referencia. Los límites de duración del partido pueden depender del torneo: confirmalos antes de jugar.</p></section>
-      <section class="settings-section"><div class="section-heading"><h2>Tiempos totales</h2><span>${editing?'PERFIL PERSONALIZADO':'PERFIL DE REFERENCIA'}</span></div><p>Un valor por reloj. Cada cuenta de Pull, Llamada, Time out y Medio tiempo corre hasta cero y termina con tres chicharras.</p>${editing?`<form data-form="ruleset-profile" data-profile="${esc(draftRuleset?'':currentProfile?.id||'')}"><div class="field"><label for="profile-name">Nombre del perfil</label><input id="profile-name" name="name" maxlength="40" value="${esc(draftRuleset?'':currentProfile?.name||'')}" placeholder="Ej.: Torneo local" required ${editLocked?'disabled':''}></div><div class="duration-grid">${durations.map(([key,label,value,unit])=>durationField(key,label,value,unit,editLocked)).join('')}</div><button class="button button-primary settings-save" ${editLocked?'disabled':''}>${draftRuleset?'GUARDAR PERFIL PERSONALIZADO':currentProfile?'GUARDAR CAMBIOS':'GUARDAR PERFIL PERSONALIZADO'}</button></form>`:`<div class="duration-grid">${durations.map(([key,label,value,unit])=>`<div class="duration-readout"><span>${esc(label)}</span><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`).join('')}</div><p>Elegí “PERSONALIZADO · Crear perfil” para cambiar los valores y guardarlos en el desplegable.</p>`}</section>
+      <section class="settings-section"><div class="section-heading"><h2>Tiempos totales</h2><span>${editing?'PERFIL PERSONALIZADO':'PERFIL DE REFERENCIA'}</span></div><p>Un valor por reloj. Cada cuenta de Pull, Llamada, Time out y Medio tiempo corre hasta cero y termina con cinco alarmas.</p>${editing?`<form data-form="ruleset-profile" data-profile="${esc(draftRuleset?'':currentProfile?.id||'')}"><div class="field"><label for="profile-name">Nombre del perfil</label><input id="profile-name" name="name" maxlength="40" value="${esc(draftRuleset?'':currentProfile?.name||'')}" placeholder="Ej.: Torneo local" required ${editLocked?'disabled':''}></div><div class="duration-grid">${durations.map(([key,label,value,unit])=>durationField(key,label,value,unit,editLocked)).join('')}</div><button class="button button-primary settings-save" ${editLocked?'disabled':''}>${draftRuleset?'GUARDAR PERFIL PERSONALIZADO':currentProfile?'GUARDAR CAMBIOS':'GUARDAR PERFIL PERSONALIZADO'}</button></form>`:`<div class="duration-grid">${durations.map(([key,label,value,unit])=>`<div class="duration-readout"><span>${esc(label)}</span><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`).join('')}</div><p>Elegí “PERSONALIZADO · Crear perfil” para cambiar los valores y guardarlos en el desplegable.</p>`}</section>
       ${locked?'<p class="settings-locked">El partido ya comenzó. Prepará un nuevo partido para cambiar el reglamento o sus tiempos.</p>':''}
       <p class="settings-source">Referencias: <a href="https://rules.wfdf.sport/" target="_blank" rel="noreferrer">WFDF</a> · <a href="https://usaultimate.org/rules/" target="_blank" rel="noreferrer">USA Ultimate</a>.</p>
     </section>`;
@@ -524,7 +537,7 @@
     const locked=hasStarted()||isLocked(),current=state.settings.ruleset;
     selectedProfileId=current;
     const profiles=[{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];
-    openModal('PERFIL DE TIEMPO',`<p>${locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${p.id===current?'SELECCIONADO':'ELEGIR'}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile">USAR ESTE PERFIL</button><button class="button profile-new" type="button" data-action="new-profile">CREAR NUEVO PERFIL</button><button class="button profile-guide" type="button" data-action="start-tutorial">CÓMO USAR LA APP</button></div>`);
+    openModal('PERFIL DE TIEMPO',`<p>${locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${p.id===current?'SELECCIONADO':'ELEGIR'}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile" autofocus>USAR ESTE PERFIL</button><button class="button profile-new" type="button" data-action="new-profile">CREAR NUEVO PERFIL</button><button class="button profile-guide" type="button" data-action="start-tutorial">CÓMO USAR LA APP</button></div>`);
   }
 
   function closeTutorial(){
@@ -589,6 +602,7 @@
     const previous=document.activeElement;closeModal();modalRoot._returnFocus=previous;
     modalRoot.innerHTML=`<dialog class="modal" aria-labelledby="modalTitle"><header class="modal-header"><h2 class="modal-title" id="modalTitle">${esc(title)}</h2><button class="modal-close" data-action="close-modal" aria-label="Cerrar">×</button></header><div class="modal-body">${body}</div></dialog>`;
     const dialog=modalRoot.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',e=>{e.preventDefault();closeModal();});
+    if(!dialog.querySelector('[autofocus]'))(dialog.querySelector('.modal-body .button-primary')||dialog.querySelector('.modal-body button'))?.focus({preventScroll:true});
   }
 
   function closeModal() {modalRoot.querySelector('dialog')?.close();modalRoot.innerHTML='';if(modalRoot._returnFocus?.isConnected)modalRoot._returnFocus.focus();}
@@ -597,9 +611,24 @@
     openModal("Sobre Ultimate Clock", `<div class="info-hero"><span class="info-mark">UC</span><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="info-primary" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a><a href="https://iona.ar/" target="_blank" rel="noopener noreferrer">Conocé más proyectos ↗</a></div>`);
   }
 
-  function openGoal(teamIndex,origin='dashboard') {
-    const team = activeMatch().teams[teamIndex];
-    openModal("Registrar gol", `<p class="goal-note">Sumá un punto para <strong>${esc(team.name)}</strong>. Los dos campos son opcionales.</p><form data-form="goal" data-team="${teamIndex}" data-origin="${origin}"><div class="field"><label for="assist">Pase</label><input id="assist" name="assist" autocomplete="off" placeholder="Quién dio el pase gol"></div><div class="field"><label for="scorer">Gol</label><input id="scorer" name="scorer" autocomplete="off" placeholder="Quién recibió y anotó"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">Registrar gol</button></div></form>`);
+  function addGoal(teamIndex,origin='dashboard') {
+    const m=activeMatch(),team=m.teams[teamIndex];if(!team)return;
+    const goal={id:uid('goal'),elapsed:m.clock.elapsed,at:nowIso(),assist:'',scorer:''};
+    team.score+=1;team.goals.push(goal);logEvent('goal',{team:teamIndex,goal:goal.id,assist:'',scorer:''});
+    closeModal();saveState();rerender(origin);announce(`Gol de ${team.name}. ${m.teams[0].score} a ${m.teams[1].score}`);
+    showToast(`Gol de ${team.name}.`,[{label:'PASE Y GOL',action:'goal-details',data:{team:teamIndex,goal:goal.id,origin}},{label:'DESHACER',action:'undo-goal',data:{team:teamIndex,goal:goal.id,origin}}]);
+  }
+  function undoGoal(teamIndex,goalId,origin) {
+    const m=activeMatch(),team=m.teams[teamIndex],at=team?.goals.findIndex(g=>g.id===goalId);
+    if(!team||at<0){showToast('Ese gol ya no se puede deshacer.');return;}
+    team.goals.splice(at,1);team.score=Math.max(0,team.score-1);m.events=m.events.filter(e=>e.goal!==goalId);
+    saveState();rerender(origin);showToast(`Gol de ${team.name} deshecho.`);
+  }
+  function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
+  function openGoal(teamIndex,goalId,origin='dashboard') {
+    const team = activeMatch().teams[teamIndex],goal=team?.goals.find(g=>g.id===goalId);
+    if(!goal)return;
+    openModal("Detalle del gol", `<p class="goal-note">Gol de <strong>${esc(team.name)}</strong> a los ${fmt(goal.elapsed)}. Los dos campos son opcionales.</p><form data-form="goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}"><div class="field"><label for="assist">Pase</label><input id="assist" name="assist" autocomplete="off" value="${esc(goal.assist)}" placeholder="Quién dio el pase gol" autofocus></div><div class="field"><label for="scorer">Gol</label><input id="scorer" name="scorer" autocomplete="off" value="${esc(goal.scorer)}" placeholder="Quién recibió y anotó"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">Guardar detalle</button></div></form>`);
   }
 
   function openMinus(teamIndex) {
@@ -628,12 +657,13 @@
   }
 
   function saveMatch() {
-    const m=activeMatch();if(m.status==='saved'){showToast('Este partido ya está guardado.');renderHistory();return;}
-    if(Object.values(m.timers).some(t=>t.running)||m.breakTimer.running){showToast('Esperá a que terminen las cuentas activas antes de guardar.');return;}
+    const m=activeMatch();if(m.status==='saved'){showToast('Este partido ya está guardado.');renderHistory();return true;}
+    if(Object.values(m.timers).some(t=>t.running)||m.breakTimer.running){closeModal();showToast('Esperá a que terminen las cuentas activas antes de guardar.');return false;}
     updateClock();for(const t of [...Object.values(m.timers),m.breakTimer]){updateRunningValue(t);t.running=false;t.startedAt=null;}
     m.clock.running=false;m.clock.startedAt=null;m.clock.status='Finalizado';logEvent('saved');m.status='saved';m.savedAt=nowIso();m.themeName=themeName(state.settings.theme);m.themeSnapshot=currentThemeVars();
     state.savedMatches.unshift(clone(m));
     const persisted=saveState();showToast(persisted?'Planilla guardada. Partido cerrado.':'Planilla en memoria. Descargá un respaldo para conservarla.');renderHistory();
+    return true;
   }
 
   function resetMatch() {
@@ -694,7 +724,7 @@
       updateRunningValue(m.breakTimer);if(!m.breakTimer.completed){showToast('El medio tiempo todavía está en curso.');return true;}
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
-    else if(action==='save-and-new'){saveMatch();resetMatch();}
+    else if(action==='save-and-new'){if(saveMatch())resetMatch();}
     else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match);if(sheet)exportData(sheet,`ultimate-clock-${sheet.id}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,'ultimate-clock-respaldo.json');
     else if(action==='retry-storage'){
@@ -723,8 +753,9 @@
     if(action==='tour-close'){closeTutorial();return;}
     if(action==='tour-prev'){showTutorialStep(tutorialIndex-1);return;}
     if(action==='tour-next'){showTutorialStep(tutorialIndex+1);return;}
-    if(action==='donation-info'){openModal('DONÁ', '<p>El enlace para donar todavía no está disponible. Gracias por querer apoyar el desarrollo de Ultimate Clock.</p>');return;}
-    if(isLocked()&&['goal','minus','confirm-minus','edit-team','toggle-clock','toggle-timer','timeout','start-break','second-half'].includes(action)){showToast('Partido cerrado. Elegí Nuevo partido.');return;}
+    if(action==='reload'){location.reload();return;}
+    if(action==='donation-info'){openModal('APOYÁ ESTE PROYECTO', '<p>El enlace para donar todavía no está disponible. Gracias por querer apoyar el desarrollo de Ultimate Clock.</p>');return;}
+    if(isLocked()&&['goal','goal-details','undo-goal','minus','confirm-minus','edit-team','toggle-clock','toggle-timer','timeout','start-break','second-half'].includes(action)){showToast('Partido cerrado. Elegí Nuevo partido.');return;}
     if(extraAction(action,actionElement))return;
     if (action === "toggle-menu") {
       const menu = document.querySelector(".header-actions");
@@ -758,10 +789,12 @@
     if (action === "confirm-reset") resetMatch();
     if (action === "confirm-minus") {
       const index = Number(actionElement.dataset.team); const team = activeMatch().teams[index];
-      if (team.score > 0) { team.score -= 1; team.adjustments.push({ at: nowIso(), delta: -1 }); activeMatch().events.push({ type: "adjustment", team: index, at: nowIso() }); }
+      if (team.score > 0) { team.score -= 1; team.adjustments.push({ at: nowIso(), delta: -1 }); logEvent('adjustment', { team: index }); }
       closeModal(); saveState(); renderDashboard(); showToast("Puntaje corregido.");
     }
-    if (action === "goal") openGoal(Number(actionElement.dataset.team),actionElement.dataset.origin||'dashboard');
+    if (action === "goal") addGoal(Number(actionElement.dataset.team),actionElement.dataset.origin||'dashboard');
+    if (action === "goal-details") { hideToast(); openGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
+    if (action === "undo-goal") { hideToast(); undoGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
     if (action === "minus") openMinus(Number(actionElement.dataset.team));
     if (action === "edit-team") openTeamEditor(Number(actionElement.dataset.team));
     if (action === "toggle-clock") toggleTimer("clock");
@@ -780,6 +813,7 @@
   });
 
   document.addEventListener("keydown", event => {
+    if (event.key === " " && !event.repeat && tutorialIndex<0 && !modalRoot.innerHTML && !event.target.closest("button,input,select,textarea,a,[contenteditable]") && app.querySelector(".dashboard-screen")) { event.preventDefault(); toggleTimer("clock"); return; }
     if (event.key === "Escape" && tutorialIndex>=0){event.preventDefault();closeTutorial();}
     else if (event.key === "Escape" && modalRoot.innerHTML) closeModal();
     else if(event.key === "Escape"){document.querySelector('.header-actions').classList.remove('is-open');document.querySelector('.menu-button').setAttribute('aria-expanded','false');document.body.classList.remove('menu-open');document.querySelector('.menu-button').focus();}
@@ -791,10 +825,12 @@
     if(extraSubmit(form))return;
     if(isLocked()&&['goal','team'].includes(form.dataset.form)){closeModal();return;}
     if (form.dataset.form === "goal") {
-      const index = Number(form.dataset.team); const team = activeMatch().teams[index];
-      const data = new FormData(form); const goal = { elapsed: activeMatch().clock.elapsed, at: nowIso(), assist: String(data.get("assist") || "").trim(), scorer: String(data.get("scorer") || "").trim() };
-      team.score += 1; team.goals.push(goal); activeMatch().events.push({ type: "goal", team: index, assist: goal.assist, scorer: goal.scorer, at: goal.at, elapsed:goal.elapsed });
-      closeModal(); saveState(); if(form.dataset.origin==='sheet')renderLiveSheet();else renderDashboard(); showToast(`Gol registrado para ${team.name}.`); announce(`Gol de ${team.name}`);
+      const m = activeMatch(), team = m.teams[Number(form.dataset.team)], goal = team?.goals.find(g => g.id === form.dataset.goal);
+      if (!goal) { closeModal(); return; }
+      const data = new FormData(form);
+      goal.assist = String(data.get("assist") || "").trim(); goal.scorer = String(data.get("scorer") || "").trim();
+      const event = m.events.find(e => e.goal === goal.id); if (event) Object.assign(event, { assist: goal.assist, scorer: goal.scorer });
+      closeModal(); saveState(); rerender(form.dataset.origin); showToast("Detalle del gol guardado.");
     }
     if (form.dataset.form === "team") {
       const index = Number(form.dataset.team); const data = new FormData(form); const team = activeMatch().teams[index];
@@ -839,7 +875,7 @@
     showToast('Falló la reproducción. Revisá el navegador y probá el sonido desde MENU.');
   };
   ClockAlerts.setSound(false);
-  document.addEventListener('visibilitychange',updateAudioControls);
+  document.addEventListener('visibilitychange',()=>{updateAudioControls();if(!document.hidden&&wakeWanted){wakeWanted=false;wakeLock=null;}});
   document.addEventListener('fullscreenchange',updateFullscreenControl);
   window.addEventListener('resize',()=>{if(tutorialIndex>=0)requestAnimationFrame(positionTutorial);});
   (state.pendingAlerts||[]).forEach(dispatchAlert);
@@ -847,10 +883,17 @@
   updateAudioControls();
   updateFullscreenControl();
   renderDashboard();
-  openProfileSelector();
+  if(!hasStarted()&&!isLocked())openProfileSelector();
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();
-  window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY&&e.newValue&&JSON.parse(e.newValue).writerId!==writerId){storageBlocked=true;showToast('Otra pestaña cambió el partido. Recargá esta pestaña antes de continuar.');app.inert=true;document.querySelector('.topbar').inert=true;const warning=document.createElement('div');warning.className='storage-warning';warning.innerHTML='Partido abierto en otra pestaña. <button onclick="location.reload()">Recargar estado actual</button>';document.body.prepend(warning);}});
+  let otherTabLocked=false;
+  window.addEventListener('storage',e=>{
+    if(otherTabLocked||e.key!==STORAGE_KEY||!e.newValue)return;
+    let writer;try{writer=JSON.parse(e.newValue).writerId;}catch{return;}
+    if(writer===writerId)return;
+    otherTabLocked=storageBlocked=true;showToast('Otra pestaña cambió el partido. Recargá esta pestaña antes de continuar.');app.inert=true;document.querySelector('.topbar').inert=true;
+    const warning=document.createElement('div');warning.className='storage-warning';warning.innerHTML='Partido abierto en otra pestaña. <button type="button" data-action="reload">Recargar estado actual</button>';document.body.prepend(warning);
+  });
   if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>showToast('La instalación sin conexión no está disponible en este navegador.'));
 
 })();

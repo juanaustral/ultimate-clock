@@ -2,7 +2,8 @@
 
 Referencia: prototipo Stitch `stitch_document_based_app_builder.zip` aportado por Juan. Se adoptó su dirección visual como punto de partida y se rehízo el flujo operativo según las correcciones posteriores.
 
-- Un único encabezado muestra ULTIMATE CLOCK y el botón MENU. Ese botón abre Planilla, Historial, Nuevo partido, Configurar, Guardar, Info, ACTIVAR/DESACTIVAR SONIDO, PROBAR SONIDO y Claro/Oscuro en cualquier ancho.
+- Un único encabezado muestra ULTIMATE CLOCK y el botón MENU. Ese botón abre Claro/Oscuro y tres grupos: PARTIDO (Planilla, Historial, Guardar, Nuevo partido), SONIDO Y PANTALLA (Activar/Probar sonido, Pantalla completa, Configurar) y AYUDA (Cómo usar la app, Info). REINICIAR CONTADORES queda aparte, al final y en rojo.
+- El botón + suma el gol al instante; el aviso inferior ofrece PASE Y GOL y DESHACER durante 6 s. Las cuentas marcan los últimos 10 s y la pantalla se mantiene encendida mientras corre un reloj.
 - En vertical, los marcadores y el reloj se apilan Equipo 1 → Tiempo → Equipo 2. El tablero completo usa el alto disponible de la pantalla; en horizontal de poca altura, los dos grupos ocupan columnas contiguas. La pantalla principal no tiene pie de página.
 - El reloj del partido domina el tablero y es el único pausado/reanudable. Los widgets de Pull, Llamada, Time out y Medio tiempo muestran una sola barra de progreso que avanza de verde a amarillo y rojo.
 - Pull y Llamada vuelven a Listo al tocar REINICIAR; una nueva cuenta empieza solo con un segundo toque en INICIAR. En horizontal, Pull ocupa el centro entre las Llamadas de cada equipo. Hay un único TIME OUT con dos botones de equipo y su cupo restante; las Llamadas conservan el fondo del color elegido.
