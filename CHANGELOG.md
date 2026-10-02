@@ -13,6 +13,7 @@
 
 - Se adoptó la licencia PolyForm Noncommercial 1.0.0 (`LICENSE.md`).
 - Las planillas guardadas en Historial se exportan también como **PDF** (imprimible, A4, varias páginas) y **CSV** (un evento por fila, apto para Excel y Google Sheets), junto al JSON existente. Sin dependencias nuevas.
+- Las llamadas por equipo aparecen como **Llamada** y el nombre del equipo en la planilla, el PDF y el CSV, en lugar del identificador interno.
 
 ## 2026-09-30
 

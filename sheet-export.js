@@ -7,11 +7,12 @@
   const fmt=value=>{const total=Math.max(0,Math.ceil(Number(value)||0));return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;};
   const dateLabel=value=>{try{return new Intl.DateTimeFormat('es-AR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value??'');}};
   const teamName=(match,index)=>index===undefined||index===null?'':(match.teams?.[index]?.name??'');
-  const timerName=id=>id?(TIMER_LABELS[id]||id):'';
+  /* Per-team call timers are saved as call-0 / call-1. */
+  const timerName=(match,id)=>{if(!id)return '';const call=/^call-(\d+)$/.exec(id);if(call){const index=Number(call[1]);return `${TIMER_LABELS.call} ${teamName(match,index)||`equipo ${index+1}`}`;}return TIMER_LABELS[id]||id;};
 
   /* Same text the saved-sheet modal shows for each event. */
   function describeEvent(match,e){
-    return [EVENT_LABELS[e.type]||e.type,teamName(match,e.team),timerName(e.timer),e.label,e.note,e.scorer&&`gol: ${e.scorer}`,e.assist&&`pase: ${e.assist}`,e.mode].filter(Boolean).join(' · ');
+    return [EVENT_LABELS[e.type]||e.type,teamName(match,e.team),timerName(match,e.timer),e.label,e.note,e.scorer&&`gol: ${e.scorer}`,e.assist&&`pase: ${e.assist}`,e.mode].filter(Boolean).join(' · ');
   }
 
   /* RFC 4180 cell; cells that a spreadsheet would run as a formula get a leading apostrophe. */
@@ -23,7 +24,7 @@
 
   function toCSV(match){
     const header=['fecha_hora','tiempo_juego','evento','equipo','cronometro','detalle','nota','gol','pase','modo'];
-    const rows=(match.events||[]).map(e=>[e.at||'',fmt(e.elapsed||0),EVENT_LABELS[e.type]||e.type,teamName(match,e.team),timerName(e.timer),e.label||'',e.note||'',e.scorer||'',e.assist||'',e.mode||'']);
+    const rows=(match.events||[]).map(e=>[e.at||'',fmt(e.elapsed||0),EVENT_LABELS[e.type]||e.type,teamName(match,e.team),timerName(match,e.timer),e.label||'',e.note||'',e.scorer||'',e.assist||'',e.mode||'']);
     /* BOM so spreadsheet apps read accents as UTF-8. */
     return '﻿'+[header,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n';
   }
