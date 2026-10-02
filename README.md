@@ -4,7 +4,7 @@
 
 [![Demo en vivo](https://img.shields.io/badge/demo-iona.ar%2Fultimateclock-111111)](https://iona.ar/ultimateclock/)
 [![Pruebas](https://img.shields.io/badge/tests-22%2F22-1f8a70)](qa/pruebas.txt)
-[![Licencia](https://img.shields.io/badge/license-por--definir-lightgrey)](#licencia)
+[![Licencia](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](#licencia)
 
 ULTIMATE CLOCK es un proyecto de **Juan Martínez García / IONA**. Está pensado para una mesa de tiempo que necesita leer y accionar el partido desde un teléfono, tableta o pantalla de cancha sin depender de una cuenta ni de un backend.
 
@@ -87,7 +87,9 @@ Para ejecutar las pruebas: `node --test tests/*.test.cjs`.
 
 ## Licencia
 
-La licencia pública todavía está por definirse. El código se comparte como portfolio y caso de estudio de Juan Martínez García / IONA.
+Ultimate Clock se publica bajo la [PolyForm Noncommercial License 1.0.0](LICENSE.md). Podés leer, usar, modificar y compartir el código con cualquier fin no comercial. El uso comercial requiere permiso de Juan Martínez García / IONA.
+
+La fuente JetBrains Mono incluida en `prototipos-ufm/` conserva su propia licencia, la SIL Open Font License 1.1.
 
 ## Pendiente externo
 
