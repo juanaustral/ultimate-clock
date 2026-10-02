@@ -1,8 +1,8 @@
 /* Pure scoresheet exporters (CSV and PDF): no dependencies, shared by the app and Node tests. */
 (function (root) {
   'use strict';
-  const EVENT_LABELS={goal:'Gol',timeout:'Time-out',call:'Llamada',adjustment:'Ajuste manual −1',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Mitad',incident:'Incidencia',saved:'Partido finalizado'};
-  const TIMER_LABELS={clock:'Reloj de partido',pull:'Pull',call:'Llamada',timeout:'Time-out',break:'Descanso'};
+  const EVENT_LABELS={goal:'Gol',timeout:'Time-out',call:'Llamado',adjustment:'Ajuste manual −1',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Mitad',incident:'Incidencia',saved:'Partido finalizado'};
+  const TIMER_LABELS={clock:'Reloj de partido',pull:'Pull',call:'Llamado',timeout:'Time-out',break:'Descanso'};
 
   /* Traducción opcional: tr(textoEnEspañol, variables). Sin tr, todo queda en español. */
   const same=(text,vars)=>String(text??'').replace(/\{(\w+)\}/g,(m,k)=>vars&&k in vars?String(vars[k]):m);
@@ -10,7 +10,7 @@
   const dateLabel=(value,locale='es-AR')=>{try{return new Intl.DateTimeFormat(locale,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value??'');}};
   const teamName=(match,index)=>index===undefined||index===null?'':(match.teams?.[index]?.name??'');
   /* Per-team call timers are saved as call-0 / call-1. */
-  const timerName=(match,id,tr=same)=>{if(!id)return '';const call=/^call-(\d+)$/.exec(id);if(call){const index=Number(call[1]),team=teamName(match,index);return team?tr('Llamada {team}',{team}):tr('Llamada equipo {n}',{n:index+1});}return TIMER_LABELS[id]?tr(TIMER_LABELS[id]):id;};
+  const timerName=(match,id,tr=same)=>{if(!id)return '';const call=/^call-(\d+)$/.exec(id);if(call){const index=Number(call[1]),team=teamName(match,index);return team?tr('Llamado {team}',{team}):tr('Llamado equipo {n}',{n:index+1});}return TIMER_LABELS[id]?tr(TIMER_LABELS[id]):id;};
   const eventName=(type,tr=same)=>EVENT_LABELS[type]?tr(EVENT_LABELS[type]):type;
 
   /* Same text the saved-sheet modal shows for each event. */

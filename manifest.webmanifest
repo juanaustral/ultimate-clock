@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Ultimate Clock",
   "short_name": "Ultimate Clock",
-  "description": "App gratis para llevar partidos de Ultimate Frisbee desde el celular o la tablet: reloj del partido, goles, llamadas, pull, time outs y planilla exportable. En español e inglés, sin publicidad y funciona sin internet.",
+  "description": "App gratis para llevar partidos de Ultimate Frisbee desde el celular o la tablet: reloj del partido, goles, llamados, pull, time outs y planilla exportable. En español e inglés, sin publicidad y funciona sin internet.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "./",
