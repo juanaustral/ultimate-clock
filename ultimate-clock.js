@@ -397,12 +397,12 @@
       logEvent(m.clock.running?'resume':'pause',{timer:'clock'});
     }else{
       if(!['pull','call-0','call-1'].includes(id))return;
-      const index=id==='call-1'?1:0,t=id==='pull'?m.timers.pull:index===0?m.timers.call:m.timers.call2;
-      if(id==='pull'&&t.running){if(fromCard)return;Object.assign(t,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});saveState();renderDashboard();return;}
-      if(t.running){showToast(t('Este tiempo corre hasta el final.'));return;}
-      if(t.completed){Object.assign(t,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});saveState();renderDashboard();return;}
+      const index=id==='call-1'?1:0,timer=id==='pull'?m.timers.pull:index===0?m.timers.call:m.timers.call2;
+      /* Pull y Llamado: mientras corren, el botón es REINICIAR (vuelve a cero). Tocar la tarjeta no reinicia. */
+      if(timer.running){if(fromCard)return;Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});saveState();renderDashboard();return;}
+      if(timer.completed){Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});saveState();renderDashboard();return;}
       if(id!=='pull'){openCall(index);return;}
-      setRunning(t,true);logEvent('start',{timer:id});
+      setRunning(timer,true);logEvent('start',{timer:id});
     }
     saveState();renderDashboard();
   }
@@ -427,13 +427,13 @@
     Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});m.callTypes[index]='';saveState();renderDashboard();
   }
   function startTimeout(teamIndex) {
-    const m=activeMatch(),t=m.timers.timeout;
-    if((t.running||t.elapsed>0)&&!t.completed){showToast(t('Terminá el time-out activo antes de registrar otro.'));return;}
+    const m=activeMatch(),timer=m.timers.timeout;
+    if((timer.running||timer.elapsed>0)&&!timer.completed){showToast(t('Terminá el time-out activo antes de registrar otro.'));return;}
     if(m.timeoutState.usages[teamIndex]>=m.config.timeoutsPerTeam){showToast(t('Este equipo no tiene time-outs disponibles.'));return;}
-    openModal(t('Iniciar time out'),`<form data-form="timeout" data-team="${teamIndex}"><p>${t('<strong>{team}</strong> usará uno de sus {n} time outs de este tiempo. La cuenta de {time} no se puede pausar.',{team:esc(m.teams[teamIndex].name),n:m.config.timeoutsPerTeam,time:fmt(m.config.timeoutDuration)})}</p><div class="modal-actions"><button type="button" class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary">${esc(t('INICIAR TIME OUT'))}</button></div></form>`);
+    openModal(t('Iniciar time out'),`<form data-form="timeout" data-team="${teamIndex}"><p>${t('<strong>{team}</strong> usará uno de sus {n} time outs de este tiempo. La cuenta de {time} no se puede pausar y el reloj del partido se detiene.',{team:esc(m.teams[teamIndex].name),n:m.config.timeoutsPerTeam,time:fmt(m.config.timeoutDuration)})}</p><div class="modal-actions"><button type="button" class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary">${esc(t('INICIAR TIME OUT'))}</button></div></form>`);
   }
 
-  const timerButtonLabel=(id,timer)=>timer.completed||(id==='pull'&&timer.running)?'REINICIAR':'INICIAR';
+  const timerButtonLabel=(id,timer)=>timer.completed||timer.running?'REINICIAR':'INICIAR';
   function timerState(timer) {
     if(isLocked())return {label:t('Finalizado'),className:'complete'};
     if(timer.completed)return {label:t('Tiempo cumplido'),className:'complete'};
@@ -493,7 +493,7 @@
     return `<article class="instrument timer-card ${team?'timer-call team-timer':''} timer-${id} ${timer.running?'is-running':''} ${status.className==='complete'?'is-complete':''}" data-timer-card="${id}" ${team?`style="${teamStyle(team)}"`:''}><div class="tile">
       <div class="timer-head"><div><h2 class="timer-title">${esc(t(title))}</h2><span class="timer-sub">${sub}</span></div><span class="status-line ${status.className}">${esc(status.label)}</span></div>
       <strong class="timer-display" data-display="${id}">${fmt(timer.duration-timer.elapsed)}</strong>
-      <button class="timer-main-action" type="button" data-action="toggle-timer" data-timer="${id}" ${(timer.running&&id!=='pull')||isLocked()?'disabled':''}>${esc(t(timerButtonLabel(id,timer)))}</button>
+      <button class="timer-main-action" type="button" data-action="toggle-timer" data-timer="${id}" ${isLocked()?'disabled':''}>${esc(t(timerButtonLabel(id,timer)))}</button>
       <div class="progress-track" role="progressbar" aria-label="${esc(t('Progreso de {timer}',{timer:t(title)}))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span>${id==='pull'?(timer.thresholds||[]).filter(x=>x.at<timer.duration).map(x=>`<i class="progress-mark${timer.elapsed>=x.at?' passed':''}" data-at="${x.at}" style="--at:${100*x.at/timer.duration}%"></i>`).join(''):''}</div>
     </div></article>`;
   }
@@ -525,7 +525,7 @@
     const clockCard=document.querySelector('[data-timer-card="clock"]'),cs=clockState(clock),clockStatus=document.querySelector('[data-display="clock-status"]');
     if(clockStatus){clockStatus.textContent=cs.label;clockStatus.className=`status-line ${cs.className}`;}
     if(clockCard){clockCard.classList.toggle('is-running',clock.running);clockCard.classList.toggle('is-paused',!clock.running&&clock.elapsed>0);clockCard.classList.toggle('is-complete',cs.className==='complete');const button=clockCard.querySelector('.clock-actions [data-action="toggle-clock"]');if(button){button.textContent=t(isLocked()?'FINALIZADO':clock.running?'Ⅱ PAUSAR':clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR');button.disabled=isLocked()||clock.capAlerted||(match.half===1&&clock.halfAlerted);}}
-    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);card.classList.toggle('is-running',timer.running);card.classList.toggle('is-ending',isEnding(timer));const button=card.querySelector('[data-action="toggle-timer"]');const label=t(timerButtonLabel(id,timer));if(button.textContent!==label)button.textContent=label;button.disabled=(timer.running&&id!=='pull')||isLocked();setProgress(card,timer.elapsed,timer.duration);card.querySelectorAll('.progress-mark').forEach(mark=>mark.classList.toggle('passed',timer.elapsed>=Number(mark.dataset.at)));}
+    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);card.classList.toggle('is-running',timer.running);card.classList.toggle('is-ending',isEnding(timer));const button=card.querySelector('[data-action="toggle-timer"]');const label=t(timerButtonLabel(id,timer));if(button.textContent!==label)button.textContent=label;button.disabled=isLocked();setProgress(card,timer.elapsed,timer.duration);card.querySelectorAll('.progress-mark').forEach(mark=>mark.classList.toggle('passed',timer.elapsed>=Number(mark.dataset.at)));}
     const timeout=match.timers.timeout,timeoutCard=document.querySelector('[data-timer-card="timeout"]');
     if(timeoutCard){
       const active=match.timeoutState.activeTeam,ts=timerState(timeout),phase=timeoutCard.querySelector('[data-display="timeout-phase"]');
@@ -894,7 +894,9 @@
     if(isLocked()){closeModal();return true;}
     unlockAudio();
     if(type==='call'){const index=Number(form.dataset.team);if(![0,1].includes(index)||pendingCall!==index)return true;pendingCall=null;registerCall(index,String(data.get('type')));closeModal();return true;}
-    else {const index=Number(form.dataset.team),t=m.timers.timeout;if(t.running||m.timeoutState.usages[index]>=m.config.timeoutsPerTeam){showToast(t('Ese time out no está disponible.'));return true;}m.timeoutState.activeTeam=index;m.timeoutState.mode='';m.timeoutState.usages[index]++;t.elapsed=0;t.alerted=[];t.completed=false;configureTimeout(m,'');setRunning(t,true);logEvent('timeout',{team:index});}
+    else {const index=Number(form.dataset.team),timer=m.timers.timeout;if(timer.running||m.timeoutState.usages[index]>=m.config.timeoutsPerTeam){showToast(t('Ese time out no está disponible.'));return true;}m.timeoutState.activeTeam=index;m.timeoutState.mode='';m.timeoutState.usages[index]++;timer.elapsed=0;timer.alerted=[];timer.completed=false;configureTimeout(m,'');setRunning(timer,true);logEvent('timeout',{team:index});
+      /* El time out detiene el reloj del partido; se reanuda con ▶ REANUDAR cuando vuelve el juego. */
+      if(m.clock.running){updateClock();m.clock.running=false;m.clock.startedAt=null;m.clock.status='Pausado';logEvent('pause',{timer:'clock'});}}
     closeModal();saveState();renderDashboard();return true;
   }
 
