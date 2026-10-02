@@ -124,7 +124,7 @@
 
   /* WhatsApp message: *bold*, _italic_ and emojis; one line per key moment with the running score. */
   /* One emoji per call category and incident type, keyed by the saved Spanish label. */
-  const CATEGORY_EMOJI={'Falta':'🤼','Violación':'⛔','Pick':'🚧','Travel':'👣','Stall':'⏳','Gol discutido':'❓','Lesión':'🩹','Tiempo de Espíritu':'🤝','TFR':'🧘','PMF':'🟨','Otra':'📝'};
+  const CATEGORY_EMOJI={'Falta':'🤼','Violación':'⛔','Pick':'🚧','Travel':'👣','Conteo':'⏳','Gol discutido':'❓','Lesión':'🩹','Tiempo de Espíritu':'🤝','TFR':'🧘','PMF':'🟨','Otra':'📝'};
   const waSafe=value=>String(value??'').replace(/[*_~`]/g,'').replace(/\s+/g,' ').trim();
   function toWhatsApp(match,{rulesetLabel,t:tr=same,locale='es-AR',url='iona.ar/ultimateclock'}={}){
     const teams=match.teams||[],events=match.events||[];
