@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es" data-theme="hum">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="Aprendé Ultimate Frisbee resolviendo jugadas, con feedback claro y referencias al reglamento USA Ultimate 2026–2027.">
+    <title>Punto por punto — Ultimate Frisbee</title>
+    <link rel="stylesheet" href="ultimate-game-v2.css">
+    <link rel="stylesheet" href="ultimate-game-overrides.css">
+    <script src="ultimate-game-v2.js" defer></script>
+  </head>
+  <body>
+    <div class="app-frame">
+      <header class="site-header">
+        <a class="brand" href="#inicio" aria-label="Punto por punto, inicio">
+          <span class="brand__disc" aria-hidden="true"><span></span></span>
+          <span class="brand__name">PUNTO<br>POR PUNTO</span>
+        </a>
+        <nav class="main-nav" aria-label="Navegación principal">
+          <button class="nav-link is-current" type="button" data-view="home" aria-current="page">Jugar</button>
+          <button class="nav-link" type="button" data-view="flow">Diagrama</button>
+          <button class="nav-link" type="button" data-view="progress">Progreso</button>
+          <button class="nav-link" type="button" data-view="rules">Reglas</button>
+        </nav>
+        <a class="source-link" href="https://usaultimate.org/rules/" target="_blank" rel="noreferrer">USAU 2026–27 <span aria-hidden="true">↗</span></a>
+      </header>
+
+      <p class="storage-note" id="storageNote" role="status" hidden></p>
+      <main class="main-content" id="appMain" tabindex="-1"></main>
+
+      <footer class="site-footer" aria-label="Acerca del juego">
+        <div class="footer-tagline" aria-hidden="true">LEÉ LA JUGADA <span>·</span> JUGÁ CON SPIRIT <span>·</span> PUNTO POR PUNTO</div>
+        <p>Una guía interactiva basada en las reglas USA Ultimate 2026–2027. Paráfrasis educativa; consultá las reglas y modificaciones de tu evento.</p>
+      </footer>
+    </div>
+
+  </body>
+</html>

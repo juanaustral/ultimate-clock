@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Punto por punto · recorrido de juego",
+    "subtitle": "Decisiones esenciales desde el pull hasta el gol o el cambio de posesión · USAU 2026–2027",
+    "output": "ultimate-game-flow.html",
+    "animation": "trace",
+    "visual_preset": "editorial",
+    "quality_profile": "showcase",
+    "viewBox": [1000, 720],
+    "views": [
+      {"id":"inicio", "label":"Inicio del punto", "focus":["pull","inbounds","play"], "note":"El pull da inicio al punto; importa dónde termina y cómo se pone en juego."},
+      {"id":"posesion", "label":"Posesión y pase", "focus":["play","pass","complete","turnover"], "note":"Una recepción completa conserva la posesión; una incompleta la cambia."},
+      {"id":"gol", "label":"Final de la jugada", "focus":["complete","goal","restart"], "note":"Una recepción legal controlada en la end zone de ataque suma un gol."},
+      {"id":"llamadas", "label":"Llamadas", "focus":["call","continuation","check"], "note":"Las llamadas se resuelven con continuación, acuerdo y, cuando corresponde, check."},
+      {"id":"excepciones", "label":"Excepciones frecuentes", "focus":["out","turnover","check","restart"], "note":"Fuera de límites, turnovers y reanudaciones no borran el contexto reglamentario."}
+    ],
+    "legend": {"mode":"all", "entries":{"frontend":{"label":"en juego"},"backend":{"label":"decisión"},"database":{"label":"resultado"},"security":{"label":"llamada / seguridad"},"external":{"label":"referencia"}}}
+  },
+  "lanes": [
+    {"id":"punto","label":"Punto en juego"},
+    {"id":"decision","label":"Decisión de cancha"},
+    {"id":"resultado","label":"Resultado"},
+    {"id":"llamadas","label":"Llamadas y reinicio","variant":"exception"}
+  ],
+  "phases": [
+    {"id":"arranque","label":"Arranque", "fromCol":0,"toCol":1},
+    {"id":"juego","label":"Disco en juego", "fromCol":2,"toCol":3,"variant":"emphasis"},
+    {"id":"resolucion","label":"Resultado y continuidad", "fromCol":4,"toCol":5,"variant":"dashed"}
+  ],
+  "mainPath":["pull","inbounds","play","pass","complete","goal","restart"],
+  "semanticChecks":{"allowedRoots":["pull"],"allowedTerminals":["restart","turnover","check"],"requiredPaths":[{"from":"pull","to":"restart"},{"from":"pass","to":"turnover"}]},
+  "nodes": [
+    {"id":"pull","lane":"punto","col":0,"type":"frontend","label":"Pull","sublabel":"inicia el punto","tag":"§9"},
+    {"id":"inbounds","lane":"decision","col":1,"type":"backend","label":"¿Queda dentro?","sublabel":"leer dónde termina","tag":"§9–11"},
+    {"id":"out","lane":"llamadas","col":2,"type":"security","label":"Disco fuera","sublabel":"brick o reinicio","tag":"§11"},
+    {"id":"play","lane":"punto","col":2,"type":"frontend","label":"Disco en juego","sublabel":"pivote y toque","tag":"§10"},
+    {"id":"pass","lane":"punto","col":3,"type":"frontend","label":"Pase legal","sublabel":"el lanzador no corre","tag":"§1"},
+    {"id":"complete","lane":"decision","col":4,"type":"backend","label":"¿Completo?","sublabel":"posesión o turnover","tag":"§14"},
+    {"id":"turnover","lane":"resultado","col":5,"type":"database","label":"Turnover","sublabel":"cambia el ataque","tag":"§14"},
+    {"id":"goal","lane":"decision","col":5,"type":"backend","label":"¿Hay gol?","sublabel":"control legal","tag":"§13"},
+    {"id":"restart","lane":"punto","col":5,"type":"database","label":"Siguiente pull","sublabel":"cambio de lado","tag":"§9 · §13"},
+    {"id":"call","lane":"llamadas","col":3,"type":"security","label":"Llamada","sublabel":"foul / pick / travel","tag":"§16–20"},
+    {"id":"continuation","lane":"llamadas","col":4,"type":"security","label":"Continuación","sublabel":"primero, resultado","tag":"§17"},
+    {"id":"check","lane":"llamadas","col":5,"type":"external","label":"Check","sublabel":"reanuda el juego","tag":"§10 · §17"}
+  ],
+  "edges": [
+    {"from":"pull","to":"inbounds","variant":"emphasis"},
+    {"from":"inbounds","to":"play","label":"sí"},
+    {"from":"inbounds","to":"out","label":"no","variant":"security"},
+    {"from":"out","to":"play","label":"poner en juego","variant":"dashed"},
+    {"from":"play","to":"pass","variant":"emphasis"},
+    {"from":"pass","to":"complete","variant":"emphasis"},
+    {"from":"complete","to":"goal","label":"sí","variant":"emphasis"},
+    {"from":"complete","to":"turnover","label":"no","variant":"security"},
+    {"from":"goal","to":"restart","label":"sí","variant":"emphasis"},
+    {"from":"pass","to":"call","label":"si hay llamada","variant":"security"},
+    {"from":"call","to":"continuation","variant":"security"},
+    {"from":"continuation","to":"check","variant":"security"}
+  ],
+  "cards":[
+    {"dot":"amber","title":"La lectura inicial","items":["El pull inicia el punto","Una línea perimetral es fuera de la cancha","El disco se pone en juego según el lugar y el estado"]},
+    {"dot":"emerald","title":"La posesión","items":["El disco avanza mediante pases","Una recepción completa conserva posesión","Un pase incompleto genera turnover"]},
+    {"dot":"rose","title":"Resolver sin borrar la jugada","items":["Las llamadas deben ser inmediatas y percibidas con certeza","Con disco en el aire se aplica continuación","Una detención se reanuda mediante check cuando corresponde"]}
+  ]
+}

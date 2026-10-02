@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f4ead8">
+    <meta name="description" content="Ultimate Clock: tablero de cronómetros para partidos de Ultimate Frisbee.">
+    <title>ULTIMATE CLOCK</title>
+    <link rel="stylesheet" href="ultimate-clock.css">
+    <script src="ultimate-clock.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#tablero" aria-label="ULTIMATE CLOCK, tablero">
+          <span class="brand-disc" aria-hidden="true"><span></span></span>
+          <span class="brand-copy"><strong>ULTIMATE</strong><em>CLOCK</em></span>
+        </a>
+        <button class="mobile-menu" type="button" data-action="toggle-menu" aria-expanded="false" aria-controls="headerActions" aria-label="Abrir acciones">☰</button>
+        <div class="header-actions" id="headerActions">
+          <button class="icon-button theme-button" type="button" data-action="themes" aria-label="Cambiar perfil visual" title="Perfil visual"><span class="status-dot"></span><span class="button-label">Modo</span></button>
+          <button class="icon-button" type="button" data-action="settings" aria-label="Abrir configuración" title="Configuración">⚙<span class="button-label">Configurar</span></button>
+          <button class="icon-button reset-button" type="button" data-action="reset" aria-label="Reiniciar contadores" title="Reiniciar">R</button>
+          <button class="icon-button" type="button" data-action="save" aria-label="Guardar partido" title="Guardar partido">▣<span class="button-label">Guardar</span></button>
+          <button class="icon-button" type="button" data-action="info" aria-label="Información de la app" title="Información">ⓘ</button>
+        </div>
+      </header>
+
+      <main id="app" class="app-main" tabindex="-1"></main>
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+      <div id="liveRegion" class="sr-only" aria-live="assertive"></div>
+      <div id="modalRoot"></div>
+    </div>
+  </body>
+</html>

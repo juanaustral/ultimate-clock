@@ -1,0 +1,267 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Ultimate Frisbee · aprender el reglamento en juego",
+    "output": "ultimate-rules.html",
+    "animation": "trace",
+    "visual_preset": "editorial",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "antes-del-punto",
+        "label": "Antes del punto",
+        "focus": ["inicio", "pull", "disco-en-juego"],
+        "note": "Del sorteo al pull válido: señales, posiciones, tiempos y errores de salida."
+      },
+      {
+        "id": "pase-posesion-gol",
+        "label": "Pase, posesión y gol",
+        "focus": ["disco-en-juego", "posesion", "resultado", "gol"],
+        "note": "Seguí el disco: pivote, stall, pase completo y condiciones para anotar."
+      },
+      {
+        "id": "turnover-reinicio",
+        "label": "Turnover y reinicio",
+        "focus": ["resultado", "turnover", "reinicio", "disco-en-juego"],
+        "note": "Qué cambia de equipo cuando el pase cae, sale o llega al stall diez."
+      },
+      {
+        "id": "llamadas-disputas",
+        "label": "Llamadas y disputas",
+        "focus": ["lanzamiento", "llamada", "resolucion", "observer", "reinicio"],
+        "note": "Cómo llamar, contestar, resolver y reanudar sin perder el hilo del juego."
+      },
+      {
+        "id": "tiempos-variantes",
+        "label": "Tiempos y variantes",
+        "focus": ["inicio", "pull", "timeout", "observer"],
+        "note": "Timeouts, sustituciones, observers y el índice de adaptaciones oficiales."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "punto", "label": "Punto y estado del disco" },
+    { "id": "ataque", "label": "Ataque y posesión" },
+    { "id": "defensa", "label": "Defensa y resultado" },
+    { "id": "llamadas", "label": "Llamadas y resolución" },
+    { "id": "tiempos", "label": "Tiempos y personal" },
+    { "id": "excepciones", "label": "Excepciones y seguridad", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "preparar", "label": "Preparar", "fromCol": 0, "toCol": 1 },
+    { "id": "jugar", "label": "Jugar el punto", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "resolver", "label": "Resolver y volver a jugar", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    {
+      "id": "flujo-principal",
+      "label": "Flujo principal del punto",
+      "lane": "punto",
+      "fromCol": 1,
+      "toCol": 5,
+      "variant": "emphasis"
+    },
+    {
+      "id": "control-reglamentario",
+      "label": "Control reglamentario",
+      "lane": "llamadas",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "security"
+    },
+    {
+      "id": "tiempo-y-personal",
+      "label": "Tiempo y personal",
+      "lane": "tiempos",
+      "fromCol": 0,
+      "toCol": 4,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": ["inicio", "pull", "disco-en-juego", "posesion", "lanzamiento", "resultado", "gol"],
+  "nodes": [
+    {
+      "id": "inicio",
+      "lane": "punto",
+      "col": 0,
+      "type": "external",
+      "label": "Inicio",
+      "tag": "USAU §§1, 6"
+    },
+    {
+      "id": "pull",
+      "lane": "punto",
+      "col": 1,
+      "type": "external",
+      "label": "Pull",
+      "tag": "USAU §9"
+    },
+    {
+      "id": "disco-en-juego",
+      "lane": "ataque",
+      "col": 2,
+      "type": "frontend",
+      "label": "Disco en juego",
+      "tag": "USAU §§3, 10"
+    },
+    {
+      "id": "posesion",
+      "lane": "ataque",
+      "col": 3,
+      "type": "backend",
+      "label": "Posesión",
+      "tag": "USAU §§3, 15"
+    },
+    {
+      "id": "lanzamiento",
+      "lane": "ataque",
+      "col": 4,
+      "type": "frontend",
+      "label": "Lanzamiento",
+      "tag": "USAU §§16, 18"
+    },
+    {
+      "id": "resultado",
+      "lane": "punto",
+      "col": 5,
+      "type": "messagebus",
+      "label": "Resultado pase",
+      "tag": "USAU §§11, 14"
+    },
+    {
+      "id": "gol",
+      "lane": "ataque",
+      "col": 5,
+      "type": "messagebus",
+      "label": "Gol",
+      "tag": "USAU §13"
+    },
+    {
+      "id": "turnover",
+      "lane": "defensa",
+      "col": 5,
+      "type": "security",
+      "label": "Turnover",
+      "tag": "USAU §14"
+    },
+    {
+      "id": "reinicio",
+      "lane": "excepciones",
+      "col": 5,
+      "type": "backend",
+      "label": "Reinicio",
+      "tag": "USAU §§10, 17"
+    },
+    {
+      "id": "llamada",
+      "lane": "llamadas",
+      "col": 3,
+      "type": "security",
+      "label": "Llamada",
+      "tag": "USAU §§17, 19, 20"
+    },
+    {
+      "id": "resolucion",
+      "lane": "llamadas",
+      "col": 4,
+      "type": "backend",
+      "label": "Resolución",
+      "tag": "USAU §17"
+    },
+    {
+      "id": "observer",
+      "lane": "llamadas",
+      "col": 5,
+      "type": "external",
+      "label": "Observer",
+      "tag": "USAU §§2, 22, 23"
+    },
+    {
+      "id": "timeout",
+      "lane": "tiempos",
+      "col": 4,
+      "type": "cloud",
+      "label": "Timeout",
+      "tag": "USAU §§7, 8"
+    }
+  ],
+  "edges": [
+    { "from": "inicio", "to": "pull", "label": "elige posesión o lado", "variant": "emphasis" },
+    { "from": "pull", "to": "disco-en-juego", "label": "pull válido · brick · re-pull", "variant": "emphasis" },
+    { "from": "disco-en-juego", "to": "posesion", "label": "tomar posesión + establecer pivote" },
+    { "from": "posesion", "to": "lanzamiento", "label": "liberar antes del stall 10" },
+    { "from": "lanzamiento", "to": "resultado", "label": "pase legal" },
+    { "from": "resultado", "to": "gol", "label": "captura en end zone de ataque", "variant": "emphasis" },
+    { "from": "resultado", "to": "turnover", "label": "incompleto · OOB · stall 10", "variant": "security" },
+    { "from": "gol", "to": "reinicio", "label": "nuevo punto · cambia el ataque", "variant": "emphasis" },
+    { "from": "turnover", "to": "reinicio", "label": "nuevo equipo en posesión", "variant": "security" },
+    { "from": "reinicio", "to": "disco-en-juego", "label": "check o self-check" },
+    { "from": "lanzamiento", "to": "llamada", "label": "travel · marking · foul · pick", "variant": "security" },
+    { "from": "llamada", "to": "resolucion", "label": "responde", "variant": "security" },
+    { "from": "resolucion", "to": "reinicio", "label": "check + posición correcta" },
+    { "from": "resolucion", "to": "observer", "label": "si no hay acuerdo", "variant": "dashed" },
+    { "from": "observer", "to": "reinicio", "label": "decisión + check", "variant": "dashed" },
+    { "from": "timeout", "to": "reinicio", "label": "70 s · cuenta reiniciada" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Fundamentos · USAU §§1–6",
+      "items": [
+        "§1 Ultimate: dos equipos de siete; se avanza pasando el disco y no se corre con él.",
+        "§2 Spirit of the Game: respeto, reglas acordadas y alegría del juego; cada jugador se auto-oficia.",
+        "§3 Definiciones: posesión, thrower, marker, in play, live, dead, foul, violation y best perspective.",
+        "§4 Cancha: central zone, end zones, goal lines, sidelines, backlines, brick marks y líneas de seguridad.",
+        "§5 Equipamiento: disco aprobado, ropa segura, calzado sin partes peligrosas y uniformes distinguibles.",
+        "§6 Estructura: game total estándar 15, halftime target 8, soft cap, hard cap y halftime cap."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "El punto · USAU §§7–14",
+      "items": [
+        "§7 Timeouts: equipo, lesión, técnico y Spirit; un timeout detiene el juego y suspende los conteos.",
+        "§8 Sustituciones: normalmente después de un gol; también por lesión, equipamiento ilegal, personal incorrecto o misconduct.",
+        "§9 Pull: se juega al inicio y después de cada gol; tras anotar se cambia el sentido y el equipo que anotó hace el pull.",
+        "§10 Reinicio: el disco puede estar in play, live o dead; el check, self-check y defensive self-check reanudan según el caso.",
+        "§11 Límites: las líneas perimetrales están fuera; la ubicación de puesta en juego depende del último evento relevante.",
+        "§12–14 End zone, scoring y turnovers: la captura válida, el primer contacto y el destino del disco deciden la jugada."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Control del lanzamiento · USAU §§15–19",
+      "items": [
+        "§15 Stall: el marker anuncia “stalling” y cuenta 1–10 con intervalos mínimos de un segundo; stall 10 es turnover.",
+        "§16 Marking violations: fast count, double team, disc space, straddle, wrapping y vision blocking; el juego no se detiene.",
+        "§17 Llamadas: quien llama debe haber percibido con certeza la infracción; la continuación termina cuando el thrower reconoce la llamada.",
+        "§18 Travel: mantener el pivote; hay excepciones para quien atrapa corriendo o saltando y lanza antes de tres contactos adicionales.",
+        "§19 Pick: obstrucción a un defensor que está guardando a un atacante; solo puede llamarlo el jugador obstruido e inmediatamente."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Contacto, posición y Spirit · USAU §§20–23",
+      "items": [
+        "§20 Foul: se debe evitar iniciar contacto; dangerous play es foul y prioriza el riesgo, incluso en situaciones de contacto severo.",
+        "§20 Receiving, throwing, blocking, force-out y strip se resuelven según si el contacto afectó la jugada y si el disco estaba en el aire.",
+        "§21 Posicionamiento: cada jugador puede ocupar espacio libre; quien salta tiene derechos de aterrizaje, sin anular la obligación de evitar contacto.",
+        "§22 Observers: pueden controlar tiempos, resolver disputas, intervenir en Spirit y emitir opiniones según lo definido por el evento.",
+        "§23 Etiquette: informar infracciones no llamadas, identificarse durante stoppages, resolver disputas con check y ayudar a jugadores novatos."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Anexos y vigencia",
+      "items": [
+        "Snapshot estudiado: Official Rules of Ultimate 2026–2027; consulta realizada el 17/09/2026.",
+        "Appendix A: diagrama de cancha. Appendix B: mixed rules y personnel ratios.",
+        "Appendix C: misconduct system. Appendix D: hand signals. Appendix E: youth adaptations.",
+        "Appendix F: beach adaptations. Appendix G: Ultimate 4’s adaptations.",
+        "Las reglas del evento y la Captain’s Clause pueden modificar logística y variantes antes de competir.",
+        "Fuente oficial: https://usaultimate.org/rules/"
+      ]
+    }
+  ]
+}
