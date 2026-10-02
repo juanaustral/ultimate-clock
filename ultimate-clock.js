@@ -911,11 +911,13 @@
     document.querySelectorAll('.header-actions [data-action="set-lang"]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.lang===lang)));
     updateAudioControls();updateFullscreenControl();
   }
+  /* Los equipos con el nombre por defecto ("Equipo 1" / "Team 1") siguen al idioma; los nombres propios no se tocan. */
+  function relabelDefaultTeams() {
+    state.activeMatch?.teams.forEach((team,i)=>{if(UCI18N.languages.some(l=>team.name===UCI18N.t(l,'Equipo {n}',{n:i+1})))team.name=t('Equipo {n}',{n:i+1});});
+  }
   function setLang(next) {
     if(!UCI18N.languages.includes(next)||next===lang)return;
-    /* Los equipos con el nombre por defecto cambian de idioma; los nombres propios no. */
-    for(const match of [state.activeMatch].filter(Boolean))match.teams.forEach((team,i)=>{if(team.name===t('Equipo {n}',{n:i+1}))team.name=UCI18N.t(next,'Equipo {n}',{n:i+1});});
-    lang=next;state.settings.lang=next;saveState();applyStaticText();
+    lang=next;state.settings.lang=next;relabelDefaultTeams();saveState();applyStaticText();
     const profileOpen=!!modalRoot.querySelector('.profile-choices');
     const view=app.firstElementChild?.className||'';
     if(view.includes('settings-screen'))renderSettings();else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();
@@ -938,6 +940,7 @@
   window.addEventListener('resize',()=>{if(tutorialIndex>=0)requestAnimationFrame(positionTutorial);});
   (state.pendingAlerts||[]).forEach(dispatchAlert);
   applyTheme(state.settings.theme,false);
+  if(state.activeMatch?.status==='active')relabelDefaultTeams();
   applyStaticText();
   updateAudioControls();
   updateFullscreenControl();

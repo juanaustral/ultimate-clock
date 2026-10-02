@@ -164,6 +164,22 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 .clock-card .status-line.paused::before{background:#ffc35c}
 
 @container (max-width:280px){.timer-head .status-line{font-size:0;gap:0;padding:6px}}
+/* Tarjetas muy bajas (teléfonos chicos): encabezado en un renglón y botones más bajos, para que el número no pise el nombre ni el botón. */
+@container (max-width:299px) and (max-height:160px){
+  .tile{gap:3px;padding:6px 7px}
+  .timer-head{align-items:center}
+  .timer-head>div{display:flex;align-items:baseline;gap:5px}
+  .timer-title{font-size:12px}
+  .timer-sub,.timer-call .timer-sub{display:block;min-width:0;margin-top:0;font-size:11px}
+  .timer-head .status-line{display:none}
+  .timer-main-action{min-height:32px;font-size:12px}
+  .progress-track{height:4px}
+  .timer-display,.timeout-display,.timer-card.timer-call .timer-display{font-size:max(16px,min(calc(100cqh - 72px),30cqw))}
+  /* Sin lugar para el nombre: queda el color del equipo y el cupo; el nombre sigue en el aria-label. */
+  .timeout-team-button{grid-template-areas:"left";justify-items:center;min-height:32px;padding:3px 6px}
+  .timeout-team-button span,.timeout-go{display:none}
+  .timeout-team-button strong{font-size:15px}
+}
 
 /* ── Estados: lo que corre se enciende ── */
 .timer-pull.is-running{background:var(--accent);color:var(--accent-ink);border-color:transparent}
