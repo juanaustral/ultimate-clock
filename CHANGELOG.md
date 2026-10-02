@@ -1,5 +1,30 @@
 # Historial de cambios
 
+## 2026-10-02 · Rediseño "Línea de banda"
+
+- Reloj del partido primero y arriba; Llamadas debajo del reloj y Pull y Time Out al final.
+- Botones de Time Out con INICIAR (EN CURSO o SIN CUPO según el caso) y nombre del equipo más grande en las Llamadas.
+- VISITÁ MI SITIO WEB lleva a juanmartinezgarcia.com; Ultimate Frisbee Mendoza en violeta en Info y en el pie. El enlace de donación sigue pendiente.
+
+- Logo nuevo (disco y cronómetro) en encabezado, menú, Info e ícono.
+- PLANILLA reúne el partido actual, los botones EXPORTAR y las planillas guardadas; se quitó Historial.
+- Menú con ＋ NUEVO PARTIDO primero y en color, y MODO CLARO / MODO OSCURO.
+- Info con VISITÁ MI SITIO WEB y DONÁ PARA APOYAR EL PROYECTO.
+- Archivos exportados con nombre legible: `planilla-equipo-a-vs-equipo-b-AAAA-MM-DD`.
+- Tablero nuevo que entra sin scroll ni recortes en teléfono y tablet, vertical y horizontal: equipos lado a lado y cuentas secundarias en una grilla 2×2 (en horizontal, todo en dos filas).
+- Las cuentas se llenan de color mientras corren; los números escalan con su tarjeta.
+- Descanso dentro de la tarjeta del reloj, Llamada con categorías a la vista y aviso de gol arriba.
+- CSS reescrito: de 50 KB a 29 KB. Detalle en `docs/DISENO-2026-10.md`.
+
+## 2026-10-02 · Revisión de código y UX
+
+- Gol con un toque: el aviso ofrece PASE Y GOL y DESHACER.
+- Pantalla encendida mientras corre un reloj, vibración al finalizar y aviso visual en los últimos 10 s.
+- Menú agrupado (Partido, Sonido y pantalla, Ayuda) con REINICIAR CONTADORES separado.
+- Corregido: cuenta congelada en 00:01 al terminar, pérdida del partido en Guardar y crear nuevo, avisos repetidos con dos pestañas, selector de perfil al recargar a mitad de partido y ajuste −1 sin tiempo de juego.
+- Más liviano: sin guardado continuo, CSS sin reglas muertas, `tokens.css` sin `@import` y service worker que abre desde la caché (v20).
+- Detalle en `docs/REVISION-2026-10-02.md`.
+
 ## 2026-10-02
 
 - Se adoptó la licencia PolyForm Noncommercial 1.0.0 (`LICENSE.md`).

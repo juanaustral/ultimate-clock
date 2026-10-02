@@ -18,12 +18,12 @@
   ];
 
   const TUTORIAL_STEPS = [
-    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Sumá un gol con +; el botón − corrige el puntaje y deja registro del ajuste.'},
     {target:'.clock-card',title:'Tiempo del partido',text:'Iniciá el reloj principal cuando empieza el juego. Es el único que podés pausar. Al cumplirse el primer tiempo aparecerá el aviso para iniciar el descanso.'},
-    {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Esta cuenta no se pausa y suena cinco veces al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
+    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante; desde el aviso podés anotar pase y gol o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.'},
     {target:'.timer-call-0',title:'Llamadas por equipo',text:'Cada equipo tiene su propia Llamada. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.'},
-    {target:'.timeout-card',title:'Time Out',text:'Elegí el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
-    {target:'.menu-button',title:'Menú y planilla',text:'Desde MENU abrís la planilla, el historial y la configuración. Ahí también activás y probás el sonido antes del partido.'}
+    {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Esta cuenta no se pausa y suena cinco veces al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
+    {target:'.timeout-card',title:'Time Out',text:'Tocá INICIAR en el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
+    {target:'.menu-button',title:'Menú y planilla',text:'Desde MENU empezás un partido nuevo, abrís la planilla (con las guardadas y los botones para exportar) y la configuración. Ahí también activás y probás el sonido antes del partido.'}
   ];
 
   const THEME_VARS = [
@@ -38,6 +38,12 @@
     light: { bg: "#f8f9fb", panel: "#ffffff", ink: "#191c1e", accent: "#1b47e2", "accent-2": "#16171b" },
     dark: { bg: "#0b0c0e", panel: "#16171b", ink: "#f7f8fa", accent: "#4971ff", "accent-2": "#0b0c0e" }
   };
+
+  /* Logo: un disco visto de frente con la corona de un cronómetro y el tiempo transcurrido en blanco. */
+  const LOGO_SVG = '<svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg>';
+  /* Completar con el enlace de cobro cuando esté definido; mientras tanto el botón explica que todavía no hay enlace. */
+  const DONATION_URL = ''; // Pendiente: Juan todavía no tiene el link de donación.
+  const WEBSITE_URL = 'https://juanmartinezgarcia.com/';
 
   const TEAM_DEFAULTS = [
     { name: "Equipo 1", color: "#1b47e2" },
@@ -69,20 +75,8 @@
   const dateLabel = value => new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
   const nowIso = () => new Date().toISOString();
 
-  function relativeLuminance(hex) {
-    const clean = String(hex).replace("#", "");
-    const full = clean.length === 3 ? clean.split("").map(x => x + x).join("") : clean;
-    const rgb = [0, 2, 4].map(index => parseInt(full.slice(index, index + 2), 16) / 255);
-    const linear = rgb.map(channel => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
-    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-  }
-
-  function contrastColor(hex) {
-    const lum = relativeLuminance(hex);
-    const whiteRatio = (1.05) / (lum + 0.05);
-    const blackRatio = (lum + 0.05) / 0.05;
-    return whiteRatio >= blackRatio ? "#ffffff" : "#000000";
-  }
+  const contrastColor = hex => E.ink(hex);
+  const isHexColor = value => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(value));
 
   function getRuleset() { return E.configuration(state.settings); }
   function rulesetLabel(id) {return state?.customRulesets?.find(profile=>profile.id===id)?.name||RULESETS[id]?.label||'Personalizado';}
@@ -172,6 +166,7 @@
     m.callTypes=Array.isArray(m.callTypes)&&m.callTypes.length===2?m.callTypes:[m.callType||'Falta','Falta'];
     for(const timer of [m.timers.pull,m.timers.call,m.timers.call2,m.timers.timeout,m.breakTimer])timer.thresholds=[{at:timer.duration,label:'Tiempo cumplido'}];
     m.pendingHalfPrompt ||= false;m.pendingSecondHalfPrompt ||= false;
+    m.teams.forEach((team,i)=>{if(!isHexColor(team.color))team.color=TEAM_DEFAULTS[i].color;});
     return stored;
   }
 
@@ -229,12 +224,20 @@
     document.querySelectorAll('[data-action="quick-theme"]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.theme===state.settings.theme)));
   }
 
-  function showToast(message) {
+  /* actions: [{label, action, data}] rendered as buttons handled by the global click listener. */
+  function showToast(message, actions = []) {
     toast.textContent = message;
+    for (const item of actions) {
+      const button = document.createElement("button");
+      button.type = "button"; button.className = "toast-action"; button.textContent = item.label; button.dataset.action = item.action;
+      Object.entries(item.data || {}).forEach(([key, value]) => { button.dataset[key] = value; });
+      toast.append(button);
+    }
     toast.hidden = false;
     window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => { toast.hidden = true; }, 3200);
+    showToast.timer = window.setTimeout(hideToast, actions.length ? 6000 : 3200);
   }
+  function hideToast() { window.clearTimeout(showToast.timer); toast.hidden = true; toast.textContent = ""; }
 
   function announce(message) {
     liveRegion.textContent = "";
@@ -260,6 +263,14 @@
     button.textContent=active?'SALIR DE PANTALLA COMPLETA':'PANTALLA COMPLETA';
     button.setAttribute('aria-label',button.textContent);
   }
+  /* Keeps the screen on while any clock runs, so the phone does not sleep on the sideline. */
+  let wakeLock=null,wakeWanted=false;
+  function updateWakeLock(running){
+    if(running===wakeWanted||!('wakeLock' in navigator))return;
+    wakeWanted=running;
+    if(running&&!document.hidden)navigator.wakeLock.request('screen').then(lock=>{if(wakeWanted)wakeLock=lock;else lock.release();}).catch(()=>{});
+    else if(!running){wakeLock?.release().catch(()=>{});wakeLock=null;}
+  }
   async function unlockAudio(){
     if(!state.settings.sound)return false;
     const ready=await ClockAlerts.unlock();
@@ -275,6 +286,7 @@
     document.body.classList.remove("flash-threshold", "flash-complete");
     void document.body.offsetWidth;
     document.body.classList.add(kind === "complete" ? "flash-complete" : "flash-threshold");
+    if (kind === "complete") try { navigator.vibrate?.([220, 120, 220, 120, 420]); } catch {}
     const card = document.querySelector(`[data-timer-card="${timerId}"]`);
     if (card) {
       card.classList.remove("alert");
@@ -286,6 +298,7 @@
   function triggerTimerAlert(timer, threshold, kind = "threshold") {
     logEvent('limit',{timer:timer.id,label:threshold.label,limit:threshold.at});
     queueAlert(kind,timer.id,`${timer.label}: ${threshold.label}`);
+    saveState();
   }
 
   function elapsedFor(item) {return E.elapsed(item);}
@@ -303,10 +316,10 @@
     clock.elapsed=E.elapsed(clock);clock.startedAt=Date.now();
     if(match.half===1&&!clock.halfAlerted&&clock.elapsed>=clock.halfCap){
       clock.elapsed=clock.halfCap;clock.running=false;clock.startedAt=null;clock.halfAlerted=true;clock.status='Primer tiempo cumplido';match.pendingHalfPrompt=true;
-      logEvent('limit',{timer:'clock',label:'Primer tiempo cumplido',limit:clock.halfCap});queueAlert('complete','clock','Primer tiempo cumplido');
+      logEvent('limit',{timer:'clock',label:'Primer tiempo cumplido',limit:clock.halfCap});queueAlert('complete','clock','Primer tiempo cumplido');saveState();
     }else if(match.half===2&&!clock.capAlerted&&clock.elapsed>=clock.gameCap){
       clock.elapsed=clock.gameCap;clock.running=false;clock.startedAt=null;clock.capAlerted=true;clock.status='Tiempo total cumplido';
-      logEvent('limit',{timer:'clock',label:'Tiempo total cumplido',limit:clock.gameCap});queueAlert('complete','clock','Tiempo total cumplido');
+      logEvent('limit',{timer:'clock',label:'Tiempo total cumplido',limit:clock.gameCap});queueAlert('complete','clock','Tiempo total cumplido');saveState();
     }
     return true;
   }
@@ -317,18 +330,22 @@
     else if(match.pendingSecondHalfPrompt){match.pendingSecondHalfPrompt=false;saveState();openModal('MEDIO TIEMPO CUMPLIDO',`<div class="milestone-modal"><div class="milestone-clock">00:00</div><p>El descanso terminó. El reloj del partido se reanudará al comenzar la segunda mitad.</p><button class="button button-primary" data-action="second-half">INICIAR SEGUNDO TIEMPO</button></div>`);}
   }
 
+  /* Timers keep start anchors, so the state saved on each discrete change is
+     enough to recover after a reload; ticks only repaint. */
   let lastPaint = 0;
-  let lastPersist = 0;
   function tick(timestamp) {
     try {
       const match=state.activeMatch;
       if(match?.status==='active'){
+        const timers=[match.clock,...Object.values(match.timers),match.breakTimer],runningBefore=timers.filter(t=>t.running).length;
         let changed=updateClock();
-        for(const timer of [...Object.values(match.timers),match.breakTimer])changed=updateRunningValue(timer)||changed;
-        if(changed){if(timestamp-lastPaint>80){updateDisplays();lastPaint=timestamp;}if(timestamp-lastPersist>1000){saveState();lastPersist=timestamp;}}
-        if((match.pendingHalfPrompt||match.pendingSecondHalfPrompt)&&!modalRoot.querySelector('dialog[open]'))renderDashboard();
-        showPendingTimePrompt();
-      }
+        for(const timer of timers.slice(1))changed=updateRunningValue(timer)||changed;
+        /* A timer that just finished always repaints, or its last frame could be skipped by the throttle. */
+        const stopped=timers.filter(t=>t.running).length<runningBefore;
+        if(changed&&(stopped||timestamp-lastPaint>80)){updateDisplays();lastPaint=timestamp;}
+        if((match.pendingHalfPrompt||match.pendingSecondHalfPrompt)&&!modalRoot.querySelector('dialog[open]')){if(app.querySelector('.dashboard-screen'))renderDashboard();showPendingTimePrompt();}
+        updateWakeLock(changed);
+      }else updateWakeLock(false);
     } finally {window.requestAnimationFrame(tick);}
   }
   window.requestAnimationFrame(tick);
@@ -375,7 +392,7 @@
     }
     saveState();renderDashboard();
   }
-  function openCall(teamIndex) {const m=activeMatch();if((teamIndex===0?m.timers.call:m.timers.call2).running){showToast('La llamada corre hasta el final.');return;}openModal(`Llamada de ${m.teams[teamIndex].name}`,`<form data-form="call" data-team="${teamIndex}"><div class="field"><label for="call-type">Categoría de llamada</label><select id="call-type" name="type">${CALL_CATEGORIES.map(x=>`<option>${x}</option>`).join('')}</select></div><p class="call-guidance" id="call-guidance">${esc(CALL_GUIDANCE.Falta)}</p><p>El reloj registra la llamada; no aplica sanciones ni reemplaza las reglas. <a href="${m.ruleset==='usau'?'https://usaultimate.org/rules/':'https://rules.wfdf.sport/'}" target="_blank" rel="noopener noreferrer">Consultar reglamento ↗</a></p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary">INICIAR LLAMADA</button></div></form>`);}
+  function openCall(teamIndex) {const m=activeMatch();if((teamIndex===0?m.timers.call:m.timers.call2).running){showToast('La llamada corre hasta el final.');return;}openModal(`Llamada de ${m.teams[teamIndex].name}`,`<form data-form="call" data-team="${teamIndex}"><fieldset class="call-types"><legend>Categoría de llamada</legend>${CALL_CATEGORIES.map((x,i)=>`<label class="call-type"><input type="radio" name="type" value="${esc(x)}" ${i===0?'checked':''}><span>${esc(x)}</span></label>`).join('')}</fieldset><p class="call-guidance" id="call-guidance">${esc(CALL_GUIDANCE.Falta)}</p><p>El reloj registra la llamada; no aplica sanciones ni reemplaza las reglas. <a href="${m.ruleset==='usau'?'https://usaultimate.org/rules/':'https://rules.wfdf.sport/'}" target="_blank" rel="noopener noreferrer">Consultar reglamento ↗</a></p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary">INICIAR LLAMADA</button></div></form>`);}
   function startTimeout(teamIndex) {
     const m=activeMatch(),t=m.timers.timeout;
     if((t.running||t.elapsed>0)&&!t.completed){showToast('Terminá el time-out activo antes de registrar otro.');return;}
@@ -407,9 +424,9 @@
 
   function teamMarkup(team,index) {
     return `<article class="instrument team-card team-${index+1}" data-team-card="${index}" style="${teamStyle(team)}">
-      <div class="team-top"><div><span class="team-role">GOLES</span><button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="Editar nombre y color de ${esc(team.name)}"><strong class="team-name">${esc(team.name)}</strong><span aria-hidden="true">✎</span></button></div></div>
-      <div class="score-display" aria-label="Puntaje de ${esc(team.name)}">${team.score}</div>
-      <div class="team-bottom"><div class="score-actions"><button class="score-button minus" data-action="minus" data-team="${index}" aria-label="Restar un punto a ${esc(team.name)}">−</button><button class="score-button plus" data-action="goal" data-team="${index}" aria-label="Sumar un gol a ${esc(team.name)}">+</button></div></div>
+      <button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="Editar nombre y color de ${esc(team.name)}"><strong class="team-name">${esc(team.name)}</strong><span class="team-edit" aria-hidden="true">✎</span></button>
+      <div class="score-display" role="img" aria-label="${team.score} goles de ${esc(team.name)}">${team.score}</div>
+      <div class="score-actions"><button class="score-button minus" type="button" data-action="minus" data-team="${index}" aria-label="Restar un punto a ${esc(team.name)}">−</button><button class="score-button plus" type="button" data-action="goal" data-team="${index}" aria-label="Sumar un gol a ${esc(team.name)}">+ GOL</button></div>
     </article>`;
   }
 
@@ -417,36 +434,50 @@
     const status=clockState(match.clock);
     return `<article class="instrument clock-card ${status.className==='running'?'is-running':status.className==='paused'?'is-paused':status.className==='complete'?'is-complete':''}" data-timer-card="clock">
       <div class="clock-head"><span class="status-line ${status.className}" data-display="clock-status">${esc(status.label)}</span><span class="half-badge">${match.half}º TIEMPO</span></div>
-      <div class="clock-center"><button type="button" class="clock-display" data-action="toggle-clock" aria-label="Tiempo total del partido: iniciar, pausar o reanudar" data-display="clock">${fmt(match.clock.elapsed)}</button><span>TIEMPO TOTAL DEL PARTIDO</span></div>
-      <div class="clock-bottom"><div class="clock-details"><div class="clock-detail"><span>RESTANTE TOTAL</span><b data-display="game-remaining">${fmt(match.clock.gameCap-match.clock.elapsed)}</b></div><div class="clock-detail"><span>${match.half===1?'HASTA MEDIO TIEMPO':'SEGUNDO TIEMPO'}</span><b data-display="half-remaining">${match.half===1?fmt(match.clock.halfCap-match.clock.elapsed):fmt(match.clock.gameCap-match.clock.elapsed)}</b></div></div>
-      <div class="clock-actions"><button class="button button-primary" type="button" data-action="toggle-clock">${match.clock.running?'Ⅱ PAUSAR':match.clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR'}</button></div></div>
+      <button type="button" class="clock-display" data-action="toggle-clock" aria-label="Tiempo jugado del partido: iniciar, pausar o reanudar" data-display="clock">${fmt(match.clock.elapsed)}</button>
+      <div class="clock-details"><div class="clock-detail"><span>RESTA</span><b data-display="game-remaining">${fmt(match.clock.gameCap-match.clock.elapsed)}</b></div>${match.half===1?`<div class="clock-detail"><span>AL DESCANSO</span><b data-display="half-remaining">${fmt(match.clock.halfCap-match.clock.elapsed)}</b></div>`:''}</div>
+      <div class="clock-actions"><button class="button button-primary" type="button" data-action="toggle-clock">${match.clock.running?'Ⅱ PAUSAR':match.clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR'}</button></div>
+    </article>`;
+  }
+
+  /* During the half-time break this card takes the game clock's place, so the board never grows. */
+  function breakMarkup(match) {
+    const b=match.breakTimer,state=b.running?'running':b.completed?'complete':'';
+    return `<article class="instrument clock-card break-panel ${b.running?'is-running':''} ${b.completed?'is-complete':''}" data-timer-card="break">
+      <div class="clock-head"><span class="status-line ${state}">${b.running?'Descanso en curso':b.completed?'Descanso cumplido':'Primer tiempo cumplido'}</span><span class="half-badge">MEDIO TIEMPO</span></div>
+      <strong class="clock-display" data-display="break">${fmt(b.duration-b.elapsed)}</strong>
+      <div class="clock-details"><div class="clock-detail"><span>JUGADO</span><b>${fmt(match.clock.elapsed)}</b></div><div class="progress-track" role="progressbar" aria-label="Progreso del medio tiempo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*b.elapsed/b.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*b.elapsed/b.duration)}%"></span></div></div>
+      <div class="clock-actions">${!b.running&&!isLocked()?`<button class="button button-primary" type="button" data-action="${b.completed?'second-half':'start-break'}">${b.completed?'▶ SEGUNDO TIEMPO':'▶ INICIAR DESCANSO'}</button>`:''}</div>
     </article>`;
   }
 
   function timerMarkup(match,id,title,teamIndex=null) {
     const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,status=timerState(timer),team=teamIndex===null?null:match.teams[teamIndex];
-    return `<article class="instrument timer-card ${team?'timer-call team-timer':''} timer-${id} ${status.className==='complete'?'is-complete':''}" data-timer-card="${id}" ${team?`style="${teamStyle(team)}"`:''}>
-      <div class="timer-head"><h2 class="timer-title">${esc(title)}${team?`<span>· ${esc(team.name)}</span>`:''}</h2><span class="timer-badge" data-display="${id}-phase">${timer.completed?'CUMPLIDO':timer.running?'EN CURSO':'LISTO'}</span></div>
-      <div class="timer-core"><strong class="timer-display" data-display="${id}">${fmt(timer.duration-timer.elapsed)}</strong><button class="timer-main-action" type="button" data-action="toggle-timer" data-timer="${id}" ${timer.running||isLocked()?'disabled':''}>${timer.completed?'REINICIAR':'INICIAR'}</button></div>
+    const sub=team?`${esc(team.name)}${timer.running||timer.completed?` · ${esc(match.callTypes[teamIndex])}`:''}`:'Lanzamiento';
+    return `<article class="instrument timer-card ${team?'timer-call team-timer':''} timer-${id} ${timer.running?'is-running':''} ${status.className==='complete'?'is-complete':''}" data-timer-card="${id}" ${team?`style="${teamStyle(team)}"`:''}><div class="tile">
+      <div class="timer-head"><div><h2 class="timer-title">${esc(title)}</h2><span class="timer-sub">${sub}</span></div><span class="status-line ${status.className}">${esc(status.label)}</span></div>
+      <strong class="timer-display" data-display="${id}">${fmt(timer.duration-timer.elapsed)}</strong>
+      <button class="timer-main-action" type="button" data-action="toggle-timer" data-timer="${id}" ${timer.running||isLocked()?'disabled':''}>${timer.completed?'REINICIAR':'INICIAR'}</button>
       <div class="progress-track" role="progressbar" aria-label="Progreso de ${esc(title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span></div>
-      <div class="timer-bottom"><span class="status-line ${status.className}">${esc(status.label)}</span></div>
-      ${team?`<p class="timer-context">${esc(match.callTypes[teamIndex])}</p>`:''}
-    </article>`;
+    </div></article>`;
   }
+
+  const timeoutGoLabel = (match,index) => match.timeoutState.activeTeam===index&&match.timers.timeout.running?'EN CURSO':match.timeoutState.usages[index]>=match.config.timeoutsPerTeam?'SIN CUPO':'INICIAR';
 
   function timeoutMarkup(match) {
     const timer=match.timers.timeout,status=timerState(timer),active=match.timeoutState.activeTeam,c=match.config;
-    return `<article class="instrument timeout-card ${timer.running?'is-active':''}" data-timer-card="timeout">
-      <div class="timeout-summary"><h2 class="timer-title">TIME OUT</h2><strong class="timeout-display" data-display="timeout">${fmt(timer.duration-timer.elapsed)}</strong><span class="timeout-phase status-line ${status.className}" data-display="timeout-phase">${active===null?'DISPONIBLE':esc(status.label)}</span></div>
+    return `<article class="instrument timeout-card ${timer.running?'is-active':''}" data-timer-card="timeout" ${active!==null?`style="${teamStyle(match.teams[active])}"`:''}><div class="tile">
+      <div class="timer-head"><div><h2 class="timer-title">TIME OUT</h2><span class="timer-sub">${active===null?`${c.timeoutsPerTeam} por tiempo`:esc(match.teams[active].name)}</span></div><span class="timeout-phase status-line ${active===null?'':status.className}" data-display="timeout-phase">${active===null?'Disponible':esc(status.label)}</span></div>
+      <strong class="timeout-display" data-display="timeout">${fmt(timer.duration-timer.elapsed)}</strong>
+      <div class="timeout-actions">${match.teams.map((team,index)=>`<button class="timeout-team-button ${active===index?'is-current':''}" type="button" data-action="timeout" data-team="${index}" style="${teamStyle(team)}" aria-label="Iniciar time out de ${esc(team.name)}. ${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])} de ${c.timeoutsPerTeam} disponibles" ${isLocked()||timer.running||match.timeoutState.usages[index]>=c.timeoutsPerTeam?'disabled':''}><span>${esc(team.name)}</span><strong data-timeout-remaining="${index}">${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])}/${c.timeoutsPerTeam}</strong><b class="timeout-go" data-timeout-go="${index}">${timeoutGoLabel(match,index)}</b></button>`).join('')}</div>
       <div class="progress-track" role="progressbar" aria-label="Progreso del time out" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span></div>
-      <div class="timeout-actions">${match.teams.map((team,index)=>`<button class="timeout-team-button ${active===index?'is-current':''}" type="button" data-action="timeout" data-team="${index}" style="${teamStyle(team)}" aria-label="Iniciar time out de ${esc(team.name)}. ${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])} de ${c.timeoutsPerTeam} disponibles" ${isLocked()||timer.running||match.timeoutState.usages[index]>=c.timeoutsPerTeam?'disabled':''}><span>${esc(team.name)}</span><strong data-timeout-remaining="${index}">${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])}/${c.timeoutsPerTeam}</strong></button>`).join('')}</div>
-    </article>`;
+    </div></article>`;
   }
 
   function renderDashboard() {
-    const match=activeMatch();updateTimerConfig(match);const b=match.breakTimer;
-    const breakPanel=match.half===1&&match.clock.halfAlerted?`<section class="break-panel" data-timer-card="break"><div><span class="screen-eyebrow">MEDIO TIEMPO</span><h2>${b.running?'DESCANSO EN CURSO':b.completed?'MEDIO TIEMPO CUMPLIDO':'PRIMER TIEMPO CUMPLIDO'}</h2></div><strong data-display="break">${fmt(b.duration-b.elapsed)}</strong><div class="progress-track" role="progressbar" aria-label="Progreso del medio tiempo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*b.elapsed/b.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*b.elapsed/b.duration)}%"></span></div>${!b.running&&!isLocked()?`<button class="button button-primary" data-action="${b.completed?'second-half':'start-break'}">${b.completed?'INICIAR SEGUNDO TIEMPO':'INICIAR MEDIO TIEMPO'}</button>`:''}</section>`:'';
-    app.innerHTML=`<section id="tablero" class="dashboard-screen">${breakPanel}<div class="main-grid">${teamMarkup(match.teams[0],0)}${clockMarkup(match)}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'call-0','LLAMADA',0)}${timerMarkup(match,'pull','PULL')}${timerMarkup(match,'call-1','LLAMADA',1)}${timeoutMarkup(match)}</div></section>`;
+    const match=activeMatch();updateTimerConfig(match);
+    const center=match.half===1&&match.clock.halfAlerted?breakMarkup(match):clockMarkup(match);
+    app.innerHTML=`<section id="tablero" class="dashboard-screen"><div class="main-grid">${center}${teamMarkup(match.teams[0],0)}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'call-0','LLAMADA',0)}${timerMarkup(match,'call-1','LLAMADA',1)}${timerMarkup(match,'pull','PULL')}${timeoutMarkup(match)}</div></section>`;
     updateDisplays();if(isLocked())app.querySelectorAll('[data-action="goal"],[data-action="minus"],[data-action="edit-team"],[data-action="toggle-clock"],[data-action="toggle-timer"],[data-action="timeout"]').forEach(el=>el.disabled=true);
     updateThemeMeta();
   }
@@ -457,27 +488,30 @@
     set('clock',fmt(Math.floor(clock.elapsed)));set('game-remaining',fmt(clock.gameCap-clock.elapsed));set('half-remaining',match.half===1?fmt(clock.halfCap-clock.elapsed):fmt(clock.gameCap-clock.elapsed));
     const clockCard=document.querySelector('[data-timer-card="clock"]'),cs=clockState(clock),clockStatus=document.querySelector('[data-display="clock-status"]');
     if(clockStatus){clockStatus.textContent=cs.label;clockStatus.className=`status-line ${cs.className}`;}
-    if(clockCard){clockCard.classList.toggle('is-running',clock.running);clockCard.classList.toggle('is-paused',!clock.running&&clock.elapsed>0);clockCard.classList.toggle('is-complete',clock.capAlerted);const button=clockCard.querySelector('.clock-actions [data-action="toggle-clock"]');if(button){button.textContent=isLocked()?'FINALIZADO':clock.running?'Ⅱ PAUSAR':clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR';button.disabled=isLocked()||clock.capAlerted||(match.half===1&&clock.halfAlerted);}}
-    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));set(`${id}-phase`,timer.completed?'CUMPLIDO':timer.running?'EN CURSO':'LISTO');const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);const button=card.querySelector('[data-action="toggle-timer"]');button.textContent=timer.completed?'REINICIAR':'INICIAR';button.disabled=timer.running||isLocked();setProgress(card,timer.elapsed,timer.duration);}
+    if(clockCard){clockCard.classList.toggle('is-running',clock.running);clockCard.classList.toggle('is-paused',!clock.running&&clock.elapsed>0);clockCard.classList.toggle('is-complete',cs.className==='complete');const button=clockCard.querySelector('.clock-actions [data-action="toggle-clock"]');if(button){button.textContent=isLocked()?'FINALIZADO':clock.running?'Ⅱ PAUSAR':clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR';button.disabled=isLocked()||clock.capAlerted||(match.half===1&&clock.halfAlerted);}}
+    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);card.classList.toggle('is-running',timer.running);card.classList.toggle('is-ending',isEnding(timer));const button=card.querySelector('[data-action="toggle-timer"]');button.textContent=timer.completed?'REINICIAR':'INICIAR';button.disabled=timer.running||isLocked();setProgress(card,timer.elapsed,timer.duration);}
     const timeout=match.timers.timeout,timeoutCard=document.querySelector('[data-timer-card="timeout"]');
     if(timeoutCard){
       const active=match.timeoutState.activeTeam,ts=timerState(timeout),phase=timeoutCard.querySelector('[data-display="timeout-phase"]');
       set('timeout',fmt(timeout.duration-timeout.elapsed));
-      phase.textContent=active===null?'DISPONIBLE':ts.label;
+      phase.textContent=active===null?'Disponible':ts.label;
       phase.className=`timeout-phase status-line ${active===null?'':ts.className}`;
       timeoutCard.classList.toggle('is-active',timeout.running);
+      timeoutCard.classList.toggle('is-ending',isEnding(timeout));
       setProgress(timeoutCard,timeout.elapsed,timeout.duration);
       timeoutCard.querySelectorAll('[data-action="timeout"]').forEach((button,index)=>{
         const remaining=Math.max(0,match.config.timeoutsPerTeam-match.timeoutState.usages[index]);
         button.querySelector('[data-timeout-remaining]').textContent=`${remaining}/${match.config.timeoutsPerTeam}`;
         button.setAttribute('aria-label',`Iniciar time out de ${match.teams[index].name}. ${remaining} de ${match.config.timeoutsPerTeam} disponibles`);
         button.classList.toggle('is-current',active===index);
+        const go=button.querySelector('[data-timeout-go]'),label=timeoutGoLabel(match,index);if(go.textContent!==label)go.textContent=label;
         button.disabled=isLocked()||timeout.running||remaining===0;
       });
     }
     const breakCard=document.querySelector('[data-timer-card="break"]');if(breakCard){set('break',fmt(match.breakTimer.duration-match.breakTimer.elapsed));setProgress(breakCard,match.breakTimer.elapsed,match.breakTimer.duration);}
     const liveClock=document.querySelector('.sheet-live-clock');if(liveClock)liveClock.textContent=fmt(Math.floor(clock.elapsed));
   }
+  const isEnding = timer => timer.running && timer.duration - timer.elapsed <= 10;
   function setProgress(card,elapsed,duration){const bar=card.querySelector('.progress-track');if(!bar)return;const percent=Math.max(0,Math.min(100,Math.round(100*elapsed/duration)));bar.setAttribute('aria-valuenow',String(percent));bar.querySelector('.progress-fill').style.setProperty('--progress',`${percent}%`);}
 
   function eventDescription(event,match) {
@@ -486,24 +520,34 @@
     const kind={goal:'Gol',timeout:'Time-out',call:'Llamada',adjustment:'Ajuste manual',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Descanso / mitad',incident:'Incidencia',saved:'Guardado'}[event.type]||esc(event.type);
     return `${kind}${team}${event.label?` · ${esc(event.label)}`:''}${names}${event.mode?` · ${esc(event.mode)}`:''}${event.note?` · ${esc(event.note)}`:''}`;
   }
+  /* planilla-equipo-1-vs-equipo-2-2026-10-02 */
+  function exportName(match) {
+    const slug=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'equipo';
+    return `planilla-${slug(match.teams[0].name)}-vs-${slug(match.teams[1].name)}-${String(match.savedAt||match.createdAt||nowIso()).slice(0,10)}`;
+  }
+  function exportButtons(match,label) {
+    return `<div class="export-actions" role="group" aria-label="${esc(label)}">${['pdf','csv','json'].map(format=>`<button class="button${format==='pdf'?' button-primary':''}" type="button" data-action="export-sheet" data-format="${format}" data-match="${esc(match.id)}">${format.toUpperCase()}</button>`).join('')}</div>`;
+  }
+  function savedSheetsMarkup() {
+    const items=state.savedMatches;
+    return `<section class="event-section saved-section"><div class="section-heading"><h2>Planillas guardadas</h2><span>${items.length} · DATOS LOCALES</span></div>${items.length?`<div class="history-list">${items.map(match=>`<button class="history-item" type="button" data-history="${esc(match.id)}"><span><span class="history-teams">${esc(match.teams[0].name)} <small>vs</small> ${esc(match.teams[1].name)}</span><span class="history-date">${dateLabel(match.savedAt||match.createdAt)} · ${esc(rulesetLabel(match.ruleset))}</span></span><strong class="history-score">${match.teams[0].score} — ${match.teams[1].score}</strong></button>`).join('')}</div>`:'<p class="empty-events">Al tocar Guardar, la planilla del partido queda acá para abrirla y exportarla.</p>'}</section>`;
+  }
   function renderLiveSheet() {
     const m=activeMatch(),events=[...m.events].reverse();
-    app.innerHTML=`<section class="sheet-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>Tablero</span></button><div><span class="screen-eyebrow">PARTIDO ACTUAL</span><h1>Planilla en vivo</h1></div><button class="screen-utility" data-action="history">Historial</button></div>
+    app.innerHTML=`<section class="sheet-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>Tablero</span></button><div><span class="screen-eyebrow">${m.status==='saved'?'PARTIDO CERRADO':'PARTIDO ACTUAL'}</span><h1>Planilla</h1></div></div>
       <div class="sheet-live-strip"><span>${m.status==='saved'?'CERRADO':m.clock.running?'EN CURSO':m.clock.elapsed>0?'PAUSADO':'PREPARADO'} · ${m.half}º TIEMPO</span><strong class="sheet-live-clock">${fmt(Math.floor(m.clock.elapsed))}</strong><small>${esc(rulesetLabel(m.ruleset))}</small></div>
-      <div class="sheet-score-grid">${m.teams.map((team,index)=>`<div class="sheet-score-team sheet-score-${index+1}"><strong>${esc(team.name)}</strong><b>${team.score}</b><small>TIME OUTS RESTANTES ${Math.max(0,m.config.timeoutsPerTeam-m.timeoutState.usages[index])}/${m.config.timeoutsPerTeam}</small></div>`).join('')}</div>
+      <div class="sheet-score-grid">${m.teams.map((team,index)=>`<div class="sheet-score-team sheet-score-${index+1}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><b>${team.score}</b><small>TIME OUTS ${Math.max(0,m.config.timeoutsPerTeam-m.timeoutState.usages[index])}/${m.config.timeoutsPerTeam}</small></div>`).join('')}</div>
       ${m.status==='active'?`<section class="quick-entry"><div class="section-heading"><h2>Registro rápido</h2><span>ESTE DISPOSITIVO</span></div><div class="quick-grid"><button class="quick-primary" data-action="goal-picker">＋ Gol</button><button data-action="quick-call">⚠ Llamada</button><button data-action="timeout-picker">◷ Time-out</button><button data-action="incident">△ Incidencia</button></div></section>`:''}
-      <section class="event-section"><div class="section-heading"><h2>Historial de planilla</h2><span>${events.length} ${events.length===1?'REGISTRO':'REGISTROS'}</span></div>${events.length?`<ol class="event-feed">${events.map(e=>`<li><time>${fmt(e.elapsed||0)}</time><span>${eventDescription(e,m)}</span></li>`).join('')}</ol>`:'<p class="empty-events">Todavía no hay eventos. Usá el registro rápido para comenzar.</p>'}</section>
-      <div class="sheet-actions"><button class="button button-primary" data-action="save">${m.status==='saved'?'Ver historial':'Guardar planilla'}</button><button class="button" data-action="back-dashboard">Volver al tablero</button></div></section>`;
+      <section class="event-section"><div class="section-heading"><h2>Eventos</h2><span>${events.length} ${events.length===1?'REGISTRO':'REGISTROS'}</span></div>${events.length?`<ol class="event-feed">${events.map(e=>`<li><time>${fmt(e.elapsed||0)}</time><span>${eventDescription(e,m)}</span></li>`).join('')}</ol>`:'<p class="empty-events">Todavía no hay eventos. Usá el registro rápido para comenzar.</p>'}</section>
+      <section class="event-section"><div class="section-heading"><h2>Exportar este partido</h2><span>PDF · CSV · JSON</span></div>${exportButtons(m,'Exportar la planilla de este partido')}</section>
+      <div class="sheet-actions">${m.status==='saved'?'<button class="button button-primary" data-action="new-match">Nuevo partido</button>':'<button class="button button-primary" data-action="save">Guardar planilla</button>'}<button class="button" data-action="back-dashboard">Volver al tablero</button></div>
+      ${savedSheetsMarkup()}</section>`;
     updateDisplays();
   }
   function openGoalPicker() {openModal('Registrar gol',`<p>Elegí qué equipo anotó.</p><div class="picker-options">${activeMatch().teams.map((team,index)=>`<button class="button" data-action="goal" data-team="${index}" data-origin="sheet">${esc(team.name)}</button>`).join('')}</div>`);}
   function openTimeoutPicker() {openModal('Pedir time-out',`<p>Elegí el equipo que pide tiempo.</p><div class="picker-options">${activeMatch().teams.map((team,index)=>`<button class="button" data-action="timeout" data-team="${index}">${esc(team.name)}</button>`).join('')}</div>`);}
   function openCallPicker() {openModal('Registrar llamada',`<p>Elegí el equipo que hizo el llamado.</p><div class="picker-options">${activeMatch().teams.map((team,index)=>`<button class="button" data-action="pick-call-team" data-team="${index}">${esc(team.name)}</button>`).join('')}</div>`);}
   function openIncident() {openModal('Anotar incidencia','<form data-form="incident"><div class="field"><label for="incident-type">Tipo</label><select id="incident-type" name="type"><option>TFR</option><option>PMF</option><option>Otra</option></select></div><div class="field"><label for="incident-note">Nota opcional</label><input id="incident-note" name="note" maxlength="160"></div><p>Registro descriptivo. No aplica sanciones ni certifica decisiones.</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary">Anotar</button></div></form>');}
-
-  function openThemes() {
-    openModal('Modos de lectura',`<p>Elegí el contraste más cómodo para el entorno de juego.</p><div class="mode-options">${[...BUILT_IN_THEMES,...state.customThemes].map(theme=>`<button class="mode-option ${state.settings.theme===theme.id?'active':''}" type="button" data-action="apply-theme" data-theme="${esc(theme.id)}" style="--mode-swatch:${esc(theme.swatch||theme.vars?.accent||'#2448dc')}"><strong>${esc(theme.name)}</strong><small>${state.settings.theme===theme.id?'Activo':'Aplicar'}</small></button>`).join('')}</div>`);
-  }
 
   function renderSettings() {
     const config=getRuleset(),locked=hasStarted()||isLocked();
@@ -514,7 +558,7 @@
     const durations=[['gameCap','Tiempo total del partido',Math.round(config.gameCap/6)/10,'min'],['halfCap','Primer tiempo',Math.round(config.halfCap/6)/10,'min'],['halftime','Medio tiempo',Math.round(config.halftime/6)/10,'min'],['pull','Pull',config.pull.release,'s'],['call','Llamada',config.call.restart,'s'],['timeout','Time out',config.timeoutDuration,'s'],['timeoutsPerTeam','Time outs por equipo y por tiempo',config.timeoutsPerTeam,'']];
     app.innerHTML=`<section class="settings-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← Tablero</button><div><span class="screen-eyebrow">CONFIGURACIÓN</span><h1>Preparar partido</h1></div></div>
       <section class="settings-section"><div class="section-heading"><h2>Reglamento</h2></div><div class="settings-row"><div class="field"><label for="ruleset">Perfil</label><select id="ruleset" data-setting="ruleset" ${locked?'disabled':''}>${options}</select></div><div class="field"><label for="sound">Avisos</label><select id="sound" data-setting="sound"><option value="on" ${state.settings.sound?'selected':''}>Sonido y aviso visual</option><option value="off" ${!state.settings.sound?'selected':''}>Solo aviso visual</option></select></div></div><p>WFDF y USA Ultimate cargan sus tiempos de referencia. Los límites de duración del partido pueden depender del torneo: confirmalos antes de jugar.</p></section>
-      <section class="settings-section"><div class="section-heading"><h2>Tiempos totales</h2><span>${editing?'PERFIL PERSONALIZADO':'PERFIL DE REFERENCIA'}</span></div><p>Un valor por reloj. Cada cuenta de Pull, Llamada, Time out y Medio tiempo corre hasta cero y termina con tres chicharras.</p>${editing?`<form data-form="ruleset-profile" data-profile="${esc(draftRuleset?'':currentProfile?.id||'')}"><div class="field"><label for="profile-name">Nombre del perfil</label><input id="profile-name" name="name" maxlength="40" value="${esc(draftRuleset?'':currentProfile?.name||'')}" placeholder="Ej.: Torneo local" required ${editLocked?'disabled':''}></div><div class="duration-grid">${durations.map(([key,label,value,unit])=>durationField(key,label,value,unit,editLocked)).join('')}</div><button class="button button-primary settings-save" ${editLocked?'disabled':''}>${draftRuleset?'GUARDAR PERFIL PERSONALIZADO':currentProfile?'GUARDAR CAMBIOS':'GUARDAR PERFIL PERSONALIZADO'}</button></form>`:`<div class="duration-grid">${durations.map(([key,label,value,unit])=>`<div class="duration-readout"><span>${esc(label)}</span><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`).join('')}</div><p>Elegí “PERSONALIZADO · Crear perfil” para cambiar los valores y guardarlos en el desplegable.</p>`}</section>
+      <section class="settings-section"><div class="section-heading"><h2>Tiempos totales</h2><span>${editing?'PERFIL PERSONALIZADO':'PERFIL DE REFERENCIA'}</span></div><p>Un valor por reloj. Cada cuenta de Pull, Llamada, Time out y Medio tiempo corre hasta cero y termina con cinco alarmas.</p>${editing?`<form data-form="ruleset-profile" data-profile="${esc(draftRuleset?'':currentProfile?.id||'')}"><div class="field"><label for="profile-name">Nombre del perfil</label><input id="profile-name" name="name" maxlength="40" value="${esc(draftRuleset?'':currentProfile?.name||'')}" placeholder="Ej.: Torneo local" required ${editLocked?'disabled':''}></div><div class="duration-grid">${durations.map(([key,label,value,unit])=>durationField(key,label,value,unit,editLocked)).join('')}</div><button class="button button-primary settings-save" ${editLocked?'disabled':''}>${draftRuleset?'GUARDAR PERFIL PERSONALIZADO':currentProfile?'GUARDAR CAMBIOS':'GUARDAR PERFIL PERSONALIZADO'}</button></form>`:`<div class="duration-grid">${durations.map(([key,label,value,unit])=>`<div class="duration-readout"><span>${esc(label)}</span><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`).join('')}</div><p>Elegí “PERSONALIZADO · Crear perfil” para cambiar los valores y guardarlos en el desplegable.</p>`}</section>
       ${locked?'<p class="settings-locked">El partido ya comenzó. Prepará un nuevo partido para cambiar el reglamento o sus tiempos.</p>':''}
       <p class="settings-source">Referencias: <a href="https://rules.wfdf.sport/" target="_blank" rel="noreferrer">WFDF</a> · <a href="https://usaultimate.org/rules/" target="_blank" rel="noreferrer">USA Ultimate</a>.</p>
     </section>`;
@@ -525,7 +569,7 @@
     const locked=hasStarted()||isLocked(),current=state.settings.ruleset;
     selectedProfileId=current;
     const profiles=[{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];
-    openModal('PERFIL DE TIEMPO',`<p>${locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${p.id===current?'SELECCIONADO':'ELEGIR'}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile">USAR ESTE PERFIL</button><button class="button profile-new" type="button" data-action="new-profile">CREAR NUEVO PERFIL</button><button class="button profile-guide" type="button" data-action="start-tutorial">CÓMO USAR LA APP</button></div>`);
+    openModal('PERFIL DE TIEMPO',`<p>${locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${p.id===current?'SELECCIONADO':'ELEGIR'}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile" autofocus>USAR ESTE PERFIL</button><button class="button profile-new" type="button" data-action="new-profile">CREAR NUEVO PERFIL</button><button class="button profile-guide" type="button" data-action="start-tutorial">CÓMO USAR LA APP</button></div>`);
   }
 
   function closeTutorial(){
@@ -580,27 +624,39 @@
     showTutorialStep(0);
   }
 
-  function renderHistory() {
-    const items = state.savedMatches;
-    app.innerHTML = `<section class="history-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>Tablero</span></button><div><span class="screen-eyebrow">PLANILLAS GUARDADAS</span><h1>Historial</h1></div><span class="screen-context">DATOS LOCALES</span></div>${items.length ? `<div class="history-list">${items.map(match => `<button class="history-item" type="button" data-history="${esc(match.id)}"><span><span class="history-teams">${esc(match.teams[0].name)} <small>vs</small> ${esc(match.teams[1].name)}</span><span class="history-date">${dateLabel(match.savedAt || match.createdAt)} · ${esc(rulesetLabel(match.ruleset))}</span></span><strong class="history-score">${match.teams[0].score} — ${match.teams[1].score}</strong></button>`).join("")}</div>` : `<div class="history-empty"><p class="section-kicker">Todavía no hay partidos guardados.</p><h2 class="page-title">La planilla aparece acá al tocar guardar.</h2><div class="form-actions"><button class="button button-primary" type="button" data-action="back-dashboard">Comenzar un partido</button></div></div>`}</section>`;
-  }
-
   function openModal(title,body) {
     if(tutorialIndex>=0)closeTutorial();
     const previous=document.activeElement;closeModal();modalRoot._returnFocus=previous;
     modalRoot.innerHTML=`<dialog class="modal" aria-labelledby="modalTitle"><header class="modal-header"><h2 class="modal-title" id="modalTitle">${esc(title)}</h2><button class="modal-close" data-action="close-modal" aria-label="Cerrar">×</button></header><div class="modal-body">${body}</div></dialog>`;
     const dialog=modalRoot.querySelector('dialog');dialog.showModal();dialog.addEventListener('cancel',e=>{e.preventDefault();closeModal();});
+    if(!dialog.querySelector('[autofocus]'))(dialog.querySelector('.modal-body .button-primary')||dialog.querySelector('.modal-body button'))?.focus({preventScroll:true});
   }
 
   function closeModal() {modalRoot.querySelector('dialog')?.close();modalRoot.innerHTML='';if(modalRoot._returnFocus?.isConnected)modalRoot._returnFocus.focus();}
 
   function openInfo() {
-    openModal("Sobre Ultimate Clock", `<div class="info-hero"><span class="info-mark">UC</span><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="info-primary" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a><a href="https://iona.ar/" target="_blank" rel="noopener noreferrer">Conocé más proyectos ↗</a></div>`);
+    const donate=DONATION_URL?`<a class="button info-donate" href="${esc(DONATION_URL)}" target="_blank" rel="noopener noreferrer">♥ DONÁ PARA APOYAR EL PROYECTO ↗</a>`:`<button class="button info-donate" type="button" data-action="donation-info">♥ DONÁ PARA APOYAR EL PROYECTO</button>`;
+    openModal("Sobre Ultimate Clock", `<div class="info-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="button button-primary" href="${WEBSITE_URL}" target="_blank" rel="noopener noreferrer">VISITÁ MI SITIO WEB ↗</a>${donate}<a class="button info-ufm" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a></div>`);
   }
 
-  function openGoal(teamIndex,origin='dashboard') {
-    const team = activeMatch().teams[teamIndex];
-    openModal("Registrar gol", `<p class="goal-note">Sumá un punto para <strong>${esc(team.name)}</strong>. Los dos campos son opcionales.</p><form data-form="goal" data-team="${teamIndex}" data-origin="${origin}"><div class="field"><label for="assist">Pase</label><input id="assist" name="assist" autocomplete="off" placeholder="Quién dio el pase gol"></div><div class="field"><label for="scorer">Gol</label><input id="scorer" name="scorer" autocomplete="off" placeholder="Quién recibió y anotó"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">Registrar gol</button></div></form>`);
+  function addGoal(teamIndex,origin='dashboard') {
+    const m=activeMatch(),team=m.teams[teamIndex];if(!team)return;
+    const goal={id:uid('goal'),elapsed:m.clock.elapsed,at:nowIso(),assist:'',scorer:''};
+    team.score+=1;team.goals.push(goal);logEvent('goal',{team:teamIndex,goal:goal.id,assist:'',scorer:''});
+    closeModal();saveState();rerender(origin);announce(`Gol de ${team.name}. ${m.teams[0].score} a ${m.teams[1].score}`);
+    showToast(`Gol de ${team.name}.`,[{label:'PASE Y GOL',action:'goal-details',data:{team:teamIndex,goal:goal.id,origin}},{label:'DESHACER',action:'undo-goal',data:{team:teamIndex,goal:goal.id,origin}}]);
+  }
+  function undoGoal(teamIndex,goalId,origin) {
+    const m=activeMatch(),team=m.teams[teamIndex],at=team?.goals.findIndex(g=>g.id===goalId);
+    if(!team||at<0){showToast('Ese gol ya no se puede deshacer.');return;}
+    team.goals.splice(at,1);team.score=Math.max(0,team.score-1);m.events=m.events.filter(e=>e.goal!==goalId);
+    saveState();rerender(origin);showToast(`Gol de ${team.name} deshecho.`);
+  }
+  function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
+  function openGoal(teamIndex,goalId,origin='dashboard') {
+    const team = activeMatch().teams[teamIndex],goal=team?.goals.find(g=>g.id===goalId);
+    if(!goal)return;
+    openModal("Detalle del gol", `<p class="goal-note">Gol de <strong>${esc(team.name)}</strong> a los ${fmt(goal.elapsed)}. Los dos campos son opcionales.</p><form data-form="goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}"><div class="field"><label for="assist">Pase</label><input id="assist" name="assist" autocomplete="off" value="${esc(goal.assist)}" placeholder="Quién dio el pase gol" autofocus></div><div class="field"><label for="scorer">Gol</label><input id="scorer" name="scorer" autocomplete="off" value="${esc(goal.scorer)}" placeholder="Quién recibió y anotó"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">Guardar detalle</button></div></form>`);
   }
 
   function openMinus(teamIndex) {
@@ -618,22 +674,19 @@
     openModal("Reiniciar contadores", `<p>¿Reiniciar todos los contadores? Se reinician tiempos, puntajes y eventos sin guardar del partido actual. El historial guardado y los perfiles no se borrarán.</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-danger" type="button" data-action="confirm-reset">Reiniciar contadores</button></div>`);
   }
 
-  function openNewTheme() {
-    openModal("Nuevo modo", `<form data-form="theme"><div class="field"><label for="theme-name">Nombre del modo</label><input id="theme-name" name="name" maxlength="28" placeholder="Ej.: Verde cancha" required autocomplete="off"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">Crear y personalizar</button></div></form>`);
-  }
-
   function openSheet(match) {
     const events=match.events.map(e=>`<li><time>${dateLabel(e.at)}<br>${fmt(e.elapsed||0)}</time><span>${esc(SheetExport.describeEvent(match,e))}</span></li>`).join('');
-    openModal('Planilla guardada',`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset))} · ${esc(match.themeName||'Claro')}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>Duración</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>Time-outs</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>Eventos</span></div></div><p>Colores: ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>Configuración del partido</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||'<li>Sin eventos</li>'}</ul><div class="modal-actions"><button class="button" data-action="export-sheet" data-format="pdf" data-match="${esc(match.id)}">Descargar PDF</button><button class="button" data-action="export-sheet" data-format="csv" data-match="${esc(match.id)}">Descargar CSV</button><button class="button" data-action="export-sheet" data-format="json" data-match="${esc(match.id)}">Descargar JSON</button><button class="button button-primary" data-action="new-match">Nuevo partido</button></div>`);
+    openModal('Planilla guardada',`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset))} · ${esc(match.themeName||'Claro')}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>Duración</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>Time-outs</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>Eventos</span></div></div><p>Colores: ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>Configuración del partido</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||'<li>Sin eventos</li>'}</ul><h3 class="section-kicker">EXPORTAR</h3>${exportButtons(match,'Exportar esta planilla')}`);
   }
 
   function saveMatch() {
-    const m=activeMatch();if(m.status==='saved'){showToast('Este partido ya está guardado.');renderHistory();return;}
-    if(Object.values(m.timers).some(t=>t.running)||m.breakTimer.running){showToast('Esperá a que terminen las cuentas activas antes de guardar.');return;}
+    const m=activeMatch();if(m.status==='saved'){showToast('Este partido ya está guardado.');renderLiveSheet();return true;}
+    if(Object.values(m.timers).some(t=>t.running)||m.breakTimer.running){closeModal();showToast('Esperá a que terminen las cuentas activas antes de guardar.');return false;}
     updateClock();for(const t of [...Object.values(m.timers),m.breakTimer]){updateRunningValue(t);t.running=false;t.startedAt=null;}
     m.clock.running=false;m.clock.startedAt=null;m.clock.status='Finalizado';logEvent('saved');m.status='saved';m.savedAt=nowIso();m.themeName=themeName(state.settings.theme);m.themeSnapshot=currentThemeVars();
     state.savedMatches.unshift(clone(m));
-    const persisted=saveState();showToast(persisted?'Planilla guardada. Partido cerrado.':'Planilla en memoria. Descargá un respaldo para conservarla.');renderHistory();
+    const persisted=saveState();showToast(persisted?'Planilla guardada. Partido cerrado.':'Planilla en memoria. Descargá un respaldo para conservarla.');renderLiveSheet();
+    return true;
   }
 
   function resetMatch() {
@@ -670,7 +723,7 @@
     else if(action==='quick-call')openCallPicker();
     else if(action==='pick-call-team')openCall(Number(element.dataset.team));
     else if(action==='incident')openIncident();
-    else if(action==='quick-theme'){const view=app.firstElementChild?.className||'';applyTheme(element.dataset.theme);if(view.includes('settings-screen'))renderSettings();else if(view.includes('sheet-screen'))renderLiveSheet();else if(view.includes('history-screen'))renderHistory();else renderDashboard();}
+    else if(action==='quick-theme'){const view=app.firstElementChild?.className||'';applyTheme(element.dataset.theme);if(view.includes('settings-screen'))renderSettings();else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();}
     else if(action==='enable-audio'){
       if(ClockAlerts.ready){state.settings.sound=false;ClockAlerts.setSound(false);saveState();updateAudioControls();showToast('Sonido desactivado.');}
       else ClockAlerts.unlock().then(ok=>{state.settings.sound=ok;ClockAlerts.setSound(ok);saveState();updateAudioControls();showToast(ok?'Sonido activado.':'No se pudo activar el sonido en este navegador.');});
@@ -694,8 +747,8 @@
       updateRunningValue(m.breakTimer);if(!m.breakTimer.completed){showToast('El medio tiempo todavía está en curso.');return true;}
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
-    else if(action==='save-and-new'){saveMatch();resetMatch();}
-    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match),format=element.dataset.format,name=`ultimate-clock-${sheet?.id}`;if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset)}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet),'text/csv;charset=utf-8',`${name}.csv`);else exportData(sheet,`${name}.json`);}
+    else if(action==='save-and-new'){if(saveMatch())resetMatch();}
+    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset)}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet),'text/csv;charset=utf-8',`${name}.csv`);else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,'ultimate-clock-respaldo.json');
     else if(action==='retry-storage'){
       if(storageInvalid){showToast('Descargá primero el respaldo. El formato anterior se conserva sin sobrescribir.');return true;}
@@ -723,8 +776,9 @@
     if(action==='tour-close'){closeTutorial();return;}
     if(action==='tour-prev'){showTutorialStep(tutorialIndex-1);return;}
     if(action==='tour-next'){showTutorialStep(tutorialIndex+1);return;}
-    if(action==='donation-info'){openModal('DONÁ', '<p>El enlace para donar todavía no está disponible. Gracias por querer apoyar el desarrollo de Ultimate Clock.</p>');return;}
-    if(isLocked()&&['goal','minus','confirm-minus','edit-team','toggle-clock','toggle-timer','timeout','start-break','second-half'].includes(action)){showToast('Partido cerrado. Elegí Nuevo partido.');return;}
+    if(action==='reload'){location.reload();return;}
+    if(action==='donation-info'){if(DONATION_URL){window.open(DONATION_URL,'_blank','noopener');return;}openModal('APOYÁ ESTE PROYECTO', '<p>El enlace para donar todavía no está disponible. Gracias por querer apoyar el desarrollo de Ultimate Clock.</p>');return;}
+    if(isLocked()&&['goal','goal-details','undo-goal','minus','confirm-minus','edit-team','toggle-clock','toggle-timer','timeout','start-break','second-half'].includes(action)){showToast('Partido cerrado. Elegí Nuevo partido.');return;}
     if(extraAction(action,actionElement))return;
     if (action === "toggle-menu") {
       const menu = document.querySelector(".header-actions");
@@ -751,17 +805,19 @@
     if (action === "info") openInfo();
     if (action === "reset") openReset();
     if (action === "save") saveMatch();
-    if (action === "history") renderHistory();
+    if (action === "history") renderLiveSheet();
     if (action === "back-dashboard") { renderDashboard(); }
     if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal('Preparar un nuevo partido','<p>El partido actual aún no está en el historial. Guardalo antes de continuar.</p><div class="modal-actions"><button class="button" data-action="close-modal">Cancelar</button><button class="button button-primary" data-action="save-and-new">Guardar y crear nuevo</button></div>');}else {resetMatch();}}
     if (action === "close-modal") closeModal();
     if (action === "confirm-reset") resetMatch();
     if (action === "confirm-minus") {
       const index = Number(actionElement.dataset.team); const team = activeMatch().teams[index];
-      if (team.score > 0) { team.score -= 1; team.adjustments.push({ at: nowIso(), delta: -1 }); activeMatch().events.push({ type: "adjustment", team: index, at: nowIso() }); }
+      if (team.score > 0) { team.score -= 1; team.adjustments.push({ at: nowIso(), delta: -1 }); logEvent('adjustment', { team: index }); }
       closeModal(); saveState(); renderDashboard(); showToast("Puntaje corregido.");
     }
-    if (action === "goal") openGoal(Number(actionElement.dataset.team),actionElement.dataset.origin||'dashboard');
+    if (action === "goal") addGoal(Number(actionElement.dataset.team),actionElement.dataset.origin||'dashboard');
+    if (action === "goal-details") { hideToast(); openGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
+    if (action === "undo-goal") { hideToast(); undoGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
     if (action === "minus") openMinus(Number(actionElement.dataset.team));
     if (action === "edit-team") openTeamEditor(Number(actionElement.dataset.team));
     if (action === "toggle-clock") toggleTimer("clock");
@@ -780,6 +836,7 @@
   });
 
   document.addEventListener("keydown", event => {
+    if (event.key === " " && !event.repeat && tutorialIndex<0 && !modalRoot.innerHTML && !event.target.closest("button,input,select,textarea,a,[contenteditable]") && app.querySelector(".dashboard-screen")) { event.preventDefault(); toggleTimer("clock"); return; }
     if (event.key === "Escape" && tutorialIndex>=0){event.preventDefault();closeTutorial();}
     else if (event.key === "Escape" && modalRoot.innerHTML) closeModal();
     else if(event.key === "Escape"){document.querySelector('.header-actions').classList.remove('is-open');document.querySelector('.menu-button').setAttribute('aria-expanded','false');document.body.classList.remove('menu-open');document.querySelector('.menu-button').focus();}
@@ -791,10 +848,12 @@
     if(extraSubmit(form))return;
     if(isLocked()&&['goal','team'].includes(form.dataset.form)){closeModal();return;}
     if (form.dataset.form === "goal") {
-      const index = Number(form.dataset.team); const team = activeMatch().teams[index];
-      const data = new FormData(form); const goal = { elapsed: activeMatch().clock.elapsed, at: nowIso(), assist: String(data.get("assist") || "").trim(), scorer: String(data.get("scorer") || "").trim() };
-      team.score += 1; team.goals.push(goal); activeMatch().events.push({ type: "goal", team: index, assist: goal.assist, scorer: goal.scorer, at: goal.at, elapsed:goal.elapsed });
-      closeModal(); saveState(); if(form.dataset.origin==='sheet')renderLiveSheet();else renderDashboard(); showToast(`Gol registrado para ${team.name}.`); announce(`Gol de ${team.name}`);
+      const m = activeMatch(), team = m.teams[Number(form.dataset.team)], goal = team?.goals.find(g => g.id === form.dataset.goal);
+      if (!goal) { closeModal(); return; }
+      const data = new FormData(form);
+      goal.assist = String(data.get("assist") || "").trim(); goal.scorer = String(data.get("scorer") || "").trim();
+      const event = m.events.find(e => e.goal === goal.id); if (event) Object.assign(event, { assist: goal.assist, scorer: goal.scorer });
+      closeModal(); saveState(); rerender(form.dataset.origin); showToast("Detalle del gol guardado.");
     }
     if (form.dataset.form === "team") {
       const index = Number(form.dataset.team); const data = new FormData(form); const team = activeMatch().teams[index];
@@ -811,7 +870,7 @@
   });
 
   document.addEventListener("change", event => {
-    if(event.target.id==='call-type'){const guidance=document.getElementById('call-guidance');if(guidance)guidance.textContent=CALL_GUIDANCE[event.target.value]||'';}
+    if(event.target.name==='type'&&event.target.closest('[data-form="call"]')){const guidance=document.getElementById('call-guidance');if(guidance)guidance.textContent=CALL_GUIDANCE[event.target.value]||'';}
     if (event.target.dataset.setting === "ruleset") {
       if(hasStarted()||isLocked())return;
       const id=event.target.value;
@@ -839,7 +898,7 @@
     showToast('Falló la reproducción. Revisá el navegador y probá el sonido desde MENU.');
   };
   ClockAlerts.setSound(false);
-  document.addEventListener('visibilitychange',updateAudioControls);
+  document.addEventListener('visibilitychange',()=>{updateAudioControls();if(!document.hidden&&wakeWanted){wakeWanted=false;wakeLock=null;}});
   document.addEventListener('fullscreenchange',updateFullscreenControl);
   window.addEventListener('resize',()=>{if(tutorialIndex>=0)requestAnimationFrame(positionTutorial);});
   (state.pendingAlerts||[]).forEach(dispatchAlert);
@@ -847,10 +906,17 @@
   updateAudioControls();
   updateFullscreenControl();
   renderDashboard();
-  openProfileSelector();
+  if(!hasStarted()&&!isLocked())openProfileSelector();
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();
-  window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY&&e.newValue&&JSON.parse(e.newValue).writerId!==writerId){storageBlocked=true;showToast('Otra pestaña cambió el partido. Recargá esta pestaña antes de continuar.');app.inert=true;document.querySelector('.topbar').inert=true;const warning=document.createElement('div');warning.className='storage-warning';warning.innerHTML='Partido abierto en otra pestaña. <button onclick="location.reload()">Recargar estado actual</button>';document.body.prepend(warning);}});
+  let otherTabLocked=false;
+  window.addEventListener('storage',e=>{
+    if(otherTabLocked||e.key!==STORAGE_KEY||!e.newValue)return;
+    let writer;try{writer=JSON.parse(e.newValue).writerId;}catch{return;}
+    if(writer===writerId)return;
+    otherTabLocked=storageBlocked=true;showToast('Otra pestaña cambió el partido. Recargá esta pestaña antes de continuar.');app.inert=true;document.querySelector('.topbar').inert=true;
+    const warning=document.createElement('div');warning.className='storage-warning';warning.innerHTML='Partido abierto en otra pestaña. <button type="button" data-action="reload">Recargar estado actual</button>';document.body.prepend(warning);
+  });
   if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>showToast('La instalación sin conexión no está disponible en este navegador.'));
 
 })();

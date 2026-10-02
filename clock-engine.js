@@ -33,7 +33,8 @@
     else {if(item.completed){item.elapsed=0;item.completed=false;item.alerted=[];}item.running=true;item.startedAt=now;}
   }
   function luminance(hex) {
-    const channels=hex.replace('#','').match(/../g).map(c=>parseInt(c,16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);
+    const clean=String(hex).replace('#',''),full=clean.length===3?clean.replace(/./g,c=>c+c):clean;
+    const channels=full.match(/../g).map(c=>parseInt(c,16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);
     return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
   }
   function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}

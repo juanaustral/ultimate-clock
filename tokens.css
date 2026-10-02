@@ -1,13 +1,20 @@
-/* Swiss Sideline Precision · curated from Juan's Stitch prototype. */
+/* Ultimate Clock · tokens del sistema "Línea de banda".
+   Claro: pensado para sol directo (fondo gris, paneles blancos, tinta casi negra).
+   Oscuro: pensado para noche y gimnasio (negro puro, paneles grafito). */
 :root{
-  --bg:#f8f9fb;--panel:#fff;--panel-dark:#16171b;--ink:#191c1e;--muted:#626775;--line:#dfe3e9;--accent:#1b47e2;--accent-ink:#fff;--accent-2:#16171b;--signal:#16a34a;--warning:#a75c00;--danger:#c62525;--focus:#1b47e2;--bg-2:#f0f1f4;--page-ink:#191c1e;
-  --color-team-light:#fff;--color-team-dark:#16171b;--color-team-light-ink:#0b0c0e;--color-team-dark-ink:#fff;
-  --font-display:'Space Grotesk','Arial Narrow',Arial,sans-serif;--font-body:Inter,Arial,system-ui,sans-serif;--font-mono:'SFMono-Regular',Consolas,monospace;
-  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;
-  --radius-sm:3px;--radius-md:6px;--rule:1px solid var(--line);--dur-short:120ms;
+  --bg:#e9ecf1;--panel:#fff;--panel-dark:#101216;--ink:#0f1115;--muted:#5a606d;--line:#d4d8df;
+  --accent:#1b47e2;--accent-ink:#fff;--accent-2:#101216;--signal:#0f8a3c;--warning:#a35a00;--danger:#c81e1e;
+  --focus:#1b47e2;--ufm:#7c3aed;--bg-2:#f1f3f6;--page-ink:#0f1115;--panel-display:#000;
+  --font-body:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --font-display:'SF Pro Display',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --gap:8px;--pad:12px;--radius:12px;--radius-sm:8px;--rule:1px solid var(--line);
+  --bar:52px;--foot:26px;--touch:48px;--dur-short:140ms;
+  --shadow:0 1px 2px #0000000f,0 2px 8px #0000000a;
 }
-html[data-theme="dark"]{--bg:#0b0c0e;--panel:#16171b;--panel-dark:#0b0c0e;--ink:#f7f8fa;--muted:#a6adba;--line:#3a3d46;--accent:#4971ff;--accent-ink:#fff;--accent-2:#0b0c0e;--signal:#51d981;--warning:#ffbe57;--danger:#ff6969;--focus:#8ea8ff;--bg-2:#24262c;--page-ink:#f7f8fa}
-html[data-theme="sun"]{--bg:#fff;--panel:#fff;--panel-dark:#0b0c0e;--ink:#070707;--muted:#414141;--line:#090909;--accent:#facc15;--accent-ink:#080800;--accent-2:#0b0c0e;--signal:#146d35;--warning:#815300;--danger:#a50000;--focus:#0b0c0e;--bg-2:#f3f3f3;--page-ink:#070707}
-html[data-theme="amber"]{--bg:#000;--panel:#101010;--panel-dark:#000;--ink:#fff;--muted:#e0e0e0;--line:#ddd;--accent:#ffd000;--accent-ink:#000;--accent-2:#000;--signal:#ffe678;--warning:#ffd000;--danger:#ff8d83;--focus:#fff;--bg-2:#252525;--page-ink:#fff}
-html[data-theme="cyan"]{--bg:#00161d;--panel:#09272f;--panel-dark:#001019;--ink:#fff;--muted:#c8ecf3;--line:#9dc9d3;--accent:#00e5ff;--accent-ink:#00161d;--accent-2:#001019;--signal:#00e5ff;--warning:#ffe672;--danger:#ff8875;--focus:#fff;--bg-2:#123640;--page-ink:#fff}
+html[data-theme="dark"]{
+  --bg:#000;--panel:#15171c;--panel-dark:#0a0b0e;--ink:#f4f5f7;--muted:#9aa1ad;--line:#2a2e36;
+  --accent:#4d74ff;--accent-ink:#fff;--accent-2:#0a0b0e;--signal:#3ddc76;--warning:#ffbb4d;--danger:#ff5c5c;
+  --focus:#8ea8ff;--bg-2:#1e2128;--page-ink:#f4f5f7;--shadow:none;
+}
 html[data-theme="custom"]{--panel-dark:var(--accent-2);--bg-2:var(--panel)}
