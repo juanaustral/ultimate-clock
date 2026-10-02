@@ -43,6 +43,7 @@
   };
 
   /* Logo: un disco visto de frente con la corona de un cronómetro y el tiempo transcurrido en blanco. */
+  const WHATSAPP_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2l-.4-.3Z"/></svg>';
   const LOGO_SVG = '<svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg>';
   /* Enlace de donación (perfil de Cafecito de Juan). Si queda vacío, el botón explica que todavía no hay enlace. */
   const DONATION_URL = 'https://cafecito.app/juanaustral';
@@ -534,8 +535,13 @@
     const slug=value=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'equipo';
     return `${t('planilla')}-${slug(match.teams[0].name)}-vs-${slug(match.teams[1].name)}-${String(match.savedAt||match.createdAt||nowIso()).slice(0,10)}`;
   }
+  /* wa.me opens the WhatsApp app on phones and WhatsApp Web on computers, with the message ready to pick a chat. */
+  function shareWhatsApp(text) {
+    const opened=window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank','noopener');
+    if(!opened)location.href=`https://wa.me/?text=${encodeURIComponent(text)}`;
+  }
   function exportButtons(match,label) {
-    return `<div class="export-actions" role="group" aria-label="${esc(label)}">${['pdf','csv','json'].map(format=>`<button class="button${format==='pdf'?' button-primary':''}" type="button" data-action="export-sheet" data-format="${format}" data-match="${esc(match.id)}">${format.toUpperCase()}</button>`).join('')}</div>`;
+    return `<div class="export-actions" role="group" aria-label="${esc(label)}">${['pdf','csv','json'].map(format=>`<button class="button${format==='pdf'?' button-primary':''}" type="button" data-action="export-sheet" data-format="${format}" data-match="${esc(match.id)}">${format.toUpperCase()}</button>`).join('')}<button class="button export-whatsapp" type="button" data-action="export-sheet" data-format="whatsapp" data-match="${esc(match.id)}">${WHATSAPP_SVG}${esc(t('ENVIAR POR WHATSAPP'))}</button></div>`;
   }
   function savedSheetsMarkup() {
     const items=state.savedMatches;
@@ -548,7 +554,7 @@
       <div class="sheet-score-grid">${m.teams.map((team,index)=>`<div class="sheet-score-team sheet-score-${index+1}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><b>${team.score}</b><small>${esc(t('TIME OUTS'))} ${Math.max(0,m.config.timeoutsPerTeam-m.timeoutState.usages[index])}/${m.config.timeoutsPerTeam}</small></div>`).join('')}</div>
       ${m.status==='active'?`<section class="quick-entry"><div class="section-heading"><h2>${esc(t('Registro rápido'))}</h2><span>${esc(t('ESTE DISPOSITIVO'))}</span></div><div class="quick-grid"><button class="quick-primary" data-action="goal-picker">＋ ${esc(t('Gol'))}</button><button data-action="quick-call">⚠ ${esc(t('Llamado'))}</button><button data-action="timeout-picker">◷ ${esc(t('Time-out'))}</button><button data-action="incident">△ ${esc(t('Incidencia'))}</button></div></section>`:''}
       <section class="event-section"><div class="section-heading"><h2>${esc(t('Eventos'))}</h2><span>${events.length} ${esc(t(events.length===1?'REGISTRO':'REGISTROS'))}</span></div>${events.length?`<ol class="event-feed">${events.map(e=>`<li><time>${fmt(e.elapsed||0)}</time><span>${eventDescription(e,m)}</span></li>`).join('')}</ol>`:`<p class="empty-events">${esc(t('Todavía no hay eventos. Usá el registro rápido para comenzar.'))}</p>`}</section>
-      <section class="event-section"><div class="section-heading"><h2>${esc(t('Exportar este partido'))}</h2><span>PDF · CSV · JSON</span></div>${exportButtons(m,t('Exportar la planilla de este partido'))}</section>
+      <section class="event-section"><div class="section-heading"><h2>${esc(t('Exportar este partido'))}</h2><span>PDF · CSV · JSON · WHATSAPP</span></div>${exportButtons(m,t('Exportar la planilla de este partido'))}</section>
       <div class="sheet-actions">${m.status==='saved'?`<button class="button button-primary" data-action="new-match">${esc(t('Nuevo partido'))}</button>`:`<button class="button button-primary" data-action="save">${esc(t('Guardar planilla'))}</button>`}<button class="button" data-action="back-dashboard">${esc(t('Volver al tablero'))}</button></div>
       ${savedSheetsMarkup()}</section>`;
     updateDisplays();
@@ -581,7 +587,10 @@
     const locked=hasStarted()||isLocked(),current=keepSelection&&selectedProfileId?selectedProfileId:state.settings.ruleset;
     selectedProfileId=current;
     const profiles=[{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];
-    openModal(t('PERFIL DE TIEMPO'),`${langSwitch()}<p>${esc(t(locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'))}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${esc(t(p.id===current?'SELECCIONADO':'ELEGIR'))}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile" autofocus>${esc(t('USAR ESTE PERFIL'))}</button><button class="button profile-new" type="button" data-action="new-profile">${esc(t('CREAR NUEVO PERFIL'))}</button><button class="button profile-guide" type="button" data-action="start-tutorial">${esc(t('CÓMO USAR LA APP'))}</button></div>`);
+    openModal(t('Te damos la bienvenida'),`<div class="welcome-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p></div></div>${langSwitch()}<p>${esc(t(locked?'El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'Elegí los tiempos para este partido antes de empezar.'))}</p><div class="profile-choices">${profiles.map(p=>`<button class="profile-choice ${p.id===current?'active':''}" type="button" data-action="select-profile" data-profile="${esc(p.id)}" aria-pressed="${p.id===current}" ${locked&&p.id!==current?'disabled':''}><strong>${esc(p.name)}</strong><span>${esc(t(p.id===current?'SELECCIONADO':'ELEGIR'))}</span></button>`).join('')}</div><div class="profile-actions"><button class="button profile-continue" type="button" data-action="use-profile" autofocus>${esc(t('USAR ESTE PERFIL'))}</button><button class="button profile-new" type="button" data-action="new-profile">${esc(t('CREAR NUEVO PERFIL'))}</button><button class="button profile-guide" type="button" data-action="start-tutorial">${esc(t('CÓMO USAR LA APP'))}</button></div>${storageNote()}`);
+  }
+  function storageNote() {
+    return `<p class="storage-note"><span aria-hidden="true">🔒</span> ${esc(t('Perfiles y planillas se guardan solo en este navegador. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierden. En iPhone, agregá la app a la pantalla de inicio. Exportá lo que quieras conservar.'))}</p>`;
   }
 
   function closeTutorial(){
@@ -648,7 +657,7 @@
 
   function openInfo() {
     const donate=DONATION_URL?`<a class="button info-donate" href="${esc(DONATION_URL)}" target="_blank" rel="noopener noreferrer">♥ ${esc(t('DONÁ PARA APOYAR EL PROYECTO'))} ↗</a>`:`<button class="button info-donate" type="button" data-action="donation-info">♥ ${esc(t('DONÁ PARA APOYAR EL PROYECTO'))}</button>`;
-    openModal(t("Sobre Ultimate Clock"), `<div class="info-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.'))}</p></div></div><div class="info-copy"><p><strong>${esc(t('Desarrollado por Juan Martínez García.'))}</strong> ${esc(t('Esta app es gratuita para la comunidad del Ultimate Frisbee.'))}</p><p>${esc(t('Los datos se guardan en este dispositivo.'))}</p></div><div class="info-links"><a class="button button-primary" href="${WEBSITE_URL}" target="_blank" rel="noopener noreferrer">${esc(t('VISITÁ MI SITIO WEB ↗'))}</a>${donate}<a class="button info-ufm" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">${esc(t('CONOCÉ ULTIMATE FRISBEE MENDOZA ↗'))}</a></div>`);
+    openModal(t("Sobre Ultimate Clock"), `<div class="info-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.'))}</p></div></div><div class="info-copy"><p><strong>${esc(t('Desarrollado por Juan Martínez García.'))}</strong> ${esc(t('Esta app es gratuita para la comunidad del Ultimate Frisbee.'))}</p></div>${storageNote()}<div class="info-links"><a class="button button-primary" href="${WEBSITE_URL}" target="_blank" rel="noopener noreferrer">${esc(t('VISITÁ MI SITIO WEB ↗'))}</a>${donate}<a class="button info-ufm" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">${esc(t('CONOCÉ ULTIMATE FRISBEE MENDOZA ↗'))}</a></div>`);
   }
 
   function addGoal(teamIndex,origin='dashboard') {
@@ -760,7 +769,7 @@
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
     else if(action==='save-and-new'){if(saveMatch())resetMatch();}
-    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset),t,locale:lang==='en'?'en-US':'es-AR'}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet,{t}),'text/csv;charset=utf-8',`${name}.csv`);else exportData(sheet,`${name}.json`);}
+    else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset),t,locale:lang==='en'?'en-US':'es-AR'}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet,{t}),'text/csv;charset=utf-8',`${name}.csv`);else if(format==='whatsapp')shareWhatsApp(SheetExport.toWhatsApp(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset),t,locale:lang==='en'?'en-US':'es-AR'}));else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,`ultimate-clock-${t('respaldo')}.json`);
     else if(action==='retry-storage'){
       if(storageInvalid){showToast(t('Descargá primero el respaldo. El formato anterior se conserva sin sobrescribir.'));return true;}
@@ -956,6 +965,8 @@
     otherTabLocked=storageBlocked=true;showToast(t('Otra pestaña cambió el partido. Recargá esta pestaña antes de continuar.'));app.inert=true;document.querySelector('.topbar').inert=true;
     const warning=document.createElement('div');warning.className='storage-warning';warning.innerHTML=`${esc(t('Partido abierto en otra pestaña.'))} <button type="button" data-action="reload">${esc(t('Recargar estado actual'))}</button>`;document.body.prepend(warning);
   });
+  /* Ask the browser not to evict saved games under storage pressure; silently ignored where unsupported. */
+  navigator.storage?.persist?.().catch(()=>{});
   if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>showToast(t('La instalación sin conexión no está disponible en este navegador.')));
 
 })();

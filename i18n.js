@@ -148,7 +148,15 @@
     'Abrir configuración':'Open settings','CONFIGURAR':'SETTINGS','AYUDA':'HELP','Información de la app':'App information','INFO':'INFO',
     'REINICIAR CONTADORES':'RESET COUNTERS','Créditos y apoyo':'Credits and support','UN PROYECTO DE':'A PROJECT BY','PARA':'FOR',
     'Apoyá este proyecto':'Support this project',
-    'Si el tablero no aparece:':'If the board does not appear:'
+    'Si el tablero no aparece:':'If the board does not appear:',
+    /* Bienvenida y guardado */
+    'Te damos la bienvenida':'Welcome',
+    'Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.':'Game clock, goals, calls, pull, time outs and scoresheet for your game. Free and offline.',
+    'Perfiles y planillas se guardan solo en este navegador. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierden. En iPhone, agregá la app a la pantalla de inicio. Exportá lo que quieras conservar.':'Profiles and scoresheets are stored only in this browser. Clearing its data, using private mode or switching devices loses them. On iPhone, add the app to your Home Screen. Export what you want to keep.',
+    /* WhatsApp */
+    'ENVIAR POR WHATSAPP':'SEND BY WHATSAPP','Empate':'Draw','Ganó {team}':'{team} won','Resumen':'Summary','Goles':'Goals','Llamados':'Calls',
+    'pase de {name}':'assist by {name}','Gol de {team}':'Goal by {team}','Punto descontado a {team}':'Point taken from {team}','Time-out de {team}':'Timeout by {team}',
+    'Segundo tiempo':'Second half','Final':'Final','Momentos':'Key moments','Hecho con Ultimate Clock':'Made with Ultimate Clock'
   };
   const languages=['es','en'];
   function t(lang,text,vars){

@@ -122,6 +122,39 @@
     return bytes;
   }
 
-  const api={EVENT_LABELS,TIMER_LABELS,describeEvent,toCSV,toPDF,csvCell,pdfText};
+  /* WhatsApp message: *bold*, _italic_ and emojis; one line per key moment with the running score. */
+  const waSafe=value=>String(value??'').replace(/[*_~`]/g,'').replace(/\s+/g,' ').trim();
+  function toWhatsApp(match,{rulesetLabel,t:tr=same,locale='es-AR',url='iona.ar/ultimateclock'}={}){
+    const teams=match.teams||[],events=match.events||[];
+    const name=index=>waSafe(teamName(match,index))||tr('Equipo {n}',{n:index+1});
+    const [a,b]=[teams[0]?.score??0,teams[1]?.score??0];
+    const count=(type,index)=>events.filter(e=>e.type===type&&e.team===index).length;
+    const lines=[`🥏 *ULTIMATE CLOCK* · ${tr('Planilla')}`,'',`*${name(0)} ${a} — ${b} ${name(1)}*`];
+    lines.push(a===b?`🤝 ${tr('Empate')}`:`🏆 ${tr('Ganó {team}',{team:`*${name(a>b?0:1)}*`})}`);
+    const when=[match.savedAt&&dateLabel(match.savedAt,locale),rulesetLabel||match.ruleset].filter(Boolean).join(' · ');
+    if(when)lines.push(`📅 ${when}`);
+    lines.push(`⏱️ ${tr('Duración')}: *${fmt(match.clock?.elapsed)}*`,'',`📊 *${tr('Resumen')}*`);
+    for(const [emoji,label,type] of [['🥏','Goles','goal'],['⏸️','Time-outs','timeout'],['📣','Llamados','call']])
+      lines.push(`${emoji} ${tr(label)}: ${name(0)} ${count(type,0)} · ${name(1)} ${count(type,1)}`);
+    const score=[0,0],moments=[];
+    for(const e of events){
+      const time=fmt(e.elapsed||0),team=e.team===0||e.team===1?name(e.team):'';
+      if(e.type==='goal'&&team){
+        score[e.team]+=1;
+        const who=[e.scorer&&waSafe(e.scorer),e.assist&&tr('pase de {name}',{name:waSafe(e.assist)})].filter(Boolean).join(' · ');
+        moments.push(`${time} 🥏 *${tr('Gol de {team}',{team})}* (${score[0]}–${score[1]})${who?`\n        _${who}_`:''}`);
+      }
+      else if(e.type==='adjustment'&&team){score[e.team]=Math.max(0,score[e.team]-1);moments.push(`${time} ➖ ${tr('Punto descontado a {team}',{team})} (${score[0]}–${score[1]})`);}
+      else if(e.type==='timeout'&&team)moments.push(`${time} ⏸️ ${tr('Time-out de {team}',{team})}`);
+      else if(e.type==='call'&&team)moments.push(`${time} 📣 ${tr('Llamado de {team}',{team})}${e.label?` · _${waSafe(tr(e.label))}_`:''}`);
+      else if(e.type==='half')moments.push(String(e.label||'').startsWith('Inicio de segunda')?`${time} ▶️ *${tr('Segundo tiempo')}*`:`${time} 🌗 *${tr('Medio tiempo')}*`);
+      else if(e.type==='incident')moments.push(`${time} ⚠️ ${waSafe(tr(e.label||'Incidencia'))}${e.note?` · _${waSafe(e.note)}_`:''}`);
+      else if(e.type==='saved')moments.push(`${time} 🏁 *${tr('Final')}*`);
+    }
+    lines.push('',`🎬 *${tr('Momentos')}*`,...(moments.length?moments:[`_${tr('Sin eventos')}_`]),'',`_${tr('Hecho con Ultimate Clock')} · ${url}_`);
+    return lines.join('\n');
+  }
+
+  const api={EVENT_LABELS,TIMER_LABELS,describeEvent,toCSV,toPDF,toWhatsApp,csvCell,pdfText};
   if(typeof module!=='undefined')module.exports=api;else root.SheetExport=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

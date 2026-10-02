@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 2026-10-02 · Bienvenida, aviso de datos y WhatsApp
+
+- El pop-up de inicio da la bienvenida y explica la app en una línea, con logo, antes de elegir el perfil de tiempo.
+- Pie con aviso de cómo se guardan perfiles y planillas (solo en este navegador) y cómo no perderlos; el mismo aviso está en Info.
+- La app le pide al navegador guardado persistente para que no borre los datos por falta de espacio.
+- ENVIAR POR WHATSAPP en Exportar: abre WhatsApp con un mensaje con emojis, negritas y cursivas: resultado, ganador, resumen por equipo y momentos con el marcador parcial.
+- Caché v28.
+
 ## 2026-10-02 · Rediseño "Línea de banda"
 
 - Reloj del partido primero y arriba; Llamadas debajo del reloj y Pull y Time Out al final.
