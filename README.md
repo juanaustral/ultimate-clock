@@ -77,13 +77,25 @@ Fuentes consultadas el 27/09/2026: [reglas y recursos WFDF](https://rules.wfdf.s
 - `clock-engine.js`: motor temporal y validación de configuración.
 - `alerts.js`: audio y avisos.
 - `sheet-export.js`: exportación de planillas a PDF y CSV, sin dependencias.
-- `ultimate-clock.js`: tablero, equipos, perfiles, planilla, modales e historial.
+- `ultimate-clock.js`: tablero, equipos, perfiles, planilla, modales y planillas guardadas.
 - `tokens.css` y `ultimate-clock.css`: estilos Claro/Oscuro y diseño adaptable.
 - `Iniciar Ultimate Clock.command`: servidor local y apertura automática en navegador.
 - `sw.js`, `manifest.webmanifest` e `icon.svg`: carga offline e instalación.
 - `tests/` y `qa/`: pruebas y evidencia de verificación.
+- `scripts/publicar-vps.sh`: publicación en `iona.ar/ultimateclock`.
 
 Para ejecutar las pruebas: `node --test tests/*.test.cjs`.
+
+## Publicar
+
+La app se sirve como archivos estáticos desde el VPS de IONA (sitio `iona-web`, carpeta `/opt/iona-web/site/ultimateclock`). Para publicar lo que está en `main`, ejecutá en el VPS:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/juanaustral/ultimate-clock/main/scripts/publicar-vps.sh -o /tmp/publicar-vps.sh
+bash /tmp/publicar-vps.sh
+```
+
+El script respalda la versión publicada en `/opt/iona-web/backups/ultimateclock-pre-<fecha>.tar.gz`, copia solo los archivos de la app y compara el SHA-256 de cada archivo servido con el del repositorio. Si algo difiere, termina con error e indica cómo restaurar el respaldo. No cambia Caddy ni DNS. Antes de publicar, subí la versión de caché en `sw.js` para que los teléfonos que ya tienen la app instalada reciban la nueva.
 
 ## Licencia
 
