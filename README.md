@@ -3,7 +3,7 @@
 > Tablero táctil local-first para operar un partido de Ultimate Frisbee.
 
 [![Demo en vivo](https://img.shields.io/badge/demo-iona.ar%2Fultimateclock-111111)](https://iona.ar/ultimateclock/)
-[![Pruebas](https://img.shields.io/badge/tests-14%2F14-1f8a70)](qa/pruebas.txt)
+[![Pruebas](https://img.shields.io/badge/tests-22%2F22-1f8a70)](qa/pruebas.txt)
 [![Licencia](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](#licencia)
 
 ULTIMATE CLOCK es un proyecto de **Juan Martínez García / IONA**. Está pensado para una mesa de tiempo que necesita leer y accionar el partido desde un teléfono, tableta o pantalla de cancha sin depender de una cuenta ni de un backend.
@@ -47,7 +47,7 @@ El botón **MENU** reúne todas las opciones del encabezado, incluidos Planilla,
 2. Tocá **ACTIVAR SONIDO** y luego **PROBAR SONIDO** para escuchar cinco alarmas agudas y ajustar el volumen del dispositivo. El botón pasa a **DESACTIVAR SONIDO** cuando el navegador habilitó el audio. El reloj total es el único que se puede pausar. Pull, llamada, time out y medio tiempo corren hasta cero; cada finalización emite cinco alarmas agudas y un aviso visual intenso. **REINICIAR** en Pull o Llamada devuelve la cuenta a Listo sin arrancarla.
 3. Al cumplirse el primer tiempo, iniciá el medio tiempo desde el aviso. Al terminar el descanso, iniciá la segunda mitad; se renueva el cupo de timeouts de cada equipo.
 4. Registrá goles, llamadas, timeouts e incidencias desde el tablero o la planilla. En horizontal, Pull queda al centro y cada Llamada del lado de su equipo. Un solo widget de TIME OUT contiene dos botones con los colores y cupos restantes de los equipos. La planilla identifica qué equipo hizo cada llamado.
-5. Guardá el partido al terminar. La planilla cerrada se conserva en Historial y se puede exportar como JSON. La app espera a que finalicen las cuentas no pausables antes de guardar.
+5. Guardá el partido al terminar. La planilla cerrada se conserva en Historial y se puede exportar como PDF (para imprimir o compartir), CSV (para planillas de cálculo) o JSON (respaldo completo). La app espera a que finalicen las cuentas no pausables antes de guardar.
 
 El botón Reiniciar contadores reinicia solo el partido actual después de confirmación. Conserva el historial y los perfiles personalizados. Nuevo partido conserva los nombres y colores de los equipos.
 
@@ -76,6 +76,7 @@ Fuentes consultadas el 27/09/2026: [reglas y recursos WFDF](https://rules.wfdf.s
 - `index.html` y `ultimate-clock.html`: entradas equivalentes.
 - `clock-engine.js`: motor temporal y validación de configuración.
 - `alerts.js`: audio y avisos.
+- `sheet-export.js`: exportación de planillas a PDF y CSV, sin dependencias.
 - `ultimate-clock.js`: tablero, equipos, perfiles, planilla, modales e historial.
 - `tokens.css` y `ultimate-clock.css`: estilos Claro/Oscuro y diseño adaptable.
 - `Iniciar Ultimate Clock.command`: servidor local y apertura automática en navegador.

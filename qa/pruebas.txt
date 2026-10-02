@@ -1,22 +1,30 @@
-✔ completion sounds the buzzer five times after queued signals (1.622834ms)
-✔ hidden page defers pending signals until visible (0.775125ms)
-✔ sound disabled keeps visual alerts without audio permission (0.486792ms)
-✔ visual completion never waits for audio permission (0.411709ms)
-✔ test button signal uses the same five buzzer pulses and respects mute (0.661125ms)
-✔ playback failure disables sound and still delivers the visual alert (0.401708ms)
-✔ pause/resume excludes paused time, preserves milliseconds (0.485833ms)
-✔ background recovery emits completion exactly once (0.381833ms)
-✔ reload retains clock anchors and pending completion (0.079834ms)
-✔ completed timer restarts with fresh alerts (0.062ms)
-✔ system clock backward does not subtract elapsed time (0.474084ms)
-✔ custom settings survive serialized reload and retain originating ruleset (0.12975ms)
-✔ invalid match durations and timeout quota rejected (0.395209ms)
-✔ automatic team ink meets AA for a broad RGB sample (9.539375ms)
-ℹ tests 14
+✔ completion sounds the buzzer five times after queued signals (4.592526ms)
+✔ hidden page defers pending signals until visible (1.761796ms)
+✔ sound disabled keeps visual alerts without audio permission (1.144677ms)
+✔ visual completion never waits for audio permission (2.677178ms)
+✔ test button signal uses the same five buzzer pulses and respects mute (1.430315ms)
+✔ playback failure disables sound and still delivers the visual alert (1.155348ms)
+✔ pause/resume excludes paused time, preserves milliseconds (1.436896ms)
+✔ background recovery emits completion exactly once (1.49458ms)
+✔ reload retains clock anchors and pending completion (0.263546ms)
+✔ completed timer restarts with fresh alerts (0.190497ms)
+✔ system clock backward does not subtract elapsed time (0.321254ms)
+✔ custom settings survive serialized reload and retain originating ruleset (0.371102ms)
+✔ invalid match durations and timeout quota rejected (2.483906ms)
+✔ automatic team ink meets AA for a broad RGB sample (49.371426ms)
+✔ CSV has a BOM, a header and one row per event with team names and elapsed time (4.348494ms)
+✔ CSV quotes commas, quotes and newlines, and neutralizes formulas (0.31961ms)
+✔ CSV of a sheet without events is just the header (0.28218ms)
+✔ event description matches the saved-sheet modal wording (0.234789ms)
+✔ PDF text escapes delimiters and maps to WinAnsi (1.793984ms)
+✔ PDF is well formed: header, valid xref offsets, trailer and Latin text (23.991206ms)
+✔ PDF paginates long sheets and numbers every page (31.53339ms)
+✔ PDF of a sheet without events says so (1.152362ms)
+ℹ tests 22
 ℹ suites 0
-ℹ pass 14
+ℹ pass 22
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 58.306584
+ℹ duration_ms 187.533445

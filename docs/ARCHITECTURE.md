@@ -10,6 +10,7 @@ index.html / ultimate-clock.html
         ├── ultimate-clock.js  → tablero, flujo, perfiles, planilla, historial
         ├── clock-engine.js     → estado temporal, anchors, validaciones
         ├── alerts.js           → AudioContext, cinco pulsos, avisos visuales
+        ├── sheet-export.js     → planillas a PDF y CSV, sin dependencias
         ├── tokens.css          → variables de color y tipografía
         ├── ultimate-clock.css  → layout responsive y temas
         └── sw.js                → caché offline versionada
