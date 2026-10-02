@@ -430,7 +430,7 @@
     const m=activeMatch(),timer=m.timers.timeout;
     if((timer.running||timer.elapsed>0)&&!timer.completed){showToast(t('Terminá el time-out activo antes de registrar otro.'));return;}
     if(m.timeoutState.usages[teamIndex]>=m.config.timeoutsPerTeam){showToast(t('Este equipo no tiene time-outs disponibles.'));return;}
-    openModal(t('Iniciar time out'),`<form data-form="timeout" data-team="${teamIndex}"><p>${t('<strong>{team}</strong> usará uno de sus {n} time outs de este tiempo. La cuenta de {time} no se puede pausar y el reloj del partido se detiene.',{team:esc(m.teams[teamIndex].name),n:m.config.timeoutsPerTeam,time:fmt(m.config.timeoutDuration)})}</p><div class="modal-actions"><button type="button" class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary">${esc(t('INICIAR TIME OUT'))}</button></div></form>`);
+    openModal(t('Iniciar time out'),`<form data-form="timeout" data-team="${teamIndex}"><p>${t('<strong>{team}</strong> usará uno de sus {n} time outs de este tiempo. La cuenta de {time} no se puede pausar; el reloj del partido sigue corriendo.',{team:esc(m.teams[teamIndex].name),n:m.config.timeoutsPerTeam,time:fmt(m.config.timeoutDuration)})}</p><div class="modal-actions"><button type="button" class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary">${esc(t('INICIAR TIME OUT'))}</button></div></form>`);
   }
 
   const timerButtonLabel=(id,timer)=>timer.completed||timer.running?'REINICIAR':'INICIAR';
@@ -894,9 +894,7 @@
     if(isLocked()){closeModal();return true;}
     unlockAudio();
     if(type==='call'){const index=Number(form.dataset.team);if(![0,1].includes(index)||pendingCall!==index)return true;pendingCall=null;registerCall(index,String(data.get('type')));closeModal();return true;}
-    else {const index=Number(form.dataset.team),timer=m.timers.timeout;if(timer.running||m.timeoutState.usages[index]>=m.config.timeoutsPerTeam){showToast(t('Ese time out no está disponible.'));return true;}m.timeoutState.activeTeam=index;m.timeoutState.mode='';m.timeoutState.usages[index]++;timer.elapsed=0;timer.alerted=[];timer.completed=false;configureTimeout(m,'');setRunning(timer,true);logEvent('timeout',{team:index});
-      /* El time out detiene el reloj del partido; se reanuda con ▶ REANUDAR cuando vuelve el juego. */
-      if(m.clock.running){updateClock();m.clock.running=false;m.clock.startedAt=null;m.clock.status='Pausado';logEvent('pause',{timer:'clock'});}}
+    else {const index=Number(form.dataset.team),timer=m.timers.timeout;if(timer.running||m.timeoutState.usages[index]>=m.config.timeoutsPerTeam){showToast(t('Ese time out no está disponible.'));return true;}m.timeoutState.activeTeam=index;m.timeoutState.mode='';m.timeoutState.usages[index]++;timer.elapsed=0;timer.alerted=[];timer.completed=false;configureTimeout(m,'');setRunning(timer,true);logEvent('timeout',{team:index});}
     closeModal();saveState();renderDashboard();return true;
   }
 

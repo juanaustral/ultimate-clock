@@ -44,7 +44,7 @@
     /* Time out */
     'Terminá el time-out activo antes de registrar otro.':'Finish the current time out before logging another.',
     'Este equipo no tiene time-outs disponibles.':'This team has no time outs left.','Iniciar time out':'Start time out',
-    '<strong>{team}</strong> usará uno de sus {n} time outs de este tiempo. La cuenta de {time} no se puede pausar y el reloj del partido se detiene.':'<strong>{team}</strong> will use one of its {n} time outs for this half. The {time} countdown cannot be paused and the game clock stops.',
+    '<strong>{team}</strong> usará uno de sus {n} time outs de este tiempo. La cuenta de {time} no se puede pausar; el reloj del partido sigue corriendo.':'<strong>{team}</strong> will use one of its {n} time outs for this half. The {time} countdown cannot be paused; the game clock keeps running.',
     'INICIAR TIME OUT':'START TIME OUT','Ese time out no está disponible.':'That time out is not available.',
     /* Planilla y eventos */
     'Gol':'Goal','Ajuste manual':'Manual adjustment','Ajuste manual −1':'Manual adjustment −1','Pausa':'Pause','Inicio / reanudación':'Start / resume',
