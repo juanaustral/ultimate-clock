@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## 2026-10-02
+
+- Se adoptó la licencia PolyForm Noncommercial 1.0.0 (`LICENSE.md`).
+
 ## 2026-09-30
 
 - Se cambiaron los subtítulos de los marcadores a **GOLES**.
