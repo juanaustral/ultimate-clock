@@ -386,7 +386,7 @@
     }
     saveState();renderDashboard();
   }
-  function openCall(teamIndex) {const m=activeMatch();if((teamIndex===0?m.timers.call:m.timers.call2).running){showToast('La llamada corre hasta el final.');return;}openModal(`Llamada de ${m.teams[teamIndex].name}`,`<form data-form="call" data-team="${teamIndex}"><div class="field"><label for="call-type">Categoría de llamada</label><select id="call-type" name="type">${CALL_CATEGORIES.map(x=>`<option>${x}</option>`).join('')}</select></div><p class="call-guidance" id="call-guidance">${esc(CALL_GUIDANCE.Falta)}</p><p>El reloj registra la llamada; no aplica sanciones ni reemplaza las reglas. <a href="${m.ruleset==='usau'?'https://usaultimate.org/rules/':'https://rules.wfdf.sport/'}" target="_blank" rel="noopener noreferrer">Consultar reglamento ↗</a></p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary">INICIAR LLAMADA</button></div></form>`);}
+  function openCall(teamIndex) {const m=activeMatch();if((teamIndex===0?m.timers.call:m.timers.call2).running){showToast('La llamada corre hasta el final.');return;}openModal(`Llamada de ${m.teams[teamIndex].name}`,`<form data-form="call" data-team="${teamIndex}"><fieldset class="call-types"><legend>Categoría de llamada</legend>${CALL_CATEGORIES.map((x,i)=>`<label class="call-type"><input type="radio" name="type" value="${esc(x)}" ${i===0?'checked':''}><span>${esc(x)}</span></label>`).join('')}</fieldset><p class="call-guidance" id="call-guidance">${esc(CALL_GUIDANCE.Falta)}</p><p>El reloj registra la llamada; no aplica sanciones ni reemplaza las reglas. <a href="${m.ruleset==='usau'?'https://usaultimate.org/rules/':'https://rules.wfdf.sport/'}" target="_blank" rel="noopener noreferrer">Consultar reglamento ↗</a></p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary">INICIAR LLAMADA</button></div></form>`);}
   function startTimeout(teamIndex) {
     const m=activeMatch(),t=m.timers.timeout;
     if((t.running||t.elapsed>0)&&!t.completed){showToast('Terminá el time-out activo antes de registrar otro.');return;}
@@ -418,9 +418,9 @@
 
   function teamMarkup(team,index) {
     return `<article class="instrument team-card team-${index+1}" data-team-card="${index}" style="${teamStyle(team)}">
-      <div class="team-top"><div><span class="team-role">GOLES</span><button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="Editar nombre y color de ${esc(team.name)}"><strong class="team-name">${esc(team.name)}</strong><span aria-hidden="true">✎</span></button></div></div>
-      <div class="score-display" aria-label="Puntaje de ${esc(team.name)}">${team.score}</div>
-      <div class="team-bottom"><div class="score-actions"><button class="score-button minus" data-action="minus" data-team="${index}" aria-label="Restar un punto a ${esc(team.name)}">−</button><button class="score-button plus" data-action="goal" data-team="${index}" aria-label="Sumar un gol a ${esc(team.name)}">+</button></div></div>
+      <button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="Editar nombre y color de ${esc(team.name)}"><strong class="team-name">${esc(team.name)}</strong><span class="team-edit" aria-hidden="true">✎</span></button>
+      <div class="score-display" role="img" aria-label="${team.score} goles de ${esc(team.name)}">${team.score}</div>
+      <div class="score-actions"><button class="score-button minus" type="button" data-action="minus" data-team="${index}" aria-label="Restar un punto a ${esc(team.name)}">−</button><button class="score-button plus" type="button" data-action="goal" data-team="${index}" aria-label="Sumar un gol a ${esc(team.name)}">+ GOL</button></div>
     </article>`;
   }
 
@@ -428,36 +428,48 @@
     const status=clockState(match.clock);
     return `<article class="instrument clock-card ${status.className==='running'?'is-running':status.className==='paused'?'is-paused':status.className==='complete'?'is-complete':''}" data-timer-card="clock">
       <div class="clock-head"><span class="status-line ${status.className}" data-display="clock-status">${esc(status.label)}</span><span class="half-badge">${match.half}º TIEMPO</span></div>
-      <div class="clock-center"><button type="button" class="clock-display" data-action="toggle-clock" aria-label="Tiempo total del partido: iniciar, pausar o reanudar" data-display="clock">${fmt(match.clock.elapsed)}</button><span>TIEMPO TOTAL DEL PARTIDO</span></div>
-      <div class="clock-bottom"><div class="clock-details"><div class="clock-detail"><span>RESTANTE TOTAL</span><b data-display="game-remaining">${fmt(match.clock.gameCap-match.clock.elapsed)}</b></div><div class="clock-detail"><span>${match.half===1?'HASTA MEDIO TIEMPO':'SEGUNDO TIEMPO'}</span><b data-display="half-remaining">${match.half===1?fmt(match.clock.halfCap-match.clock.elapsed):fmt(match.clock.gameCap-match.clock.elapsed)}</b></div></div>
-      <div class="clock-actions"><button class="button button-primary" type="button" data-action="toggle-clock">${match.clock.running?'Ⅱ PAUSAR':match.clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR'}</button></div></div>
+      <button type="button" class="clock-display" data-action="toggle-clock" aria-label="Tiempo jugado del partido: iniciar, pausar o reanudar" data-display="clock">${fmt(match.clock.elapsed)}</button>
+      <div class="clock-details"><div class="clock-detail"><span>RESTA</span><b data-display="game-remaining">${fmt(match.clock.gameCap-match.clock.elapsed)}</b></div>${match.half===1?`<div class="clock-detail"><span>AL DESCANSO</span><b data-display="half-remaining">${fmt(match.clock.halfCap-match.clock.elapsed)}</b></div>`:''}</div>
+      <div class="clock-actions"><button class="button button-primary" type="button" data-action="toggle-clock">${match.clock.running?'Ⅱ PAUSAR':match.clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR'}</button></div>
+    </article>`;
+  }
+
+  /* During the half-time break this card takes the game clock's place, so the board never grows. */
+  function breakMarkup(match) {
+    const b=match.breakTimer,state=b.running?'running':b.completed?'complete':'';
+    return `<article class="instrument clock-card break-panel ${b.running?'is-running':''} ${b.completed?'is-complete':''}" data-timer-card="break">
+      <div class="clock-head"><span class="status-line ${state}">${b.running?'Descanso en curso':b.completed?'Descanso cumplido':'Primer tiempo cumplido'}</span><span class="half-badge">MEDIO TIEMPO</span></div>
+      <strong class="clock-display" data-display="break">${fmt(b.duration-b.elapsed)}</strong>
+      <div class="clock-details"><div class="clock-detail"><span>JUGADO</span><b>${fmt(match.clock.elapsed)}</b></div><div class="progress-track" role="progressbar" aria-label="Progreso del medio tiempo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*b.elapsed/b.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*b.elapsed/b.duration)}%"></span></div></div>
+      <div class="clock-actions">${!b.running&&!isLocked()?`<button class="button button-primary" type="button" data-action="${b.completed?'second-half':'start-break'}">${b.completed?'▶ SEGUNDO TIEMPO':'▶ INICIAR DESCANSO'}</button>`:''}</div>
     </article>`;
   }
 
   function timerMarkup(match,id,title,teamIndex=null) {
     const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,status=timerState(timer),team=teamIndex===null?null:match.teams[teamIndex];
-    return `<article class="instrument timer-card ${team?'timer-call team-timer':''} timer-${id} ${status.className==='complete'?'is-complete':''}" data-timer-card="${id}" ${team?`style="${teamStyle(team)}"`:''}>
-      <div class="timer-head"><h2 class="timer-title">${esc(title)}${team?`<span>· ${esc(team.name)}</span>`:''}</h2><span class="timer-badge" data-display="${id}-phase">${timer.completed?'CUMPLIDO':timer.running?'EN CURSO':'LISTO'}</span></div>
-      <div class="timer-core"><strong class="timer-display" data-display="${id}">${fmt(timer.duration-timer.elapsed)}</strong><button class="timer-main-action" type="button" data-action="toggle-timer" data-timer="${id}" ${timer.running||isLocked()?'disabled':''}>${timer.completed?'REINICIAR':'INICIAR'}</button></div>
+    const sub=team?`${esc(team.name)}${timer.running||timer.completed?` · ${esc(match.callTypes[teamIndex])}`:''}`:'Lanzamiento';
+    return `<article class="instrument timer-card ${team?'timer-call team-timer':''} timer-${id} ${timer.running?'is-running':''} ${status.className==='complete'?'is-complete':''}" data-timer-card="${id}" ${team?`style="${teamStyle(team)}"`:''}><div class="tile">
+      <div class="timer-head"><div><h2 class="timer-title">${esc(title)}</h2><span class="timer-sub">${sub}</span></div><span class="status-line ${status.className}">${esc(status.label)}</span></div>
+      <strong class="timer-display" data-display="${id}">${fmt(timer.duration-timer.elapsed)}</strong>
+      <button class="timer-main-action" type="button" data-action="toggle-timer" data-timer="${id}" ${timer.running||isLocked()?'disabled':''}>${timer.completed?'REINICIAR':'INICIAR'}</button>
       <div class="progress-track" role="progressbar" aria-label="Progreso de ${esc(title)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span></div>
-      <div class="timer-bottom"><span class="status-line ${status.className}">${esc(status.label)}</span></div>
-      ${team?`<p class="timer-context">${esc(match.callTypes[teamIndex])}</p>`:''}
-    </article>`;
+    </div></article>`;
   }
 
   function timeoutMarkup(match) {
     const timer=match.timers.timeout,status=timerState(timer),active=match.timeoutState.activeTeam,c=match.config;
-    return `<article class="instrument timeout-card ${timer.running?'is-active':''}" data-timer-card="timeout">
-      <div class="timeout-summary"><h2 class="timer-title">TIME OUT</h2><strong class="timeout-display" data-display="timeout">${fmt(timer.duration-timer.elapsed)}</strong><span class="timeout-phase status-line ${status.className}" data-display="timeout-phase">${active===null?'DISPONIBLE':esc(status.label)}</span></div>
-      <div class="progress-track" role="progressbar" aria-label="Progreso del time out" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span></div>
+    return `<article class="instrument timeout-card ${timer.running?'is-active':''}" data-timer-card="timeout" ${active!==null?`style="${teamStyle(match.teams[active])}"`:''}><div class="tile">
+      <div class="timer-head"><div><h2 class="timer-title">TIME OUT</h2><span class="timer-sub">${active===null?`${c.timeoutsPerTeam} por tiempo`:esc(match.teams[active].name)}</span></div><span class="timeout-phase status-line ${active===null?'':status.className}" data-display="timeout-phase">${active===null?'Disponible':esc(status.label)}</span></div>
+      <strong class="timeout-display" data-display="timeout">${fmt(timer.duration-timer.elapsed)}</strong>
       <div class="timeout-actions">${match.teams.map((team,index)=>`<button class="timeout-team-button ${active===index?'is-current':''}" type="button" data-action="timeout" data-team="${index}" style="${teamStyle(team)}" aria-label="Iniciar time out de ${esc(team.name)}. ${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])} de ${c.timeoutsPerTeam} disponibles" ${isLocked()||timer.running||match.timeoutState.usages[index]>=c.timeoutsPerTeam?'disabled':''}><span>${esc(team.name)}</span><strong data-timeout-remaining="${index}">${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])}/${c.timeoutsPerTeam}</strong></button>`).join('')}</div>
-    </article>`;
+      <div class="progress-track" role="progressbar" aria-label="Progreso del time out" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span></div>
+    </div></article>`;
   }
 
   function renderDashboard() {
-    const match=activeMatch();updateTimerConfig(match);const b=match.breakTimer;
-    const breakPanel=match.half===1&&match.clock.halfAlerted?`<section class="break-panel" data-timer-card="break"><div><span class="screen-eyebrow">MEDIO TIEMPO</span><h2>${b.running?'DESCANSO EN CURSO':b.completed?'MEDIO TIEMPO CUMPLIDO':'PRIMER TIEMPO CUMPLIDO'}</h2></div><strong data-display="break">${fmt(b.duration-b.elapsed)}</strong><div class="progress-track" role="progressbar" aria-label="Progreso del medio tiempo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*b.elapsed/b.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*b.elapsed/b.duration)}%"></span></div>${!b.running&&!isLocked()?`<button class="button button-primary" data-action="${b.completed?'second-half':'start-break'}">${b.completed?'INICIAR SEGUNDO TIEMPO':'INICIAR MEDIO TIEMPO'}</button>`:''}</section>`:'';
-    app.innerHTML=`<section id="tablero" class="dashboard-screen">${breakPanel}<div class="main-grid">${teamMarkup(match.teams[0],0)}${clockMarkup(match)}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'call-0','LLAMADA',0)}${timerMarkup(match,'pull','PULL')}${timerMarkup(match,'call-1','LLAMADA',1)}${timeoutMarkup(match)}</div></section>`;
+    const match=activeMatch();updateTimerConfig(match);
+    const center=match.half===1&&match.clock.halfAlerted?breakMarkup(match):clockMarkup(match);
+    app.innerHTML=`<section id="tablero" class="dashboard-screen"><div class="main-grid">${teamMarkup(match.teams[0],0)}${center}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'pull','PULL')}${timeoutMarkup(match)}${timerMarkup(match,'call-0','LLAMADA',0)}${timerMarkup(match,'call-1','LLAMADA',1)}</div></section>`;
     updateDisplays();if(isLocked())app.querySelectorAll('[data-action="goal"],[data-action="minus"],[data-action="edit-team"],[data-action="toggle-clock"],[data-action="toggle-timer"],[data-action="timeout"]').forEach(el=>el.disabled=true);
     updateThemeMeta();
   }
@@ -469,12 +481,12 @@
     const clockCard=document.querySelector('[data-timer-card="clock"]'),cs=clockState(clock),clockStatus=document.querySelector('[data-display="clock-status"]');
     if(clockStatus){clockStatus.textContent=cs.label;clockStatus.className=`status-line ${cs.className}`;}
     if(clockCard){clockCard.classList.toggle('is-running',clock.running);clockCard.classList.toggle('is-paused',!clock.running&&clock.elapsed>0);clockCard.classList.toggle('is-complete',cs.className==='complete');const button=clockCard.querySelector('.clock-actions [data-action="toggle-clock"]');if(button){button.textContent=isLocked()?'FINALIZADO':clock.running?'Ⅱ PAUSAR':clock.elapsed>0?'▶ REANUDAR':'▶ INICIAR';button.disabled=isLocked()||clock.capAlerted||(match.half===1&&clock.halfAlerted);}}
-    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));set(`${id}-phase`,timer.completed?'CUMPLIDO':timer.running?'EN CURSO':'LISTO');const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);card.classList.toggle('is-ending',isEnding(timer));const button=card.querySelector('[data-action="toggle-timer"]');button.textContent=timer.completed?'REINICIAR':'INICIAR';button.disabled=timer.running||isLocked();setProgress(card,timer.elapsed,timer.duration);}
+    for(const id of ['pull','call-0','call-1']){const timer=id==='call-0'?match.timers.call:id==='call-1'?match.timers.call2:match.timers.pull,card=document.querySelector(`[data-timer-card="${id}"]`);if(!card)continue;set(id,fmt(timer.duration-timer.elapsed));const status=card.querySelector('.status-line'),ts=timerState(timer);status.textContent=ts.label;status.className=`status-line ${ts.className}`;card.classList.toggle('is-complete',timer.completed);card.classList.toggle('is-running',timer.running);card.classList.toggle('is-ending',isEnding(timer));const button=card.querySelector('[data-action="toggle-timer"]');button.textContent=timer.completed?'REINICIAR':'INICIAR';button.disabled=timer.running||isLocked();setProgress(card,timer.elapsed,timer.duration);}
     const timeout=match.timers.timeout,timeoutCard=document.querySelector('[data-timer-card="timeout"]');
     if(timeoutCard){
       const active=match.timeoutState.activeTeam,ts=timerState(timeout),phase=timeoutCard.querySelector('[data-display="timeout-phase"]');
       set('timeout',fmt(timeout.duration-timeout.elapsed));
-      phase.textContent=active===null?'DISPONIBLE':ts.label;
+      phase.textContent=active===null?'Disponible':ts.label;
       phase.className=`timeout-phase status-line ${active===null?'':ts.className}`;
       timeoutCard.classList.toggle('is-active',timeout.running);
       timeoutCard.classList.toggle('is-ending',isEnding(timeout));
@@ -513,10 +525,6 @@
   function openTimeoutPicker() {openModal('Pedir time-out',`<p>Elegí el equipo que pide tiempo.</p><div class="picker-options">${activeMatch().teams.map((team,index)=>`<button class="button" data-action="timeout" data-team="${index}">${esc(team.name)}</button>`).join('')}</div>`);}
   function openCallPicker() {openModal('Registrar llamada',`<p>Elegí el equipo que hizo el llamado.</p><div class="picker-options">${activeMatch().teams.map((team,index)=>`<button class="button" data-action="pick-call-team" data-team="${index}">${esc(team.name)}</button>`).join('')}</div>`);}
   function openIncident() {openModal('Anotar incidencia','<form data-form="incident"><div class="field"><label for="incident-type">Tipo</label><select id="incident-type" name="type"><option>TFR</option><option>PMF</option><option>Otra</option></select></div><div class="field"><label for="incident-note">Nota opcional</label><input id="incident-note" name="note" maxlength="160"></div><p>Registro descriptivo. No aplica sanciones ni certifica decisiones.</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary">Anotar</button></div></form>');}
-
-  function openThemes() {
-    openModal('Modos de lectura',`<p>Elegí el contraste más cómodo para el entorno de juego.</p><div class="mode-options">${[...BUILT_IN_THEMES,...state.customThemes].map(theme=>`<button class="mode-option ${state.settings.theme===theme.id?'active':''}" type="button" data-action="apply-theme" data-theme="${esc(theme.id)}" style="--mode-swatch:${esc(theme.swatch||theme.vars?.accent||'#2448dc')}"><strong>${esc(theme.name)}</strong><small>${state.settings.theme===theme.id?'Activo':'Aplicar'}</small></button>`).join('')}</div>`);
-  }
 
   function renderSettings() {
     const config=getRuleset(),locked=hasStarted()||isLocked();
@@ -645,10 +653,6 @@
 
   function openReset() {
     openModal("Reiniciar contadores", `<p>¿Reiniciar todos los contadores? Se reinician tiempos, puntajes y eventos sin guardar del partido actual. El historial guardado y los perfiles no se borrarán.</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-danger" type="button" data-action="confirm-reset">Reiniciar contadores</button></div>`);
-  }
-
-  function openNewTheme() {
-    openModal("Nuevo modo", `<form data-form="theme"><div class="field"><label for="theme-name">Nombre del modo</label><input id="theme-name" name="name" maxlength="28" placeholder="Ej.: Verde cancha" required autocomplete="off"></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">Crear y personalizar</button></div></form>`);
   }
 
   function openSheet(match) {
@@ -847,7 +851,7 @@
   });
 
   document.addEventListener("change", event => {
-    if(event.target.id==='call-type'){const guidance=document.getElementById('call-guidance');if(guidance)guidance.textContent=CALL_GUIDANCE[event.target.value]||'';}
+    if(event.target.name==='type'&&event.target.closest('[data-form="call"]')){const guidance=document.getElementById('call-guidance');if(guidance)guidance.textContent=CALL_GUIDANCE[event.target.value]||'';}
     if (event.target.dataset.setting === "ruleset") {
       if(hasStarted()||isLocked())return;
       const id=event.target.value;

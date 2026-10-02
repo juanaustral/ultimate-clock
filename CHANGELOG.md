@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 2026-10-02 · Rediseño "Línea de banda"
+
+- Tablero nuevo que entra sin scroll ni recortes en teléfono y tablet, vertical y horizontal: equipos lado a lado, reloj debajo y cuentas secundarias en una grilla 2×2 (en horizontal, todo en dos filas).
+- Las cuentas se llenan de color mientras corren; los números escalan con su tarjeta.
+- Descanso dentro de la tarjeta del reloj, Llamada con categorías a la vista y aviso de gol arriba.
+- CSS reescrito: de 50 KB a 29 KB. Detalle en `docs/DISENO-2026-10.md`.
+
 ## 2026-10-02 · Revisión de código y UX
 
 - Gol con un toque: el aviso ofrece PASE Y GOL y DESHACER.
