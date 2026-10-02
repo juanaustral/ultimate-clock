@@ -2,12 +2,16 @@
 
 ## 2026-10-02 · Rediseño "Línea de banda"
 
+- Reloj del partido primero y arriba; Llamadas debajo del reloj y Pull y Time Out al final.
+- Botones de Time Out con INICIAR (EN CURSO o SIN CUPO según el caso) y nombre del equipo más grande en las Llamadas.
+- VISITÁ MI SITIO WEB lleva a juanmartinezgarcia.com; Ultimate Frisbee Mendoza en violeta en Info y en el pie. El enlace de donación sigue pendiente.
+
 - Logo nuevo (disco y cronómetro) en encabezado, menú, Info e ícono.
 - PLANILLA reúne el partido actual, los botones EXPORTAR y las planillas guardadas; se quitó Historial.
 - Menú con ＋ NUEVO PARTIDO primero y en color, y MODO CLARO / MODO OSCURO.
 - Info con VISITÁ MI SITIO WEB y DONÁ PARA APOYAR EL PROYECTO.
 - Archivos exportados con nombre legible: `planilla-equipo-a-vs-equipo-b-AAAA-MM-DD`.
-- Tablero nuevo que entra sin scroll ni recortes en teléfono y tablet, vertical y horizontal: equipos lado a lado, reloj debajo y cuentas secundarias en una grilla 2×2 (en horizontal, todo en dos filas).
+- Tablero nuevo que entra sin scroll ni recortes en teléfono y tablet, vertical y horizontal: equipos lado a lado y cuentas secundarias en una grilla 2×2 (en horizontal, todo en dos filas).
 - Las cuentas se llenan de color mientras corren; los números escalan con su tarjeta.
 - Descanso dentro de la tarjeta del reloj, Llamada con categorías a la vista y aviso de gol arriba.
 - CSS reescrito: de 50 KB a 29 KB. Detalle en `docs/DISENO-2026-10.md`.

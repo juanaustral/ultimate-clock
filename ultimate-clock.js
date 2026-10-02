@@ -18,11 +18,11 @@
   ];
 
   const TUTORIAL_STEPS = [
-    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante; desde el aviso podés anotar pase y gol o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.'},
     {target:'.clock-card',title:'Tiempo del partido',text:'Iniciá el reloj principal cuando empieza el juego. Es el único que podés pausar. Al cumplirse el primer tiempo aparecerá el aviso para iniciar el descanso.'},
-    {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Esta cuenta no se pausa y suena cinco veces al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
+    {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante; desde el aviso podés anotar pase y gol o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste.'},
     {target:'.timer-call-0',title:'Llamadas por equipo',text:'Cada equipo tiene su propia Llamada. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.'},
-    {target:'.timeout-card',title:'Time Out',text:'Elegí el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
+    {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Esta cuenta no se pausa y suena cinco veces al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
+    {target:'.timeout-card',title:'Time Out',text:'Tocá INICIAR en el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
     {target:'.menu-button',title:'Menú y planilla',text:'Desde MENU empezás un partido nuevo, abrís la planilla (con las guardadas y los botones para exportar) y la configuración. Ahí también activás y probás el sonido antes del partido.'}
   ];
 
@@ -42,8 +42,8 @@
   /* Logo: un disco visto de frente con la corona de un cronómetro y el tiempo transcurrido en blanco. */
   const LOGO_SVG = '<svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg>';
   /* Completar con el enlace de cobro cuando esté definido; mientras tanto el botón explica que todavía no hay enlace. */
-  const DONATION_URL = '';
-  const WEBSITE_URL = 'https://iona.ar/';
+  const DONATION_URL = ''; // Pendiente: Juan todavía no tiene el link de donación.
+  const WEBSITE_URL = 'https://juanmartinezgarcia.com/';
 
   const TEAM_DEFAULTS = [
     { name: "Equipo 1", color: "#1b47e2" },
@@ -462,12 +462,14 @@
     </div></article>`;
   }
 
+  const timeoutGoLabel = (match,index) => match.timeoutState.activeTeam===index&&match.timers.timeout.running?'EN CURSO':match.timeoutState.usages[index]>=match.config.timeoutsPerTeam?'SIN CUPO':'INICIAR';
+
   function timeoutMarkup(match) {
     const timer=match.timers.timeout,status=timerState(timer),active=match.timeoutState.activeTeam,c=match.config;
     return `<article class="instrument timeout-card ${timer.running?'is-active':''}" data-timer-card="timeout" ${active!==null?`style="${teamStyle(match.teams[active])}"`:''}><div class="tile">
       <div class="timer-head"><div><h2 class="timer-title">TIME OUT</h2><span class="timer-sub">${active===null?`${c.timeoutsPerTeam} por tiempo`:esc(match.teams[active].name)}</span></div><span class="timeout-phase status-line ${active===null?'':status.className}" data-display="timeout-phase">${active===null?'Disponible':esc(status.label)}</span></div>
       <strong class="timeout-display" data-display="timeout">${fmt(timer.duration-timer.elapsed)}</strong>
-      <div class="timeout-actions">${match.teams.map((team,index)=>`<button class="timeout-team-button ${active===index?'is-current':''}" type="button" data-action="timeout" data-team="${index}" style="${teamStyle(team)}" aria-label="Iniciar time out de ${esc(team.name)}. ${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])} de ${c.timeoutsPerTeam} disponibles" ${isLocked()||timer.running||match.timeoutState.usages[index]>=c.timeoutsPerTeam?'disabled':''}><span>${esc(team.name)}</span><strong data-timeout-remaining="${index}">${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])}/${c.timeoutsPerTeam}</strong></button>`).join('')}</div>
+      <div class="timeout-actions">${match.teams.map((team,index)=>`<button class="timeout-team-button ${active===index?'is-current':''}" type="button" data-action="timeout" data-team="${index}" style="${teamStyle(team)}" aria-label="Iniciar time out de ${esc(team.name)}. ${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])} de ${c.timeoutsPerTeam} disponibles" ${isLocked()||timer.running||match.timeoutState.usages[index]>=c.timeoutsPerTeam?'disabled':''}><span>${esc(team.name)}</span><strong data-timeout-remaining="${index}">${Math.max(0,c.timeoutsPerTeam-match.timeoutState.usages[index])}/${c.timeoutsPerTeam}</strong><b class="timeout-go" data-timeout-go="${index}">${timeoutGoLabel(match,index)}</b></button>`).join('')}</div>
       <div class="progress-track" role="progressbar" aria-label="Progreso del time out" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(100*timer.elapsed/timer.duration)}"><span class="progress-fill" style="--progress:${Math.min(100,100*timer.elapsed/timer.duration)}%"></span></div>
     </div></article>`;
   }
@@ -475,7 +477,7 @@
   function renderDashboard() {
     const match=activeMatch();updateTimerConfig(match);
     const center=match.half===1&&match.clock.halfAlerted?breakMarkup(match):clockMarkup(match);
-    app.innerHTML=`<section id="tablero" class="dashboard-screen"><div class="main-grid">${teamMarkup(match.teams[0],0)}${center}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'pull','PULL')}${timeoutMarkup(match)}${timerMarkup(match,'call-0','LLAMADA',0)}${timerMarkup(match,'call-1','LLAMADA',1)}</div></section>`;
+    app.innerHTML=`<section id="tablero" class="dashboard-screen"><div class="main-grid">${center}${teamMarkup(match.teams[0],0)}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'call-0','LLAMADA',0)}${timerMarkup(match,'call-1','LLAMADA',1)}${timerMarkup(match,'pull','PULL')}${timeoutMarkup(match)}</div></section>`;
     updateDisplays();if(isLocked())app.querySelectorAll('[data-action="goal"],[data-action="minus"],[data-action="edit-team"],[data-action="toggle-clock"],[data-action="toggle-timer"],[data-action="timeout"]').forEach(el=>el.disabled=true);
     updateThemeMeta();
   }
@@ -502,6 +504,7 @@
         button.querySelector('[data-timeout-remaining]').textContent=`${remaining}/${match.config.timeoutsPerTeam}`;
         button.setAttribute('aria-label',`Iniciar time out de ${match.teams[index].name}. ${remaining} de ${match.config.timeoutsPerTeam} disponibles`);
         button.classList.toggle('is-current',active===index);
+        const go=button.querySelector('[data-timeout-go]'),label=timeoutGoLabel(match,index);if(go.textContent!==label)go.textContent=label;
         button.disabled=isLocked()||timeout.running||remaining===0;
       });
     }
@@ -633,7 +636,7 @@
 
   function openInfo() {
     const donate=DONATION_URL?`<a class="button info-donate" href="${esc(DONATION_URL)}" target="_blank" rel="noopener noreferrer">♥ DONÁ PARA APOYAR EL PROYECTO ↗</a>`:`<button class="button info-donate" type="button" data-action="donation-info">♥ DONÁ PARA APOYAR EL PROYECTO</button>`;
-    openModal("Sobre Ultimate Clock", `<div class="info-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="button button-primary" href="${WEBSITE_URL}" target="_blank" rel="noopener noreferrer">VISITÁ MI SITIO WEB ↗</a>${donate}<a class="info-secondary" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a></div>`);
+    openModal("Sobre Ultimate Clock", `<div class="info-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>Un tablero para llevar los tiempos y la planilla del partido desde la línea de juego.</p></div></div><div class="info-copy"><p><strong>Desarrollado por Juan Martínez García.</strong> Esta app es gratuita para la comunidad del Ultimate Frisbee.</p><p>Los datos se guardan en este dispositivo.</p></div><div class="info-links"><a class="button button-primary" href="${WEBSITE_URL}" target="_blank" rel="noopener noreferrer">VISITÁ MI SITIO WEB ↗</a>${donate}<a class="button info-ufm" href="https://www.instagram.com/ultimatefrisbeemza/" target="_blank" rel="noopener noreferrer">CONOCÉ ULTIMATE FRISBEE MENDOZA ↗</a></div>`);
   }
 
   function addGoal(teamIndex,origin='dashboard') {

@@ -4,7 +4,7 @@
 :root{
   --bg:#e9ecf1;--panel:#fff;--panel-dark:#101216;--ink:#0f1115;--muted:#5a606d;--line:#d4d8df;
   --accent:#1b47e2;--accent-ink:#fff;--accent-2:#101216;--signal:#0f8a3c;--warning:#a35a00;--danger:#c81e1e;
-  --focus:#1b47e2;--bg-2:#f1f3f6;--page-ink:#0f1115;--panel-display:#000;
+  --focus:#1b47e2;--ufm:#7c3aed;--bg-2:#f1f3f6;--page-ink:#0f1115;--panel-display:#000;
   --font-body:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   --font-display:'SF Pro Display',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
   --font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;

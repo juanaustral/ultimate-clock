@@ -58,20 +58,21 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 .site-footer{display:flex;align-items:center;justify-content:center;gap:18px;padding:0 var(--gap);font:700 9.5px/1 var(--font-body);letter-spacing:.08em;color:var(--muted);background:var(--panel);border-top:var(--rule);overflow:hidden;white-space:nowrap}
 .site-footer a{min-width:0;text-decoration:none;overflow:hidden;text-overflow:ellipsis;min-height:var(--foot);display:flex;align-items:center}
 .site-footer a:last-child{color:var(--accent)}
+.site-footer .footer-ufm{flex:none;min-height:0;padding:4px 8px;border-radius:999px;background:var(--ufm);color:#fff}
 
 /* ── Tablero ──────────────────────────────────────────────
-   Vertical:   [Equipo 1 | Equipo 2] / [Reloj] / [Pull | Time Out] / [Llamada 1 | Llamada 2]
-   Horizontal: [Equipo 1 | Equipo 2 | Pull | Time Out] / [Reloj | Llamada 1 | Llamada 2] */
+   Vertical:   [Reloj] / [Equipo 1 | Equipo 2] / [Llamada 1 | Llamada 2] / [Pull | Time Out]
+   Horizontal: [Reloj | Llamada 1 | Llamada 2] / [Equipo 1 | Equipo 2 | Pull | Time Out] */
 .dashboard-screen,.main-grid,.timer-grid{display:grid;gap:var(--gap);min-height:0;min-width:0}
 .dashboard-screen{height:100%;grid-template-rows:minmax(0,1.85fr) minmax(0,2fr)}
-.main-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1.05fr) minmax(0,.8fr);grid-template-areas:"t1 t2" "clock clock"}
-.timer-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));grid-template-areas:"pull timeout" "call0 call1"}
+.main-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,.8fr) minmax(0,1.05fr);grid-template-areas:"clock clock" "t1 t2"}
+.timer-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));grid-template-areas:"call0 call1" "pull timeout"}
 .team-1{grid-area:t1}.team-2{grid-area:t2}.main-grid>.clock-card{grid-area:clock}
 .timer-pull{grid-area:pull}.timeout-card{grid-area:timeout}.timer-call-0{grid-area:call0}.timer-call-1{grid-area:call1}
 @media (orientation:landscape){
   .dashboard-screen{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
-  .main-grid{grid-template-rows:minmax(0,1fr) minmax(0,.92fr)}
-  .timer-grid{grid-template-rows:minmax(0,1fr) minmax(0,.92fr)}
+  .main-grid{grid-template-rows:minmax(0,.92fr) minmax(0,1fr)}
+  .timer-grid{grid-template-rows:minmax(0,.92fr) minmax(0,1fr)}
 }
 
 /* ── Instrumento (tarjeta base) ── */
@@ -118,11 +119,14 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 @container (min-width:300px) and (max-height:240px){
   .timer-card .tile{grid-template-columns:minmax(0,1fr) minmax(76px,38%);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"head head" "time action" "bar bar"}
   .timer-display{font-size:max(22px,min(calc(100cqh - 64px),17.5cqw))}
+  .timer-card.timer-call .timer-display{font-size:max(22px,min(calc(100cqh - 76px),17.5cqw))}
   .timer-main-action{align-self:center;min-height:clamp(48px,40cqh,80px)}
 }
 @container (max-width:299px) and (max-height:200px){
   .timer-sub{display:none}
+  .timer-call .timer-sub{display:block;margin-top:2px}
   .timer-display,.timeout-display{font-size:max(22px,min(calc(100cqh - 96px),30cqw))}
+  .timer-card.timer-call .timer-display{font-size:max(22px,min(calc(100cqh - 112px),30cqw))}
 }
 .progress-track{grid-area:bar;height:6px;border-radius:999px;background:var(--bg-2);overflow:hidden}
 .progress-fill{display:block;height:100%;width:var(--progress,0%);border-radius:inherit;background:var(--signal);transition:width .25s linear}
@@ -130,13 +134,16 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 /* Llamadas: neutras con el color del equipo como franja; al correr se llenan del color del equipo. */
 .timer-call{border-top:6px solid var(--team-color)}
 .timer-call .timer-main-action{background:var(--team-color);color:var(--team-ink)}
+.timer-call .timer-sub{margin-top:4px;font:800 clamp(12px,8cqw,19px)/1.1 var(--font-display);color:var(--ink);text-transform:uppercase;letter-spacing:.01em}
+.timer-call .timer-display{font-size:max(24px,min(calc(100cqh - 146px),30cqw))}
 
 /* Time Out: dos botones del color de cada equipo con el cupo. */
 .timeout-display{font-size:max(24px,min(calc(100cqh - 140px),30cqw))}
 .timeout-actions{grid-area:action;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.timeout-team-button{display:grid;align-content:center;justify-items:start;gap:2px;min-height:clamp(48px,26cqh,72px);padding:4px 10px;background:var(--team-color);color:var(--team-ink);text-align:left}
-.timeout-team-button span{max-width:100%;font:800 clamp(9px,5cqw,13px)/1.1 var(--font-body);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.timeout-team-button strong{font:800 clamp(16px,min(11cqh,10cqw),30px)/1 var(--font-display);font-variant-numeric:tabular-nums}
+.timeout-team-button{display:grid;grid-template-areas:"name" "go" "left";grid-template-columns:minmax(0,1fr);align-content:center;align-items:center;gap:3px 4px;min-height:clamp(52px,28cqh,76px);padding:5px 6px;background:var(--team-color);color:var(--team-ink);text-align:left}
+.timeout-team-button span{grid-area:name;max-width:100%;font:800 clamp(9px,5cqw,13px)/1.1 var(--font-body);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.timeout-team-button strong{grid-area:left;font:800 clamp(10px,min(7cqh,6cqw),16px)/1 var(--font-display);font-variant-numeric:tabular-nums}
+.timeout-go{grid-area:go;font:800 clamp(10px,min(10cqh,6.6cqw),20px)/1 var(--font-body);letter-spacing:.03em;white-space:nowrap}
 
 /* Estado en texto (chip); en tarjetas angostas queda solo el punto, el color de la tarjeta ya dice el estado. */
 .status-line{display:inline-flex;align-items:center;gap:6px;flex:none;padding:4px 8px;border-radius:999px;background:var(--bg-2);color:var(--ink);font:800 clamp(9px,5cqw,12px)/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
@@ -292,7 +299,7 @@ body.flash-complete::after{content:"";position:fixed;inset:0;z-index:50;pointer-
 .info-links{display:grid;gap:8px}
 .info-links .button{min-height:52px;font-size:14px}
 .info-donate{background:#e11d48;color:#fff}
-.info-secondary{display:flex;align-items:center;justify-content:center;min-height:var(--touch);font:800 12px var(--font-body);letter-spacing:.04em;color:var(--muted);text-decoration:none}
+.info-ufm{background:var(--ufm);color:#fff}
 /* Exportar */
 .export-actions{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px}
 .export-actions .button{min-height:52px;font-size:14px}
@@ -329,5 +336,6 @@ html[data-theme="dark"] .toast{background:#2a2e36}
 /* Tablets: más aire y un pie legible. */
 @media (min-width:700px) and (min-height:700px){:root{--gap:12px;--bar:60px;--foot:32px}.brand-copy{font-size:18px}.site-footer{font-size:11px}}
 @media (max-width:420px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.settings-row{grid-template-columns:1fr}.site-footer{gap:10px;font-size:8px;letter-spacing:.02em}}
+@media (max-width:480px){.footer-long{display:none}.site-footer{gap:8px;letter-spacing:0}.site-footer .footer-ufm{padding:4px 6px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.is-ending .timer-display,.is-ending .timeout-display{text-decoration:underline 4px var(--danger)}.instrument.alert{box-shadow:0 0 0 6px var(--danger)}}
 html[data-theme="dark"] .clock-card{border-color:var(--line)}
