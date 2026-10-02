@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## 2026-10-02
+
+- Las planillas guardadas en Historial se exportan también como **PDF** (imprimible, A4, varias páginas) y **CSV** (un evento por fila, apto para Excel y Google Sheets), junto al JSON existente. Sin dependencias nuevas.
+
 ## 2026-09-30
 
 - Se cambiaron los subtítulos de los marcadores a **GOLES**.
