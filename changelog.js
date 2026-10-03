@@ -2,8 +2,9 @@
    y agrega arriba una entrada breve en español e inglés. */
 (function (root) {
   'use strict';
-  const VERSION = 38;
+  const VERSION = 39;
   const ENTRIES = [
+    {version:39,date:'2026-10-03',es:['Modo torneo más simple: cada equipo se completa en una ficha con nombre, color y 14 casilleros de jugadores.','AGREGAR JUGADOR suma una fila más; AGREGAR EQUIPO guarda la ficha completa y se pueden cargar tantos equipos como haga falta.','Enter pasa a la fila siguiente; se avisa si falta un nombre o si un número está repetido.'],en:['Simpler tournament mode: each team is filled in on one sheet with name, color and 14 player slots.','ADD PLAYER adds another row; ADD TEAM saves the whole sheet and you can load as many teams as needed.','Enter moves to the next row; you are warned if a name is missing or a number is repeated.']},
     {version:38,date:'2026-10-03',es:['Modo torneo: cargá los equipos y sus jugadores (el número es opcional) desde MENU → MODO TORNEO.','Al empezar un partido elegís los equipos de la lista y, al anotar un gol, elegís quién dio el pase y quién lo hizo.','Estadísticas de goles y pases por jugador, y exportación e importación del torneo en un archivo.'],en:['Tournament mode: load teams and their players (the number is optional) from MENU → TOURNAMENT MODE.','When you start a match you pick teams from the list and, when a goal is scored, you pick who assisted and who scored.','Goal and assist stats per player, and tournament export and import as a file.']},
     {version:37,date:'2026-10-02',es:['El time out ya no pausa el reloj del partido.'],en:['A time out no longer pauses the game clock.']},
     {version:36,date:'2026-10-02',es:['Los botones de Time Out vuelven a funcionar.','El time out detiene el reloj del partido.','El llamado se puede reiniciar mientras corre.'],en:['The Time Out buttons work again.','A time out stops the game clock.','A call can be reset while it runs.']},

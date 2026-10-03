@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 2026-10-03 · v39 · Ficha de equipo más intuitiva
+
+- Cada equipo del torneo se completa en una sola ficha: nombre, color y una lista de 14 casilleros (número opcional + nombre). AGREGAR JUGADOR suma una fila; AGREGAR EQUIPO al final guarda la ficha y vuelve a la lista, desde donde se agrega el siguiente.
+- Tocar un equipo de la lista abre la misma ficha para editarlo; ✕ vacía una fila (al guardar, ese jugador se quita).
+- Enter pasa al nombre y a la fila siguiente (crea una al final). Pegar una lista completa las filas libres.
+- Validaciones al guardar: falta el nombre del equipo, número sin nombre y número repetido, con foco en el campo.
+- Al crear el torneo se abre directamente la ficha del primer equipo. El borrador de la ficha se conserva al cambiar idioma o tema.
+
 ## 2026-10-03 · v38 · Modo torneo
 
 - Nuevo MENU → MODO TORNEO: se crea un torneo con sus equipos y, en la ficha de cada uno, los jugadores (nombre obligatorio, número de camiseta opcional). Se agregan de a uno, editando o pegando una lista ("7 Ana", "Ana 7" o solo "Ana").
