@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   const FORMAT = 'ultimate-clock-tournament';
-  const LIMITS = { teams: 64, players: 60, name: 40, number: 3 };
+  const LIMITS = { teams: 64, players: 60, name: 40, number: 3, tournaments: 12 };
   const uid = prefix => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const text = (value, max) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   const isHex = value => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(value));
@@ -35,6 +35,16 @@
       if (player) out.push(player);
     }
     return out;
+  }
+  /* Lista de jugadores como texto, una persona por línea ("7 Ana"), y de vuelta: conserva el id de quien no cambió. */
+  const rosterToText = players => (players || []).map(p => (p.number !== '' ? `${p.number} ${p.name}` : p.name)).join('\n');
+  function rosterFromText(input, existing = []) {
+    const used = new Set();
+    return parsePlayers(input).slice(0, LIMITS.players).map(p => {
+      const same = existing.find(e => !used.has(e.id) && e.name === p.name && e.number === p.number);
+      if (same) { used.add(same.id); return same; }
+      return p;
+    });
   }
   const playerLabel = player => player ? (player.number !== '' ? `#${player.number} ${player.name}` : player.name) : '';
   const sortPlayers = players => [...players].sort((a, b) => (a.number === '' ) - (b.number === '') || (Number(a.number) - Number(b.number)) || a.name.localeCompare(b.name));
@@ -78,6 +88,27 @@
     }
     return [...rows.values()].filter(r => r.goals || r.assists).sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists) || b.goals - a.goals || a.player.name.localeCompare(b.player.name));
   }
+  /* Tabla de posiciones con los partidos guardados entre equipos del torneo: victoria 3, empate 1, derrota 0. */
+  function standings(tournament, matches) {
+    const rows = new Map((tournament?.teams || []).map(team => [team.id, { team, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0 }]));
+    for (const match of matches || []) {
+      if (match?.status !== 'saved' || !Array.isArray(match.teams) || match.teams.length !== 2) continue;
+      const [a, b] = match.teams.map(team => rows.get(team?.tid));
+      if (!a || !b || a === b) continue;
+      const sa = Number(match.teams[0].score) || 0, sb = Number(match.teams[1].score) || 0;
+      for (const [row, f, c] of [[a, sa, sb], [b, sb, sa]]) {
+        row.played++; row.gf += f; row.ga += c;
+        if (f > c) { row.won++; row.points += 3; } else if (f === c) { row.drawn++; row.points += 1; } else row.lost++;
+      }
+    }
+    return [...rows.values()].sort((x, y) => y.points - x.points || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.name.localeCompare(y.team.name));
+  }
+  /* Partidos del torneo entre dos de sus equipos, del más reciente al más antiguo. */
+  function results(tournament, matches) {
+    const ids = new Set((tournament?.teams || []).map(team => team.id));
+    return (matches || []).filter(m => m?.status === 'saved' && Array.isArray(m.teams) && m.teams.length === 2 && m.teams.every(team => ids.has(team?.tid)))
+      .sort((x, y) => String(y.savedAt).localeCompare(String(x.savedAt)));
+  }
   function exportPayload(tournament, matches) {
     return { format: FORMAT, version: 1, exportedAt: new Date().toISOString(), tournament, matches: tournamentMatches(tournament, matches) };
   }
@@ -101,6 +132,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, parsePlayers, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, exportPayload, parseFile, statsCSV };
+  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

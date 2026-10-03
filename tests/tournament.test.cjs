@@ -49,7 +49,28 @@ test('start screen offers match and tournament modes and the header shows the cu
   for(const f of ['index.html','ultimate-clock.html'])assert.ok(r(f).includes('id="modeBadge"'));
   assert.ok(js.includes('data-mode="match"')&&js.includes('data-mode="tournament"'));
   assert.ok(js.includes("openWelcome('mode')"));
-  /* en modo torneo el cuadro de gol no ofrece campos de texto: la rama de lista no incluye <input> */
-  const picker=js.slice(js.indexOf('function personPicker'),js.indexOf('function readPerson'));
-  assert.ok(!picker.includes('<input')&&!picker.includes('__other'));
+  /* en modo torneo el cuadro de gol no deja escribir: «Otro» y el texto libre solo existen con allowOther (modo partido) */
+  assert(js.includes("personPicker(key,label,roster,goal,key==='assist',!tournament)"));
+  assert(js.includes("${allowOther?`<option value=\"__other\""));
+  assert(js.includes("!tournament&&pick==='__other'"));
+});
+test('roster text round trips and keeps ids of unchanged players',()=>{
+  const a=T.parsePlayers('7 Ana\nBeto');assert.equal(T.rosterToText(a),'7 Ana\nBeto');
+  const b=T.rosterFromText('7 Ana\nBeto\n9 Cris',a);assert.equal(b[0].id,a[0].id);assert.equal(b[1].id,a[1].id);assert.equal(b.length,3);
+  assert.deepEqual(T.rosterFromText('',a),[]);assert.equal(T.rosterFromText(Array.from({length:80},(_,i)=>'P'+i).join('\n')).length,T.LIMITS.players);
+});
+test('menu has the mode entry and exit buttons and new matches never prefill the previous teams',()=>{
+  const fs=require('fs'),r=f=>fs.readFileSync(__dirname+'/../'+f,'utf8'),js=r('ultimate-clock.js');
+  for(const f of ['index.html','ultimate-clock.html'])assert.ok(r(f).includes('id="menuExitTournament"')&&r(f).includes('data-action="exit-tournament"'));
+  const fresh=js.slice(js.indexOf('function freshMatch'),js.indexOf('function startNextMatch'));
+  assert.ok(fresh.includes('makeMatch(')&&!fresh.includes('.teams'));
+  assert.ok(js.includes("action==='new-match'")&&js.includes('startNextMatch()'));
+});
+test('standings: 3 points a win, 1 a draw, ordered by points, goal difference and goals; only tournament-vs-tournament matches count',()=>{
+  const tour=T.makeTournament('L'),[a,b,c]=['A','B','C'].map(n=>T.makeTeam(n,'#111'));tour.teams.push(a,b,c);
+  const m=(x,sx,y,sy,at)=>({id:at,status:'saved',savedAt:at,teams:[{tid:x?.id||'',score:sx},{tid:y?.id||'',score:sy}],events:[]});
+  const list=[m(a,3,b,1,'2026-10-01'),m(b,2,c,2,'2026-10-02'),m(a,0,c,1,'2026-10-03'),m(a,9,null,0,'2026-10-04'),{...m(b,5,c,0,'2026-10-05'),status:'active'}];
+  const rows=T.standings(tour,list);
+  assert.deepEqual(rows.map(r=>[r.team.name,r.played,r.won,r.drawn,r.lost,r.gf,r.ga,r.points]),[['C',2,1,1,0,3,2,4],['A',2,1,0,1,3,2,3],['B',2,0,1,1,3,5,1]]);
+  assert.deepEqual(T.results(tour,list).map(x=>x.id),['2026-10-03','2026-10-02','2026-10-01']);
 });

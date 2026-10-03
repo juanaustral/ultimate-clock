@@ -479,4 +479,21 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .mode-choice-tournament span{color:inherit;opacity:.9}
 .tournament-start{margin-top:var(--gap)}
 .tournament-new+.tournament-new{margin-top:var(--gap)}
-@media (max-width:430px){.brand-copy{display:none}.mode-badge{padding:6px 8px}}
+@media (max-width:350px){.brand-copy{display:none}}
+@media (max-width:430px){.mode-badge{padding:6px 8px}}
+.icon-button[hidden]{display:none}
+.menu-exit{color:var(--danger)}
+.team-setup textarea{width:100%;min-height:110px;padding:10px 12px;border:0;border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:700 16px/1.4 var(--font-body);resize:vertical}
+.modal-body .field textarea{width:100%;padding:10px 12px;border:var(--rule);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:16px var(--font-body)}
+
+/* Varios torneos, posiciones, resultados y borrar planilla */
+.tournament-switch{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:var(--touch);padding:0 14px;border:var(--rule);border-radius:999px;background:var(--bg-2);color:var(--ink);font:800 12px var(--font-body);letter-spacing:.04em;text-transform:uppercase}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.standings td:first-child small{display:block}
+.tournament-results{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.tournament-results li{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;padding:8px 10px;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2)}
+.tournament-results .res-team{overflow-wrap:anywhere;font:700 14px var(--font-body)}
+.tournament-results .res-team:last-child{text-align:right}
+.tournament-results .res-score{font:800 16px var(--font-display);font-variant-numeric:tabular-nums}
+.sheet-delete{width:100%;margin-top:var(--gap)}

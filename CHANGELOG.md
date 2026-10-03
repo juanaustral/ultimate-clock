@@ -1,5 +1,24 @@
 # Historial de cambios
 
+## 2026-10-03 · v42 · Pendientes de la auditoría
+
+- Varios torneos: el activo y «Mis torneos» (hasta 12); NUEVO TORNEO, cambio entre torneos, eliminar el activo pasa al siguiente. Un partido en curso conserva sus equipos aunque se cambie de torneo. Importar un archivo con el mismo id reemplaza ese torneo; con otro id lo suma.
+- Posiciones (3 puntos por victoria, 1 por empate; orden por puntos, diferencia y goles a favor) y Resultados, a partir de las planillas guardadas entre equipos del torneo.
+- ELIMINAR PLANILLA en cada planilla guardada, con confirmación.
+- Pase y gol no pueden ser de la misma persona (aviso y no se guarda).
+- En modo torneo, INICIAR el reloj o anotar un gol sin los dos equipos elegidos abre la elección de equipos.
+- Cartel del encabezado más corto (PARTIDO / TORNEO): el texto ULTIMATE CLOCK se oculta solo en pantallas de hasta 350 px. Tutorial con un paso sobre los modos (7 pasos).
+- Corrige un error de consola al elegir jugadores en modo torneo.
+
+## 2026-10-03 · v41 · Auditoría de modos
+
+- MENU: grupo MODO con ENTRAR AL MODO TORNEO (en modo partido) o EQUIPOS DEL TORNEO + SALIR DEL MODO TORNEO (en modo torneo). Con un partido sin guardar piden guardarlo antes (Guardar y pasar / Guardar y salir).
+- Modo partido: paso opcional «Jugadores» (después de los equipos, en el inicio y en ＋ NUEVO PARTIDO) y campo de jugadores en el editor de equipo. En el gol se elige de la lista con «Otro (escribir)». Los jugadores viven solo en ese partido.
+- Modo partido sin memoria: ＋ NUEVO PARTIDO ya no copia nombres ni colores del anterior; al abrir la app con el último partido ya guardado se arranca con uno nuevo y vacío (la planilla queda en Planillas guardadas).
+- ＋ NUEVO PARTIDO ya no pregunta el modo: sigue en el actual (en torneo abre directo la elección de equipos).
+- Elegir MODO TORNEO en el inicio pone el cartel en MODO TORNEO de inmediato; al volver de la pantalla del torneo con equipos sin asignar se ofrece elegirlos.
+- Textos: la pantalla «Editar tiempos» se llamaba «Preparar partido»; el tutorial y la nota de guardado mencionan los modos y el torneo. Detalle y pendientes en `docs/AUDITORIA-2026-10-03.md`.
+
 ## 2026-10-03 · v40 · Modo partido y modo torneo
 
 - El inicio y ＋ NUEVO PARTIDO ofrecen dos opciones: MODO PARTIDO (nombres de equipos, pase y gol escritos a mano, también desde la planilla) y MODO TORNEO (va directo al creador de equipos).
