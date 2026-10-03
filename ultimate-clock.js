@@ -24,6 +24,7 @@
   const TUTORIAL_STEPS = [
     {target:'.clock-card',title:'Tiempo del partido',text:'Iniciá el reloj principal cuando empieza el juego. Es el único que podés pausar. Al cumplirse el primer tiempo aparecerá el aviso para iniciar el descanso.'},
     {target:'.team-card.team-1',title:'Equipos y goles',text:'Tocá el nombre para cambiarlo o elegir un color. Con + el gol se suma al instante y se abre un cuadro para anotar quién dio el pase y quién hizo el gol, o deshacerlo. El botón − corrige el puntaje y deja registro del ajuste. En modo torneo elegís los jugadores de la lista; en modo partido los escribís o los elegís si los cargaste.'},
+    {target:'.mode-badge',title:'Modo partido y modo torneo',text:'El cartel indica el modo. En modo partido escribís los nombres y, si querés, cargás los jugadores de cada partido. En modo torneo cargás equipos y jugadores una sola vez y los elegís de listas. Cambiás de modo desde MENU.'},
     {target:'.timer-call-0',title:'Llamados por equipo',text:'Cada equipo tiene su propio Llamado. Tocá INICIAR, elegí la categoría y se registrará qué equipo hizo el llamado. La cuenta sigue hasta el final.'},
     {target:'.timer-pull',title:'Pull',text:'Tocá INICIAR al preparar el lanzamiento. Dura 90 s y no se pausa: avisa con 1, 2 y 3 silbatos a los 45, 60 y 75 s y con 4 al terminar. REINICIAR la devuelve a LISTO sin arrancarla.'},
     {target:'.timeout-card',title:'Time Out',text:'Tocá INICIAR en el botón del equipo que pide el tiempo. Cada botón muestra cuántos le quedan; el contador es único y no se puede pausar.'},
@@ -127,6 +128,7 @@
       pendingAlerts: [],
       timerProfiles: [],
       tournament: null,
+      otherTournaments: [],
       activeMatch: makeMatch("wfdf"),
       savedMatches: []
     };
@@ -168,6 +170,7 @@
       if(m.ruleset==='custom')m.ruleset='profile-legacy';
     }
     stored.tournament=TN.sanitize(stored.tournament);
+    stored.otherTournaments=(Array.isArray(stored.otherTournaments)?stored.otherTournaments:[]).map(TN.sanitize).filter(Boolean).slice(0,TN.LIMITS.tournaments-1);
     if(!['light','dark'].includes(stored.settings.theme))stored.settings.theme='light';
     m.timers.call.id='call-0';m.timers.call.label=`Llamado ${m.teams[0].name}`;
     m.timers.call2 ||= makeTimer('call-1',`Llamado ${m.teams[1].name}`,m.config.call.restart,[{at:m.config.call.restart,label:'Tiempo cumplido'}]);
@@ -391,8 +394,17 @@
     if(item.running!==running)E.toggle(item);
   }
 
+  /* En modo torneo, antes de empezar los dos equipos tienen que venir de la lista; si no, se ofrece elegirlos. */
+  function tournamentReady() {
+    if(!isTournamentMode()||hasStarted())return true;
+    if(activeMatch().teams.every(x=>tournamentTeam(x.tid)))return true;
+    if(state.tournament&&state.tournament.teams.length>=2)openTournamentMatchSetup();
+    else showToast(t('Agregá al menos dos equipos al torneo para empezar.'));
+    return false;
+  }
   function toggleTimer(id,fromCard=false) {
     if(isLocked())return;
+    if(id==='clock'&&!tournamentReady())return;
     unlockAudio();const m=activeMatch();
     if(id==='clock'){
       if(m.clock.capAlerted){showToast(t('El tiempo total ya se cumplió.'));return;}
@@ -519,7 +531,7 @@
   function updateModeBadge() {
     const badge=document.getElementById('modeBadge');if(!badge)return;
     const tournament=isTournamentMode();
-    badge.textContent=t(tournament?'MODO TORNEO':'MODO PARTIDO');badge.classList.toggle('is-tournament',tournament);
+    badge.textContent=t(tournament?'TORNEO':'PARTIDO');badge.title=t(tournament?'MODO TORNEO':'MODO PARTIDO');badge.setAttribute('aria-label',t(tournament?'MODO TORNEO':'MODO PARTIDO'));badge.classList.toggle('is-tournament',tournament);
     const enter=document.getElementById('menuTournament'),exit=document.getElementById('menuExitTournament');
     if(enter)enter.textContent=t(tournament?'EQUIPOS DEL TORNEO':'ENTRAR AL MODO TORNEO');
     if(exit){exit.hidden=!tournament;exit.textContent=t('SALIR DEL MODO TORNEO');}
@@ -805,6 +817,7 @@
   }
 
   function addGoal(teamIndex,origin='dashboard') {
+    if(!tournamentReady())return;
     const m=activeMatch(),team=m.teams[teamIndex];if(!team)return;
     const goal={id:uid('goal'),elapsed:m.clock.elapsed,at:nowIso(),assist:'',scorer:''};
     team.score+=1;team.goals.push(goal);logEvent('goal',{team:teamIndex,goal:goal.id,assist:'',scorer:''});
@@ -820,7 +833,7 @@
   function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
   /* Jugadores de la ficha del torneo para un equipo del partido (vacío si no está vinculado). */
   /* Jugadores para elegir en el gol: la ficha del torneo (modo torneo) o los que se cargaron al armar el partido (modo partido). */
-  function rosterFor(team) {return TN.sortPlayers(isTournamentMode()?state.tournament?.teams.find(x=>x.id===team?.tid)?.players||[]:team?.roster||[]);}
+  function rosterFor(team) {return TN.sortPlayers(isTournamentMode()?tournamentTeam(team?.tid)?.players||[]:team?.roster||[]);}
   /* Lista de jugadores para pase y gol. En modo partido deja además escribir otro nombre; en modo torneo no. */
   function personPicker(key,label,roster,goal,autofocus,allowOther) {
     const known=roster.some(p=>p.id===goal[key+'Id']),other=allowOther&&!known&&!!goal[key];
@@ -891,7 +904,7 @@
 
   function openSheet(match) {
     const events=match.events.map(e=>`<li><time>${dateLabel(e.at)}<br>${fmt(e.elapsed||0)}</time><span>${esc(SheetExport.describeEvent(match,e,t))}</span></li>`).join('');
-    openModal(t('Planilla guardada'),`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset,match))} · ${esc(t(match.themeName||'Claro'))}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>${esc(t('Duración'))}</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>${esc(t('Time-outs'))}</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>${esc(t('Eventos'))}</span></div></div><p>${esc(t('Colores:'))} ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>${esc(t('Configuración del partido'))}</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||`<li>${esc(t('Sin eventos'))}</li>`}</ul><h3 class="section-kicker">${esc(t('EXPORTAR'))}</h3>${exportButtons(match,t('Exportar esta planilla'))}`);
+    openModal(t('Planilla guardada'),`<p>${dateLabel(match.savedAt)} · ${esc(rulesetLabel(match.ruleset,match))} · ${esc(t(match.themeName||'Claro'))}</p><h3 class="sheet-title">${esc(match.teams[0].name)} ${match.teams[0].score} — ${match.teams[1].score} ${esc(match.teams[1].name)}</h3><div class="sheet-grid"><div class="sheet-stat"><b>${fmt(match.clock.elapsed)}</b><span>${esc(t('Duración'))}</span></div><div class="sheet-stat"><b>${match.events.filter(e=>e.type==='timeout').length}</b><span>${esc(t('Time-outs'))}</span></div><div class="sheet-stat"><b>${match.events.length}</b><span>${esc(t('Eventos'))}</span></div></div><p>${esc(t('Colores:'))} ${match.teams.map(t=>`<span class="sheet-team" style="background:${esc(t.color)};color:${E.ink(t.color)}">${esc(t.name)} · ${esc(t.color)}</span>`).join(' ')}</p><details><summary>${esc(t('Configuración del partido'))}</summary><pre>${esc(JSON.stringify(match.config,null,2))}</pre></details><ul class="event-list">${events||`<li>${esc(t('Sin eventos'))}</li>`}</ul><h3 class="section-kicker">${esc(t('EXPORTAR'))}</h3>${exportButtons(match,t('Exportar esta planilla'))}<button class="button button-danger sheet-delete" type="button" data-action="delete-sheet" data-match="${esc(match.id)}">${esc(t('ELIMINAR PLANILLA'))}</button>`);
   }
 
   function saveMatch() {
@@ -944,7 +957,10 @@
   }
 
   /* ---- Modo torneo: equipos con jugadores cargados de antemano, guardados en este dispositivo ---- */
-  const tournamentTeam=id=>state.tournament?.teams.find(x=>x.id===id);
+  const allTournaments=()=>[state.tournament,...state.otherTournaments].filter(Boolean);
+  /* Un partido en curso conserva sus equipos aunque se cambie de torneo: se busca en todos. */
+  const tournamentTeam=id=>{for(const tour of allTournaments()){const team=tour.teams.find(x=>x.id===id);if(team)return team;}return null;};
+  let creatingTournament=false;
   const SHEET_MIN_ROWS=14;
   /* Ficha abierta (equipo nuevo o existente). Mientras se edita, los datos viven en los campos de la pantalla. */
   let teamSheet=null;
@@ -985,27 +1001,31 @@
     captureTeamSheet();
     if(!tour){teamSheet=null;}
     else if(teamSheet){renderTeamSheet();return;}
-    if(!tour){
-      app.innerHTML=`<section class="tournament-screen"><div class="screen-head"><button class="back-button" data-action="t-back">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('MODO TORNEO'))}</span><h1>${esc(t('Torneo'))}</h1></div></div>
+    if(!tour||creatingTournament){
+      app.innerHTML=`<section class="tournament-screen"><div class="screen-head"><button class="back-button" data-action="${tour?'t-cancel-new-tournament':'t-back'}">← ${esc(t(tour?'Torneo':'Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('MODO TORNEO'))}</span><h1>${esc(t(tour?'Nuevo torneo':'Torneo'))}</h1></div></div>
         <section class="settings-section"><p>${esc(t('Cargá los equipos y sus jugadores una sola vez. Al empezar un partido elegís los equipos de la lista y, al anotar un gol, elegís quién dio el pase y quién lo hizo. El número de camiseta es opcional.'))}</p>
         <ol class="tournament-steps"><li>${esc(t('Poné el nombre del torneo.'))}</li><li>${esc(t('Completá la ficha de cada equipo: nombre, color y jugadores.'))}</li><li>${esc(t('Al empezar un partido, elegí los equipos de la lista.'))}</li></ol>
         <form data-form="t-create"><div class="field"><label for="t-name">${esc(t('Nombre del torneo'))}</label><input id="t-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" placeholder="${esc(t('Ej.: Copa Otoño'))}" required></div><button class="button button-primary" type="submit">${esc(t('CREAR TORNEO'))}</button></form>
         ${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section>
-        <section class="settings-section"><div class="section-heading"><h2>${esc(t('¿Ya tenés un torneo?'))}</h2></div><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR ARCHIVO DE TORNEO'))}</button></section><input type="file" id="tournamentFile" accept=".json,application/json" hidden></section>`;
+        ${tour?'':`<section class="settings-section"><div class="section-heading"><h2>${esc(t('¿Ya tenés un torneo?'))}</h2></div><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR ARCHIVO DE TORNEO'))}</button></section><input type="file" id="tournamentFile" accept=".json,application/json" hidden>`}</section>`;
       return;
     }
-    const played=TN.tournamentMatches(tour,state.savedMatches).length,rows=TN.stats(tour,state.savedMatches);
+    const played=TN.tournamentMatches(tour,state.savedMatches).length,rows=TN.stats(tour,state.savedMatches),table=TN.standings(tour,state.savedMatches),results=TN.results(tour,state.savedMatches);
+    const picker=state.otherTournaments.length?`<section class="settings-section"><div class="section-heading"><h2>${esc(t('Mis torneos'))}</h2><span>${allTournaments().length}</span></div><div class="tournament-switch" role="group" aria-label="${esc(t('Mis torneos'))}"><button type="button" class="chip" aria-pressed="true" disabled>${esc(tour.name)}</button>${state.otherTournaments.map(x=>`<button type="button" class="chip" aria-pressed="false" data-action="t-switch" data-id="${esc(x.id)}">${esc(x.name)}</button>`).join('')}</div></section>`:'';
+    const standingsHtml=table.some(r=>r.played)?`<section class="settings-section"><div class="section-heading"><h2>${esc(t('Posiciones'))}</h2><span>${esc(t('VICTORIA 3 · EMPATE 1'))}</span></div><table class="tournament-stats standings"><thead><tr><th>${esc(t('Equipo'))}</th><th title="${esc(t('Partidos jugados'))}">${esc(t('PJ'))}</th><th title="${esc(t('Diferencia de goles'))}">${esc(t('DG'))}</th><th title="${esc(t('Puntos'))}">${esc(t('PTS'))}</th></tr></thead><tbody>${table.map(r=>`<tr><td><span class="dot" style="background:${esc(r.team.color)}"></span>${esc(r.team.name)} <small>${esc(t('{w}G {d}E {l}P · {gf}-{ga}',{w:r.won,d:r.drawn,l:r.lost,gf:r.gf,ga:r.ga}))}</small></td><td>${r.played}</td><td>${r.gf-r.ga>0?'+':''}${r.gf-r.ga}</td><td><b>${r.points}</b></td></tr>`).join('')}</tbody></table></section>`:'';
+    const resultsHtml=results.length?`<section class="settings-section"><div class="section-heading"><h2>${esc(t('Resultados'))}</h2><span>${results.length}</span></div><ol class="tournament-results">${results.slice(0,15).map(m=>`<li><span class="res-team">${esc(m.teams[0].name)}</span><b class="res-score">${m.teams[0].score} — ${m.teams[1].score}</b><span class="res-team">${esc(m.teams[1].name)}</span></li>`).join('')}</ol></section>`:'';
     const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))} · ${esc(t('EDITAR'))}</span></button>`).join('');
     app.innerHTML=`<section class="tournament-screen"><div class="screen-head"><button class="back-button" data-action="t-back">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('MODO TORNEO'))}</span><h1>${esc(tour.name)}</h1></div></div>
-      <section class="settings-section"><div class="section-heading"><h2>${esc(t('Equipos'))}</h2><span>${tour.teams.length}</span></div>
+      ${picker}<section class="settings-section"><div class="section-heading"><h2>${esc(t('Equipos'))}</h2><span>${tour.teams.length}</span></div>
         ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Tocá el botón para completar la ficha del primero.'))}</p>`}
         <button class="button ${tour.teams.length>=2?'':'button-primary '}tournament-new" type="button" data-action="t-new-team">＋ ${esc(t('AGREGAR EQUIPO'))}</button>
         ${tour.teams.length>=2?`<button class="button button-primary tournament-new tournament-start" type="button" data-action="t-start-match">▶ ${esc(t('EMPEZAR PARTIDO DEL TORNEO'))}</button>`:`<p class="sheet-hint">${esc(t('Agregá al menos dos equipos para empezar un partido del torneo.'))}</p>`}</section>
+      ${standingsHtml}${resultsHtml}
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Goleadores y pases'))}</h2><span>${played} ${esc(t(played===1?'PARTIDO GUARDADO':'PARTIDOS GUARDADOS'))}</span></div>
         ${rows.length?`<table class="tournament-stats"><thead><tr><th>${esc(t('Jugador'))}</th><th>${esc(t('Goles'))}</th><th>${esc(t('Pases'))}</th></tr></thead><tbody>${rows.slice(0,20).map(r=>`<tr><td><span class="dot" style="background:${esc(r.team.color)}"></span>${esc(TN.playerLabel(r.player))} <small>${esc(r.team.name)}</small></td><td>${r.goals}</td><td>${r.assists}</td></tr>`).join('')}</tbody></table>`:`<p>${esc(t('Todavía no hay goles de jugadores de la lista. Aparecen al guardar partidos donde elegiste jugadores.'))}</p>`}</section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Archivo del torneo'))}</h2><span>JSON · CSV</span></div><p>${esc(t('El archivo incluye equipos, jugadores y los partidos guardados del torneo.'))}</p>
         <div class="export-actions"><button class="button button-primary" type="button" data-action="t-export">${esc(t('EXPORTAR TORNEO'))}</button><button class="button" type="button" data-action="t-export-csv">CSV</button><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR'))}</button></div><input type="file" id="tournamentFile" accept=".json,application/json" hidden>
-        <div class="tournament-danger"><button class="button" type="button" data-action="t-rename">${esc(t('CAMBIAR NOMBRE'))}</button><button class="button button-danger" type="button" data-action="t-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section></section>`;
+        <div class="tournament-danger"><button class="button" type="button" data-action="t-rename">${esc(t('CAMBIAR NOMBRE'))}</button><button class="button button-danger" type="button" data-action="t-delete">${esc(t('ELIMINAR TORNEO'))}</button></div><button class="button tournament-new" type="button" data-action="t-new-tournament">＋ ${esc(t('NUEVO TORNEO'))}</button>${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section></section>`;
   }
   /* Empezar un partido del torneo: se eligen los dos equipos de la lista y el perfil de tiempo. */
   function openTournamentMatchSetup() {
@@ -1077,7 +1097,10 @@
     else if(action==='t-confirm-del-team'&&team){tour.teams=tour.teams.filter(x=>x.id!==team.id);teamSheet=null;closeModal();saveState();renderTournament();showToast(t('Equipo eliminado.'));}
     else if(action==='t-rename'&&tour)openModal(t('Cambiar nombre'),`<form data-form="t-rename"><div class="field"><label for="t-rename-name">${esc(t('Nombre del torneo'))}</label><input id="t-rename-name" name="name" maxlength="${TN.LIMITS.name}" value="${esc(tour.name)}" autocomplete="off" required autofocus></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar'))}</button></div></form>`);
     else if(action==='t-delete'&&tour)openModal(t('Eliminar torneo'),`<p>${esc(t('¿Eliminar el torneo {name}, sus equipos y jugadores? Las planillas guardadas no se borran. Exportá el torneo antes si querés conservarlo.',{name:tour.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="t-confirm-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>`);
-    else if(action==='t-confirm-delete'){state.tournament=null;teamSheet=null;closeModal();saveState();renderTournament();showToast(t('Torneo eliminado.'));}
+    else if(action==='t-confirm-delete'){state.tournament=state.otherTournaments.shift()||null;teamSheet=null;creatingTournament=false;closeModal();saveState();renderTournament();showToast(t('Torneo eliminado.'));}
+    else if(action==='t-new-tournament'){creatingTournament=true;renderTournament();app.scrollTop=0;document.getElementById('t-name')?.focus({preventScroll:true});}
+    else if(action==='t-cancel-new-tournament'){creatingTournament=false;renderTournament();}
+    else if(action==='t-switch'){const next=state.otherTournaments.find(x=>x.id===el.dataset.id);if(next){state.otherTournaments=state.otherTournaments.filter(x=>x!==next);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=next;saveState();renderTournament();app.scrollTop=0;}}
     else if(action==='t-export'&&tour)exportData(TN.exportPayload(tour,state.savedMatches),`${exportSlug(tour.name)}.json`);
     else if(action==='t-export-csv'&&tour)download(TN.statsCSV(tour,state.savedMatches,{team:t('equipo'),number:t('numero'),player:t('jugador'),goals:t('goles'),assists:t('pases')}),'text/csv;charset=utf-8',`${exportSlug(tour.name)}-${t('jugadores')}.csv`);
     else if(action==='t-import')document.getElementById('tournamentFile')?.click();
@@ -1119,25 +1142,34 @@
   const exportSlug=name=>String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'torneo';
   function applyTournamentImport() {
     const file=pendingTournamentImport;pendingTournamentImport=null;if(!file)return;
-    state.tournament=file.tournament;
+    const incoming=file.tournament;
+    if(state.tournament?.id===incoming.id)state.tournament=incoming;
+    else if(state.otherTournaments.some(x=>x.id===incoming.id)){state.otherTournaments=state.otherTournaments.filter(x=>x.id!==incoming.id);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=incoming;}
+    else{if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=incoming;state.otherTournaments=state.otherTournaments.slice(0,TN.LIMITS.tournaments-1);}
+    creatingTournament=false;
     const known=new Set(state.savedMatches.map(m=>m.id));let added=0;
     for(const match of file.matches)if(!known.has(match.id)){state.savedMatches.push(match);added++;}
     state.savedMatches.sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));
-    saveState();renderTournament();showToast(t('Torneo {name} importado: {n} equipos y {m} partidos nuevos.',{name:file.tournament.name,n:file.tournament.teams.length,m:added}));
+    saveState();renderTournament();showToast(t('Torneo {name} importado: {n} equipos y {m} partidos nuevos.',{name:incoming.name,n:incoming.teams.length,m:added}));
   }
-  /* Lee el archivo elegido; si ya hay un torneo, pide confirmar antes de reemplazarlo. */
   async function importTournamentFile(file) {
     let parsed=null;
     try{if(file.size<=5e6)parsed=TN.parseFile(await file.text());}catch{}
     if(!parsed){showToast(t('Ese archivo no es un torneo de Ultimate Clock.'));return;}
     pendingTournamentImport=parsed;
-    if(!state.tournament){applyTournamentImport();return;}
-    openModal(t('Reemplazar torneo'),`<p>${esc(t('Ya tenés el torneo {name}. ¿Reemplazarlo por {other}? Las planillas guardadas se conservan.',{name:state.tournament.name,other:parsed.tournament.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="button" data-action="t-confirm-import">${esc(t('REEMPLAZAR'))}</button></div>`);
+    const same=allTournaments().find(x=>x.id===parsed.tournament.id);
+    if(!same){applyTournamentImport();return;}
+    openModal(t('Reemplazar torneo'),`<p>${esc(t('Ya tenés el torneo {name}. ¿Reemplazarlo por {other}? Las planillas guardadas se conservan.',{name:same.name,other:parsed.tournament.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="button" data-action="t-confirm-import">${esc(t('REEMPLAZAR'))}</button></div>`);
   }
   function tournamentSubmit(form,data,type) {
     if(!type.startsWith('t-'))return false;
     const tour=state.tournament;
-    if(type==='t-create'){const created=TN.makeTournament(data.get('name'));if(created){state.tournament=created;saveState();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');}}
+    if(type==='t-create'){
+      const created=TN.makeTournament(data.get('name'));if(!created)return true;
+      if(allTournaments().length>=TN.LIMITS.tournaments){showToast(t('Llegaste al máximo de torneos.'));return true;}
+      if(state.tournament)state.otherTournaments.unshift(state.tournament);
+      state.tournament=created;creatingTournament=false;saveState();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');
+    }
     else if(type==='t-rename'&&tour){const name=String(data.get('name')||'').trim();if(name){tour.name=name.slice(0,TN.LIMITS.name);closeModal();saveState();renderTournament();}}
     else if(type==='t-team')saveTeamSheet();
     else if(type==='t-match')startTournamentMatch(data);
@@ -1149,7 +1181,7 @@
   function tournamentChange(el) {
     if(el.id==='tournamentFile'){const file=el.files?.[0];el.value='';if(file)importTournamentFile(file);return true;}
     if(el.type==='color'&&el.closest('.sheet-top')){syncSheetColor(el.closest('form'));return true;}
-    if(el.dataset.person){const input=el.closest('.field').querySelector('input');const other=el.value==='__other';input.hidden=!other;if(other)input.focus();return true;}
+    if(el.dataset.person){const input=el.closest('.field').querySelector('input');if(!input)return true;const other=el.value==='__other';input.hidden=!other;if(other)input.focus();return true;}
     return false;
   }
 
@@ -1193,6 +1225,8 @@
       updateRunningValue(m.breakTimer);if(!m.breakTimer.completed){showToast(t('El medio tiempo todavía está en curso.'));return true;}
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
+    else if(action==='delete-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match);if(sheet)openModal(t('Eliminar planilla'),`<p>${esc(t('¿Eliminar la planilla {a} vs {b}? No se puede deshacer. Exportala antes si querés conservarla.',{a:sheet.teams[0].name,b:sheet.teams[1].name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="confirm-delete-sheet" data-match="${esc(sheet.id)}">${esc(t('ELIMINAR PLANILLA'))}</button></div>`);}
+    else if(action==='confirm-delete-sheet'){state.savedMatches=state.savedMatches.filter(x=>x.id!==element.dataset.match);closeModal();saveState();if(app.querySelector('.sheet-screen'))renderLiveSheet();showToast(t('Planilla eliminada.'));}
     else if(action==='save-and-new'){if(saveMatch())startNextMatch();}
     else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset,sheet),t,locale:lang==='en'?'en-US':'es-AR'}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet,{t}),'text/csv;charset=utf-8',`${name}.csv`);else if(format==='whatsapp')shareWhatsApp(SheetExport.toWhatsApp(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset,sheet),t,locale:lang==='en'?'en-US':'es-AR'}));else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,`ultimate-clock-${t('respaldo')}.json`);
@@ -1317,6 +1351,8 @@
       const tournament = isTournamentMode(), roster = rosterFor(team);
       if (!(tournament && !roster.length)) {
       const assist = readPerson(data,'assist',roster,tournament), scorer = readPerson(data,'scorer',roster,tournament);
+      const same = assist.name && scorer.name && ((assist.id && assist.id === scorer.id) || assist.name.toLowerCase() === scorer.name.toLowerCase());
+      if (same) { showToast(t('El pase y el gol no pueden ser de la misma persona.')); return; }
       Object.assign(goal, { assist: assist.name, assistId: assist.id, scorer: scorer.name, scorerId: scorer.id });
       }
       const event = m.events.find(e => e.goal === goal.id); if (event) Object.assign(event, { assist: goal.assist, assistId: goal.assistId, scorer: goal.scorer, scorerId: goal.scorerId });

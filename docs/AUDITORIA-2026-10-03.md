@@ -16,7 +16,11 @@ Recorrido de la app en Chromium (390×844, español e inglés) y lectura del có
 | 8 | «Editar tiempos» abría una pantalla titulada «Preparar partido». | Título unificado. |
 | 9 | El tutorial y la nota de guardado no mencionaban modos ni torneo. | Textos actualizados en español e inglés. |
 
-## Pendiente (propuestas, sin cambiar todavía)
+## Aplicado en la v42 (puntos 1 a 7 de la lista siguiente)
+
+Los puntos 1 a 7 de abajo se resolvieron en la v42 (ver `CHANGELOG.md`). No se hizo un generador de cruces/fixture, y el punto 8 sigue abierto.
+
+## Pendiente original (propuestas)
 
 1. **No se pueden borrar planillas guardadas.** La lista de Planillas guardadas solo crece; hace falta una acción de borrar (con confirmación) o «borrar todas».
 2. **Pase y gol pueden ser la misma persona.** Habría que impedirlo o avisar.

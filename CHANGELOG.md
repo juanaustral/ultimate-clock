@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 2026-10-03 · v42 · Pendientes de la auditoría
+
+- Varios torneos: el activo y «Mis torneos» (hasta 12); NUEVO TORNEO, cambio entre torneos, eliminar el activo pasa al siguiente. Un partido en curso conserva sus equipos aunque se cambie de torneo. Importar un archivo con el mismo id reemplaza ese torneo; con otro id lo suma.
+- Posiciones (3 puntos por victoria, 1 por empate; orden por puntos, diferencia y goles a favor) y Resultados, a partir de las planillas guardadas entre equipos del torneo.
+- ELIMINAR PLANILLA en cada planilla guardada, con confirmación.
+- Pase y gol no pueden ser de la misma persona (aviso y no se guarda).
+- En modo torneo, INICIAR el reloj o anotar un gol sin los dos equipos elegidos abre la elección de equipos.
+- Cartel del encabezado más corto (PARTIDO / TORNEO): el texto ULTIMATE CLOCK se oculta solo en pantallas de hasta 350 px. Tutorial con un paso sobre los modos (7 pasos).
+- Corrige un error de consola al elegir jugadores en modo torneo.
+
 ## 2026-10-03 · v41 · Auditoría de modos
 
 - MENU: grupo MODO con ENTRAR AL MODO TORNEO (en modo partido) o EQUIPOS DEL TORNEO + SALIR DEL MODO TORNEO (en modo torneo). Con un partido sin guardar piden guardarlo antes (Guardar y pasar / Guardar y salir).

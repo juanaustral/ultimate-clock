@@ -66,3 +66,11 @@ test('menu has the mode entry and exit buttons and new matches never prefill the
   assert.ok(fresh.includes('makeMatch(')&&!fresh.includes('.teams'));
   assert.ok(js.includes("action==='new-match'")&&js.includes('startNextMatch()'));
 });
+test('standings: 3 points a win, 1 a draw, ordered by points, goal difference and goals; only tournament-vs-tournament matches count',()=>{
+  const tour=T.makeTournament('L'),[a,b,c]=['A','B','C'].map(n=>T.makeTeam(n,'#111'));tour.teams.push(a,b,c);
+  const m=(x,sx,y,sy,at)=>({id:at,status:'saved',savedAt:at,teams:[{tid:x?.id||'',score:sx},{tid:y?.id||'',score:sy}],events:[]});
+  const list=[m(a,3,b,1,'2026-10-01'),m(b,2,c,2,'2026-10-02'),m(a,0,c,1,'2026-10-03'),m(a,9,null,0,'2026-10-04'),{...m(b,5,c,0,'2026-10-05'),status:'active'}];
+  const rows=T.standings(tour,list);
+  assert.deepEqual(rows.map(r=>[r.team.name,r.played,r.won,r.drawn,r.lost,r.gf,r.ga,r.points]),[['C',2,1,1,0,3,2,4],['A',2,1,0,1,3,2,3],['B',2,0,1,1,3,5,1]]);
+  assert.deepEqual(T.results(tour,list).map(x=>x.id),['2026-10-03','2026-10-02','2026-10-01']);
+});
