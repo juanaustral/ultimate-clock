@@ -12,6 +12,7 @@ index.html / ultimate-clock.html
         ├── clock-engine.js     → estado temporal, anchors, validaciones
         ├── alerts.js           → AudioContext, cinco pulsos, avisos visuales
         ├── sheet-export.js     → planillas a PDF y CSV, sin dependencias
+        ├── tournament.js       → modo torneo: fichas, estadísticas y archivo de torneo (sin DOM)
         ├── tokens.css          → variables de color y tipografía
         ├── ultimate-clock.css  → layout responsive y temas
         └── sw.js                → caché offline versionada
@@ -19,7 +20,7 @@ index.html / ultimate-clock.html
 
 ## Estado
 
-El estado del partido vive en memoria mientras se opera y se serializa en `localStorage` bajo la versión `ultimate-clock-v2`. Los perfiles personalizados y el historial se guardan en el mismo dispositivo y origen.
+El estado del partido vive en memoria mientras se opera y se serializa en `localStorage` bajo la versión `ultimate-clock-v2`. Los perfiles personalizados, el historial y el torneo (`tournament`: equipos con jugadores; los equipos de un partido se vinculan con `tid`, y los goles guardan `scorerId`/`assistId`) se guardan en el mismo dispositivo y origen.
 
 El motor no descuenta tiempo usando solo un contador de frames. Conserva marcas de inicio y deltas, por lo que puede recuperar el tiempo transcurrido cuando una pestaña se suspende o vuelve a primer plano.
 

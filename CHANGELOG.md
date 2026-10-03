@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 2026-10-03 · v38 · Modo torneo
+
+- Nuevo MENU → MODO TORNEO: se crea un torneo con sus equipos y, en la ficha de cada uno, los jugadores (nombre obligatorio, número de camiseta opcional). Se agregan de a uno, editando o pegando una lista ("7 Ana", "Ana 7" o solo "Ana").
+- Al empezar un partido (y desde el editor de equipo) cada equipo se puede elegir de la lista del torneo: carga nombre y color y vincula los jugadores.
+- En el cuadro de gol, pase y anotador se eligen de la lista del equipo; "Otro" permite escribir un nombre a mano. Sin torneo cargado, el cuadro sigue siendo de texto libre.
+- Estadísticas de goles y pases por jugador a partir de las planillas guardadas.
+- Archivo de torneo `.json` (equipos, jugadores y partidos guardados) para exportar e importar entre dispositivos, y CSV de jugadores con sus goles y pases.
+- Todo se guarda en el navegador (`ultimate-clock-v2`, campo `tournament`); no hay cuentas ni servidor. Lo premium queda para más adelante.
+- Lógica en `tournament.js`, con `tests/tournament.test.cjs`. Caché offline v38.
+
 ## 2026-10-02 · v32
 
 - Los títulos EQUIPO 1 y EQUIPO 2 del cuadro de equipos ya no se superponen con el borde (se reemplazó `legend` por una etiqueta común).
