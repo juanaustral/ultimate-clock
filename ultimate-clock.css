@@ -25,7 +25,7 @@ h1,h2,h3,p{margin:0}
 .app-shell{height:100vh;height:100dvh;display:grid;grid-template-rows:var(--bar) minmax(0,1fr) var(--foot);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .app-main{min-height:0;width:100%;max-width:1600px;margin:0 auto;padding:var(--gap);overflow:hidden}
 .app-main:focus{outline:none}
-.app-main:has(.sheet-screen,.settings-screen,.history-screen){overflow-y:auto;overscroll-behavior:contain}
+.app-main:has(.sheet-screen,.settings-screen,.history-screen,.tournament-screen){overflow-y:auto;overscroll-behavior:contain}
 
 /* ── Encabezado ── */
 .topbar{display:flex;align-items:center;gap:var(--gap);padding:0 var(--gap) 0 calc(var(--gap) + 4px);background:var(--panel);border-bottom:var(--rule);position:relative;z-index:20}
@@ -226,7 +226,7 @@ body.flash-complete::after{content:"";position:fixed;inset:0;z-index:50;pointer-
 .field input[type=color]{padding:4px;height:56px}
 
 /* ── Pantallas secundarias (Planilla, Configuración, Historial) ── */
-.sheet-screen,.settings-screen,.history-screen{display:grid;gap:var(--gap);align-content:start;max-width:880px;margin:0 auto;padding-bottom:var(--gap)}
+.sheet-screen,.settings-screen,.history-screen,.tournament-screen{display:grid;gap:var(--gap);align-content:start;max-width:880px;margin:0 auto;padding-bottom:var(--gap)}
 .screen-head{display:flex;align-items:center;gap:var(--gap);min-height:var(--touch)}
 .screen-head>div{flex:1;min-width:0}
 .screen-head h1{font:800 clamp(20px,5vw,30px)/1 var(--font-display);text-transform:uppercase}
@@ -414,3 +414,32 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .settings-delete{width:100%;margin-top:6px}
 /* INFO con el mismo color que APOYÁ ESTE PROYECTO del pie. */
 .header-actions [data-action="info"]{background:#8ea6ff;color:#0f1115;border-color:#8ea6ff}
+
+/* Modo torneo */
+.tournament-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--gap);margin-bottom:var(--gap)}
+.tournament-team{display:grid;gap:4px;min-height:64px;padding:10px 12px;text-align:left;border-radius:var(--radius-sm);background:var(--team-color);color:var(--team-ink)}
+.tournament-team strong{font:800 15px/1.15 var(--font-display);text-transform:uppercase;overflow-wrap:anywhere}
+.tournament-team span{font:800 11px var(--font-body);letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.tournament-add,.tournament-player-form{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--gap);align-items:end;margin-top:var(--gap)}
+.tournament-add .button,.tournament-player-form .button{grid-column:1/-1}
+.tournament-add input[type=color]{padding:4px;height:var(--touch)}
+.tournament-pick{width:100%;min-height:44px;padding:0 10px;border:0;border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:700 14px var(--font-body)}
+.tournament-stats{width:100%;border-collapse:collapse;font-size:14px}
+.tournament-stats th{font:800 10px var(--font-body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px}
+.tournament-stats th:not(:first-child),.tournament-stats td:not(:first-child){text-align:right;width:56px;font-variant-numeric:tabular-nums}
+.tournament-stats td{padding:8px 6px;border-top:var(--rule)}
+.tournament-stats td small{display:block;color:var(--muted);font-size:11px}
+.tournament-stats .dot{display:inline-block;width:10px;height:10px;margin-right:6px;border-radius:50%;border:1px solid var(--ink)}
+.tournament-danger{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);margin-top:var(--gap)}
+.tournament-players{display:grid;gap:6px;margin:8px 0;list-style:none;padding:0;max-height:34vh;overflow-y:auto}
+.tournament-players li{display:grid;grid-template-columns:minmax(0,1fr) var(--touch);gap:6px}
+.player-edit,.player-remove{min-height:var(--touch);background:var(--bg-2);border:var(--rule);font:700 15px var(--font-body);color:var(--ink)}
+.player-edit{display:flex;align-items:center;gap:10px;padding:0 12px;text-align:left}
+.player-edit b{min-width:2.2ch;font:800 16px var(--font-display);color:var(--accent);text-align:right}
+.player-edit span{overflow-wrap:anywhere}
+.player-remove{font-size:22px}
+.tournament-paste{margin:var(--gap) 0}
+.tournament-paste summary{min-height:var(--touch);display:flex;align-items:center;font:800 12px var(--font-body);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.tournament-paste form{display:grid;gap:var(--gap)}
+.tournament-paste textarea{width:100%;padding:10px 12px;border:var(--rule);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:16px var(--font-body)}
+.modal-body .field select{width:100%}

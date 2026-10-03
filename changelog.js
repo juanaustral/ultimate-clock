@@ -2,8 +2,9 @@
    y agrega arriba una entrada breve en español e inglés. */
 (function (root) {
   'use strict';
-  const VERSION = 37;
+  const VERSION = 38;
   const ENTRIES = [
+    {version:38,date:'2026-10-03',es:['Modo torneo: cargá los equipos y sus jugadores (el número es opcional) desde MENU → MODO TORNEO.','Al empezar un partido elegís los equipos de la lista y, al anotar un gol, elegís quién dio el pase y quién lo hizo.','Estadísticas de goles y pases por jugador, y exportación e importación del torneo en un archivo.'],en:['Tournament mode: load teams and their players (the number is optional) from MENU → TOURNAMENT MODE.','When you start a match you pick teams from the list and, when a goal is scored, you pick who assisted and who scored.','Goal and assist stats per player, and tournament export and import as a file.']},
     {version:37,date:'2026-10-02',es:['El time out ya no pausa el reloj del partido.'],en:['A time out no longer pauses the game clock.']},
     {version:36,date:'2026-10-02',es:['Los botones de Time Out vuelven a funcionar.','El time out detiene el reloj del partido.','El llamado se puede reiniciar mientras corre.'],en:['The Time Out buttons work again.','A time out stops the game clock.','A call can be reset while it runs.']},
     {version:35,date:'2026-10-02',es:['Los perfiles de tiempo guardados se pueden eliminar desde el inicio y desde Editar tiempos.','Los tiempos se cargan en números enteros.','El Pull se puede reiniciar mientras corre.','El llamado arranca al tocarlo y la categoría se elige mientras corre; Stall pasa a llamarse Conteo.','En el menú, CONFIGURAR pasa a EDITAR TIEMPOS.'],en:['Saved time profiles can be deleted from the start screen and from Edit times.','Times are entered as whole numbers.','The pull can be reset while it runs.','A call starts as soon as you tap it and you pick its type while it runs.','In the menu, SETTINGS is now EDIT TIMES.']},

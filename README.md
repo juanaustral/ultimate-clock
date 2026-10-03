@@ -47,7 +47,8 @@ El botón **MENU** reúne todas las opciones del encabezado: primero **＋ NUEVO
 2. Tocá **ACTIVAR SONIDO** y luego **PROBAR SONIDO** para escuchar cinco alarmas agudas y ajustar el volumen del dispositivo. El botón pasa a **DESACTIVAR SONIDO** cuando el navegador habilitó el audio. El reloj total es el único que se puede pausar. Pull, llamado, time out y medio tiempo corren hasta cero; cada finalización emite cinco alarmas agudas y un aviso visual intenso. **REINICIAR** en Pull o Llamado devuelve la cuenta a Listo sin arrancarla.
 3. Al cumplirse el primer tiempo, iniciá el medio tiempo desde el aviso. Al terminar el descanso, iniciá la segunda mitad; se renueva el cupo de timeouts de cada equipo.
 4. Registrá goles, llamados, timeouts e incidencias desde el tablero o la planilla. En horizontal, Pull queda al centro y cada Llamado del lado de su equipo. Un solo widget de TIME OUT contiene dos botones con los colores y cupos restantes de los equipos. La planilla identifica qué equipo hizo cada llamado.
-5. Guardá el partido al terminar. La pestaña **Planilla** muestra el partido actual con los botones **EXPORTAR** (PDF para imprimir o compartir, CSV para planillas de cálculo y JSON como respaldo completo) y, debajo, las planillas guardadas, que también se pueden abrir y exportar. La app espera a que finalicen las cuentas no pausables antes de guardar.
+5. **Modo torneo (opcional):** en MENU → MODO TORNEO cargá los equipos y sus jugadores (el nombre es obligatorio; el número, opcional). Al empezar un partido elegís los equipos de la lista y, al anotar un gol, elegís pase y anotador en vez de escribirlos. El torneo se guarda en el navegador y se exporta/importa como archivo `.json`; hay también un CSV de jugadores con goles y pases. Sin torneo cargado la app funciona igual que siempre.
+6. Guardá el partido al terminar. La pestaña **Planilla** muestra el partido actual con los botones **EXPORTAR** (PDF para imprimir o compartir, CSV para planillas de cálculo y JSON como respaldo completo) y, debajo, las planillas guardadas, que también se pueden abrir y exportar. La app espera a que finalicen las cuentas no pausables antes de guardar.
 
 El botón Reiniciar contadores reinicia solo el partido actual después de confirmación. Conserva el historial y los perfiles personalizados. Nuevo partido conserva los nombres y colores de los equipos.
 
@@ -80,6 +81,7 @@ Fuentes consultadas el 27/09/2026: [reglas y recursos WFDF](https://rules.wfdf.s
 - `clock-engine.js`: motor temporal y validación de configuración.
 - `alerts.js`: audio y avisos.
 - `sheet-export.js`: exportación de planillas a PDF y CSV, sin dependencias.
+- `tournament.js`: modo torneo (fichas de equipo y jugadores, estadísticas, archivo de torneo), lógica sin DOM.
 - `ultimate-clock.js`: tablero, equipos, perfiles, planilla, modales y planillas guardadas.
 - `tokens.css` y `ultimate-clock.css`: estilos Claro/Oscuro y diseño adaptable.
 - `Iniciar Ultimate Clock.command`: servidor local y apertura automática en navegador.

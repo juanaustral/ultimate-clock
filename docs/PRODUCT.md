@@ -51,6 +51,7 @@ ULTIMATE CLOCK concentra las decisiones críticas en controles grandes, estados 
 - Llamadas por equipo con ocho categorías.
 - Cupo de Time Out por equipo y por mitad.
 - Planilla, historial local y exportación PDF, CSV y JSON.
+- Modo torneo local: equipos y jugadores (número opcional) cargados de antemano, pase y gol elegidos de la lista, estadísticas por jugador y archivo de torneo exportable/importable.
 - Tutorial guiado, tema claro/oscuro, pantalla completa y diseño responsive.
 
 ### Fuera de alcance
