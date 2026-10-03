@@ -104,3 +104,7 @@ La planilla guardada apareció en Historial y su detalle conservó 17 eventos: g
 ## Pendientes de la auditoría del 03/10/2026 (v42)
 
 - 46/46 pruebas (nueva: posiciones y resultados). Chromium a 390×844: volver de la pantalla del torneo abre la elección de equipos; INICIAR sin equipos la abre; pase = gol se rechaza y deja el cuadro abierto; posiciones y resultados tras guardar un partido; segundo torneo, cambio entre torneos y eliminar el activo; eliminar planilla con confirmación; tutorial de 7 pasos. Sin errores de consola. Encabezado sin desborde a 320×568, 360×640, 390×844 y 844×390.
+
+## Tiempos por torneo del 03/10/2026 (v43)
+
+- 47/47 pruebas. Chromium a 390×844: perfil por defecto WFDF, crear perfil «Liga 40» desde el torneo, el partido de torneo muestra los tiempos (resta 40:00, descanso 20:00) sin preguntar perfil, EDITAR TIEMPOS bloqueado con aviso, cambio a USA Ultimate, exportar el archivo (lleva `timing`), importarlo en un contexto limpio (otro dispositivo) recrea el perfil y el partido usa 40:00. Sin errores de consola.

@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## 2026-10-03 · v43 · Tiempos por torneo
+
+- Cada torneo guarda su perfil de tiempos (`timing`: WFDF, USA Ultimate o uno propio con copia de su configuración) y todos sus partidos lo usan. Un torneo nuevo hereda el perfil que estaba en uso.
+- Nueva sección «Tiempos del torneo» en EQUIPOS DEL TORNEO: selector de perfil y NUEVO PERFIL DE TIEMPOS (nombre y seis tiempos, queda elegido para el torneo).
+- EMPEZAR PARTIDO DEL TORNEO ya no pregunta el perfil: muestra los tiempos del torneo.
+- En modo torneo, EDITAR TIEMPOS queda bloqueado con un aviso (los tiempos los define el torneo).
+- El archivo del torneo lleva el perfil: al importarlo en otro dispositivo se recrea el perfil propio si no existe; si la copia es inválida se usa WFDF.
+
 ## 2026-10-03 · v42 · Pendientes de la auditoría
 
 - Varios torneos: el activo y «Mis torneos» (hasta 12); NUEVO TORNEO, cambio entre torneos, eliminar el activo pasa al siguiente. Un partido en curso conserva sus equipos aunque se cambie de torneo. Importar un archivo con el mismo id reemplaza ese torneo; con otro id lo suma.

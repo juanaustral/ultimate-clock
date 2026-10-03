@@ -308,6 +308,15 @@
     'Nuevo torneo':'New tournament',
     'Modo partido y modo torneo':'Match mode and tournament mode',
     'El cartel indica el modo. En modo partido escribís los nombres y, si querés, cargás los jugadores de cada partido. En modo torneo cargás equipos y jugadores una sola vez y los elegís de listas. Cambiás de modo desde MENU.':'The badge shows the mode. In match mode you type the names and, if you want, load each match\'s players. In tournament mode you load teams and players once and pick them from lists. You switch mode from MENU.',
+    /* Tiempos del torneo */
+    'En modo torneo los tiempos los define el torneo: {name}. Cambialos en MENU → EQUIPOS DEL TORNEO.':'In tournament mode the tournament sets the times: {name}. Change them in MENU → TOURNAMENT TEAMS.',
+    'Tiempos del torneo':'Tournament times',
+    'Todos los partidos de este torneo usan este perfil de tiempos.':'Every match of this tournament uses this time profile.',
+    'NUEVO PERFIL DE TIEMPOS':'NEW TIME PROFILE',
+    'Nuevo perfil de tiempos':'New time profile',
+    'GUARDAR PERFIL':'SAVE PROFILE',
+    'Tiempos: {name} (se cambian en EQUIPOS DEL TORNEO).':'Times: {name} (change them in TOURNAMENT TEAMS).',
+    'Tiempos del torneo: {name}.':'Tournament times: {name}.',
     /* WhatsApp */
     'ENVIAR POR WHATSAPP':'SEND BY WHATSAPP','Empate':'Draw','Ganó {team}':'{team} won','Resumen':'Summary','Goles':'Goals','Llamados':'Calls',
     'pase de {name}':'assist by {name}','Gol de {team}':'Goal by {team}','Punto descontado a {team}':'Point taken from {team}','Time-out de {team}':'Timeout by {team}',

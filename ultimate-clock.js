@@ -618,7 +618,7 @@
 
   function renderSettings() {
     updateModeBadge();
-    const config=getRuleset(),locked=hasStarted()||isLocked();
+    const tournamentTimes=isTournamentMode(),config=getRuleset(),locked=hasStarted()||isLocked()||tournamentTimes;
     const currentProfile=state.customRulesets.find(p=>p.id===state.settings.ruleset);
     const editing=draftRuleset||!!currentProfile;
     const editLocked=locked&&!draftRuleset;
@@ -627,7 +627,7 @@
     app.innerHTML=`<section class="settings-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('CONFIGURACIÓN'))}</span><h1>${esc(t('Editar tiempos'))}</h1></div></div>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Reglamento'))}</h2></div><div class="settings-row"><div class="field"><label for="ruleset">${esc(t('Perfil'))}</label><select id="ruleset" data-setting="ruleset" ${locked?'disabled':''}>${options}</select></div><div class="field"><label for="sound">${esc(t('Avisos'))}</label><select id="sound" data-setting="sound"><option value="on" ${state.settings.sound?'selected':''}>${esc(t('Sonido y aviso visual'))}</option><option value="off" ${!state.settings.sound?'selected':''}>${esc(t('Solo aviso visual'))}</option></select></div></div><p>${esc(t('WFDF y USA Ultimate cargan sus tiempos de referencia. Los límites de duración del partido pueden depender del torneo: confirmalos antes de jugar.'))}</p></section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Tiempos totales'))}</h2><span>${esc(t(editing?'PERFIL PERSONALIZADO':'PERFIL DE REFERENCIA'))}</span></div><p>${esc(t('Un valor por reloj. Cada cuenta de Pull, Llamado, Time out y Medio tiempo corre hasta cero y termina con cinco alarmas.'))}</p>${editing?`<form data-form="ruleset-profile" data-profile="${esc(draftRuleset?'':currentProfile?.id||'')}"><div class="field"><label for="profile-name">${esc(t('Nombre del perfil'))}</label><input id="profile-name" name="name" maxlength="40" value="${esc(draftRuleset?'':currentProfile?.name||'')}" placeholder="${esc(t('Ej.: Torneo local'))}" required ${editLocked?'disabled':''}></div><div class="duration-grid">${durations.map(([key,label,value,unit])=>durationField(key,label,value,unit,editLocked)).join('')}</div><button class="button button-primary settings-save" ${editLocked?'disabled':''}>${esc(t(draftRuleset?'GUARDAR PERFIL PERSONALIZADO':currentProfile?'GUARDAR CAMBIOS':'GUARDAR PERFIL PERSONALIZADO'))}</button>${!draftRuleset&&currentProfile?`<button class="button button-danger settings-delete" type="button" data-action="delete-profile" data-profile="${esc(currentProfile.id)}" ${locked?'disabled':''}>${esc(t('ELIMINAR PERFIL'))}</button>`:''}</form>`:`<div class="duration-grid">${durations.map(([key,label,value,unit])=>`<div class="duration-readout"><span>${esc(label)}</span><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`).join('')}</div><p>${esc(t('Elegí “PERSONALIZADO · Crear perfil” para cambiar los valores y guardarlos en el desplegable.'))}</p>`}</section>
-      ${locked?`<p class="settings-locked">${esc(t('El partido ya comenzó. Prepará un nuevo partido para cambiar el reglamento o sus tiempos.'))}</p>`:''}
+      ${tournamentTimes?`<p class="settings-locked">${esc(t('En modo torneo los tiempos los define el torneo: {name}. Cambialos en MENU → EQUIPOS DEL TORNEO.',{name:timingName(state.tournament)}))}</p>`:locked?`<p class="settings-locked">${esc(t('El partido ya comenzó. Prepará un nuevo partido para cambiar el reglamento o sus tiempos.'))}</p>`:''}
       <p class="settings-source">${esc(t('Referencias:'))} <a href="https://rules.wfdf.sport/" target="_blank" rel="noreferrer">WFDF</a> · <a href="https://usaultimate.org/rules/" target="_blank" rel="noreferrer">USA Ultimate</a>.</p>
     </section>`;
   }
@@ -961,6 +961,24 @@
   /* Un partido en curso conserva sus equipos aunque se cambie de torneo: se busca en todos. */
   const tournamentTeam=id=>{for(const tour of allTournaments()){const team=tour.teams.find(x=>x.id===id);if(team)return team;}return null;};
   let creatingTournament=false;
+  /* Tiempos del torneo: se eligen una vez y valen para todos sus partidos. */
+  function timingName(tour) {
+    const id=tour?.timing?.id||'wfdf';
+    return profileChoices().find(p=>p.id===id)?.name||tour?.timing?.name||'WFDF 2025–2028';
+  }
+  function setTournamentTiming(tour,id) {
+    const profile=state.customRulesets.find(p=>p.id===id);
+    tour.timing=profile?{id:profile.id,name:profile.name,config:clone(profile.config)}:{id:['wfdf','usau'].includes(id)?id:'wfdf',name:'',config:null};
+  }
+  /* Devuelve el perfil a usar en un partido del torneo. Si el perfil propio ya no está en este navegador (otro dispositivo, o se borró), se recrea desde la copia del torneo. */
+  function ensureTimingProfile(tour) {
+    const timing=tour?.timing||{id:'wfdf'};
+    if(['wfdf','usau'].includes(timing.id))return timing.id;
+    const local=state.customRulesets.find(p=>p.id===timing.id);
+    if(local){tour.timing={id:local.id,name:local.name,config:clone(local.config)};return local.id;}
+    if(timing.config&&!E.validate(timing.config)){state.customRulesets.push({id:timing.id,name:timing.name||t('Personalizado'),config:clone(timing.config)});return timing.id;}
+    tour.timing={id:'wfdf',name:'',config:null};return 'wfdf';
+  }
   const SHEET_MIN_ROWS=14;
   /* Ficha abierta (equipo nuevo o existente). Mientras se edita, los datos viven en los campos de la pantalla. */
   let teamSheet=null;
@@ -1020,6 +1038,7 @@
         ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Tocá el botón para completar la ficha del primero.'))}</p>`}
         <button class="button ${tour.teams.length>=2?'':'button-primary '}tournament-new" type="button" data-action="t-new-team">＋ ${esc(t('AGREGAR EQUIPO'))}</button>
         ${tour.teams.length>=2?`<button class="button button-primary tournament-new tournament-start" type="button" data-action="t-start-match">▶ ${esc(t('EMPEZAR PARTIDO DEL TORNEO'))}</button>`:`<p class="sheet-hint">${esc(t('Agregá al menos dos equipos para empezar un partido del torneo.'))}</p>`}</section>
+      <section class="settings-section"><div class="section-heading"><h2>${esc(t('Tiempos del torneo'))}</h2></div><p>${esc(t('Todos los partidos de este torneo usan este perfil de tiempos.'))}</p><div class="field"><label for="t-timing">${esc(t('Perfil de tiempo'))}</label><select id="t-timing" data-tsetting="timing">${profileChoices().map(p=>`<option value="${esc(p.id)}" ${p.id===(tour.timing?.id||'wfdf')?'selected':''}>${esc(p.name)}</option>`).join('')}${profileChoices().some(p=>p.id===tour.timing?.id)?'':`<option value="${esc(tour.timing?.id||'')}" selected>${esc(timingName(tour))}</option>`}</select></div><button class="button tournament-new" type="button" data-action="t-new-timing">＋ ${esc(t('NUEVO PERFIL DE TIEMPOS'))}</button></section>
       ${standingsHtml}${resultsHtml}
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Goleadores y pases'))}</h2><span>${played} ${esc(t(played===1?'PARTIDO GUARDADO':'PARTIDOS GUARDADOS'))}</span></div>
         ${rows.length?`<table class="tournament-stats"><thead><tr><th>${esc(t('Jugador'))}</th><th>${esc(t('Goles'))}</th><th>${esc(t('Pases'))}</th></tr></thead><tbody>${rows.slice(0,20).map(r=>`<tr><td><span class="dot" style="background:${esc(r.team.color)}"></span>${esc(TN.playerLabel(r.player))} <small>${esc(r.team.name)}</small></td><td>${r.goals}</td><td>${r.assists}</td></tr>`).join('')}</tbody></table>`:`<p>${esc(t('Todavía no hay goles de jugadores de la lista. Aparecen al guardar partidos donde elegiste jugadores.'))}</p>`}</section>
@@ -1027,14 +1046,18 @@
         <div class="export-actions"><button class="button button-primary" type="button" data-action="t-export">${esc(t('EXPORTAR TORNEO'))}</button><button class="button" type="button" data-action="t-export-csv">CSV</button><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR'))}</button></div><input type="file" id="tournamentFile" accept=".json,application/json" hidden>
         <div class="tournament-danger"><button class="button" type="button" data-action="t-rename">${esc(t('CAMBIAR NOMBRE'))}</button><button class="button button-danger" type="button" data-action="t-delete">${esc(t('ELIMINAR TORNEO'))}</button></div><button class="button tournament-new" type="button" data-action="t-new-tournament">＋ ${esc(t('NUEVO TORNEO'))}</button>${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section></section>`;
   }
+  /* Crear un perfil de tiempos propio sin salir del torneo; queda elegido para todo el torneo. */
+  function openTournamentProfileForm() {
+    const base=profileConfig(state.tournament?.timing?.id||'wfdf');
+    openModal(t('Nuevo perfil de tiempos'),`<form data-form="t-profile" class="welcome-flow" novalidate><div class="field"><label for="profile-name">${esc(t('Nombre del perfil'))}</label><input id="profile-name" name="name" maxlength="40" autocomplete="off" placeholder="${esc(t('Ej.: Torneo local'))}" required autofocus></div><div class="duration-grid">${durationRows(base).map(([key,label,value,unit])=>durationField(key,label,value,unit,false,true)).join('')}</div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('GUARDAR PERFIL'))}</button></div></form>`);
+  }
   /* Empezar un partido del torneo: se eligen los dos equipos de la lista y el perfil de tiempo. */
   function openTournamentMatchSetup() {
     const tour=state.tournament;if(!tour||tour.teams.length<2)return;
     if(hasStarted()&&!isLocked()){showToast(t('Hay un partido en curso. Guardalo o prepará uno nuevo desde MENU antes de empezar otro.'));return;}
     const m=activeMatch(),ids=[isTournamentMode()&&tournamentTeam(m.teams[0].tid)?m.teams[0].tid:tour.teams[0].id,isTournamentMode()&&tournamentTeam(m.teams[1].tid)&&m.teams[1].tid!==m.teams[0].tid?m.teams[1].tid:tour.teams.find(x=>x.id!==tour.teams[0].id).id];
     if(ids[0]===ids[1])ids[1]=tour.teams.find(x=>x.id!==ids[0]).id;
-    const current=profileChoices().some(p=>p.id===state.settings.ruleset)?state.settings.ruleset:'wfdf';
-    openModal(t('Partido del torneo'),`<form data-form="t-match" class="welcome-flow"><div class="field"><label>${esc(t('Equipo {n}',{n:1}))}</label>${tournamentSelect('tid-0',ids[0])}</div><div class="field"><label>${esc(t('Equipo {n}',{n:2}))}</label>${tournamentSelect('tid-1',ids[1])}</div><div class="field"><label for="t-match-profile">${esc(t('Perfil de tiempo'))}</label><select id="t-match-profile" name="profile">${profileChoices().map(p=>`<option value="${esc(p.id)}" ${p.id===current?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('EMPEZAR PARTIDO'))}</button></div></form>`);
+    openModal(t('Partido del torneo'),`<form data-form="t-match" class="welcome-flow"><div class="field"><label>${esc(t('Equipo {n}',{n:1}))}</label>${tournamentSelect('tid-0',ids[0])}</div><div class="field"><label>${esc(t('Equipo {n}',{n:2}))}</label>${tournamentSelect('tid-1',ids[1])}</div><p class="sheet-hint">${esc(t('Tiempos: {name} (se cambian en EQUIPOS DEL TORNEO).',{name:timingName(tour)}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('EMPEZAR PARTIDO'))}</button></div></form>`);
   }
   function startTournamentMatch(data) {
     const a=tournamentTeam(String(data.get('tid-0'))),b=tournamentTeam(String(data.get('tid-1')));
@@ -1045,7 +1068,7 @@
     state.activeMatch=makeMatch(state.settings.ruleset);
     const m=state.activeMatch;m.mode='tournament';
     [a,b].forEach((team,i)=>Object.assign(m.teams[i],{name:team.name,color:team.color,tid:team.id}));
-    startWithProfile(String(data.get('profile')));
+    startWithProfile(ensureTimingProfile(state.tournament));
   }
   /* En modo torneo los equipos del tablero se cambian eligiendo de la lista, y solo antes de empezar. */
   function openTournamentTeamSwap(index) {
@@ -1098,6 +1121,7 @@
     else if(action==='t-rename'&&tour)openModal(t('Cambiar nombre'),`<form data-form="t-rename"><div class="field"><label for="t-rename-name">${esc(t('Nombre del torneo'))}</label><input id="t-rename-name" name="name" maxlength="${TN.LIMITS.name}" value="${esc(tour.name)}" autocomplete="off" required autofocus></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar'))}</button></div></form>`);
     else if(action==='t-delete'&&tour)openModal(t('Eliminar torneo'),`<p>${esc(t('¿Eliminar el torneo {name}, sus equipos y jugadores? Las planillas guardadas no se borran. Exportá el torneo antes si querés conservarlo.',{name:tour.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="t-confirm-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>`);
     else if(action==='t-confirm-delete'){state.tournament=state.otherTournaments.shift()||null;teamSheet=null;creatingTournament=false;closeModal();saveState();renderTournament();showToast(t('Torneo eliminado.'));}
+    else if(action==='t-new-timing'&&tour)openTournamentProfileForm();
     else if(action==='t-new-tournament'){creatingTournament=true;renderTournament();app.scrollTop=0;document.getElementById('t-name')?.focus({preventScroll:true});}
     else if(action==='t-cancel-new-tournament'){creatingTournament=false;renderTournament();}
     else if(action==='t-switch'){const next=state.otherTournaments.find(x=>x.id===el.dataset.id);if(next){state.otherTournaments=state.otherTournaments.filter(x=>x!==next);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=next;saveState();renderTournament();app.scrollTop=0;}}
@@ -1143,6 +1167,7 @@
   function applyTournamentImport() {
     const file=pendingTournamentImport;pendingTournamentImport=null;if(!file)return;
     const incoming=file.tournament;
+    ensureTimingProfile(incoming);
     if(state.tournament?.id===incoming.id)state.tournament=incoming;
     else if(state.otherTournaments.some(x=>x.id===incoming.id)){state.otherTournaments=state.otherTournaments.filter(x=>x.id!==incoming.id);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=incoming;}
     else{if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=incoming;state.otherTournaments=state.otherTournaments.slice(0,TN.LIMITS.tournaments-1);}
@@ -1168,10 +1193,12 @@
       const created=TN.makeTournament(data.get('name'));if(!created)return true;
       if(allTournaments().length>=TN.LIMITS.tournaments){showToast(t('Llegaste al máximo de torneos.'));return true;}
       if(state.tournament)state.otherTournaments.unshift(state.tournament);
+      setTournamentTiming(created,state.settings.ruleset);
       state.tournament=created;creatingTournament=false;saveState();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');
     }
     else if(type==='t-rename'&&tour){const name=String(data.get('name')||'').trim();if(name){tour.name=name.slice(0,TN.LIMITS.name);closeModal();saveState();renderTournament();}}
     else if(type==='t-team')saveTeamSheet();
+    else if(type==='t-profile'&&tour){const made=profileFromForm(form,profileConfig(tour.timing?.id||'wfdf'));if(!made)return true;const profile={id:uid('profile'),name:made.name,config:clone(made.config)};state.customRulesets.push(profile);setTournamentTiming(tour,profile.id);closeModal();saveState();renderTournament();showToast(t('Tiempos del torneo: {name}.',{name:profile.name}));}
     else if(type==='t-match')startTournamentMatch(data);
     else if(type==='t-swap'){const team=tournamentTeam(String(data.get('tid'))),index=Number(form.dataset.team),m=activeMatch();if(team&&!hasStarted()&&team.id!==m.teams[1-index].tid){Object.assign(m.teams[index],{name:team.name,color:team.color,tid:team.id});closeModal();saveState();renderDashboard();}else closeModal();}
     else return false;
@@ -1179,6 +1206,7 @@
   }
   /* Cambios en selectores/archivo del modo torneo; devuelve true si el evento era suyo. */
   function tournamentChange(el) {
+    if(el.dataset.tsetting==='timing'&&state.tournament){setTournamentTiming(state.tournament,el.value);saveState();showToast(t('Tiempos del torneo: {name}.',{name:timingName(state.tournament)}));renderTournament();return true;}
     if(el.id==='tournamentFile'){const file=el.files?.[0];el.value='';if(file)importTournamentFile(file);return true;}
     if(el.type==='color'&&el.closest('.sheet-top')){syncSheetColor(el.closest('form'));return true;}
     if(el.dataset.person){const input=el.closest('.field').querySelector('input');if(!input)return true;const other=el.value==='__other';input.hidden=!other;if(other)input.focus();return true;}

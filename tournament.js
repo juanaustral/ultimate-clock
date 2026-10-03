@@ -20,7 +20,7 @@
   }
   function makeTournament(name) {
     const clean = text(name, LIMITS.name);
-    return clean ? { id: uid('tournament'), name: clean, createdAt: new Date().toISOString(), teams: [] } : null;
+    return clean ? { id: uid('tournament'), name: clean, createdAt: new Date().toISOString(), timing: sanitizeTiming(null), teams: [] } : null;
   }
   /* "#7 Ana", "7 - Ana", "Ana 7", "Ana, 7" o solo "Ana": una persona por línea. */
   function parsePlayers(input) {
@@ -49,6 +49,13 @@
   const playerLabel = player => player ? (player.number !== '' ? `#${player.number} ${player.name}` : player.name) : '';
   const sortPlayers = players => [...players].sort((a, b) => (a.number === '' ) - (b.number === '') || (Number(a.number) - Number(b.number)) || a.name.localeCompare(b.name));
 
+  /* Tiempos del torneo: un perfil oficial ('wfdf', 'usau') o uno propio, del que se guarda una copia para llevarlo en el archivo. */
+  function sanitizeTiming(input) {
+    const id = typeof input?.id === 'string' && input.id && input.id.length <= 80 ? input.id : 'wfdf';
+    const official = id === 'wfdf' || id === 'usau';
+    const config = !official && input?.config && typeof input.config === 'object' && !Array.isArray(input.config) ? JSON.parse(JSON.stringify(input.config)) : null;
+    return { id: official || config ? id : 'wfdf', name: official ? '' : text(input?.name, LIMITS.name), config: official ? null : config };
+  }
   /* Valida un torneo leído de un archivo o del almacenamiento. Devuelve una copia limpia o null. */
   function sanitize(input) {
     if (!input || typeof input !== 'object' || !Array.isArray(input.teams)) return null;
@@ -67,7 +74,7 @@
       }
       teams.push({ id: unique(team.id, 'team'), name: teamName, color: isHex(team.color) ? team.color : '#1b47e2', players });
     }
-    return { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), teams };
+    return { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), teams };
   }
 
   /* Partidos guardados en los que juega algún equipo del torneo (los equipos se vinculan con `tid`). */
@@ -132,6 +139,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
+  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
