@@ -88,3 +88,7 @@ La planilla guardada apareció en Historial y su detalle conservó 17 eventos: g
 - `node --test tests/*.test.cjs`: 42/42 (8 nuevas en `tests/tournament.test.cjs`: obligatoriedad del nombre y número opcional, lista pegada, saneamiento, estadísticas, archivo exportar/importar, CSV, cableado).
 - Recorrido en Chromium a 390×844 con servidor local: crear torneo, dos equipos, jugadores (aviso por número repetido), lista pegada, elegir equipos al empezar partido, gol con pase y anotador de la lista y con "Otro", guardar, estadísticas (Ana 2 goles, Beto 1 pase), exportar JSON y CSV, recargar (persiste), eliminar e importar, archivo inválido rechazado, inglés. Sin errores de consola ni desborde horizontal.
 - Cuadro de equipos con selector sin desborde horizontal a 320×568, 844×390 y 1280×800 (el cuadro se desplaza cuando falta alto).
+
+## Ficha de equipo del 03/10/2026 (v39)
+
+- 42/42 pruebas. En Chromium a 390×844: crear torneo abre la ficha con 14 filas; guardar vacío avisa del nombre; número sin nombre y número repetido avisan y enfocan; Enter avanza y crea filas; AGREGAR JUGADOR llega a 15 filas; pegar lista rellena filas libres; el equipo se agrega y se puede cargar un segundo; editar, vaciar una fila y cambiar de idioma conserva el borrador; la lista del cuadro de gol refleja la ficha. Sin errores de consola.

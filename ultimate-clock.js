@@ -867,61 +867,147 @@
 
   /* ---- Modo torneo: equipos con jugadores cargados de antemano, guardados en este dispositivo ---- */
   const tournamentTeam=id=>state.tournament?.teams.find(x=>x.id===id);
+  const SHEET_MIN_ROWS=14;
+  /* Ficha abierta (equipo nuevo o existente). Mientras se edita, los datos viven en los campos de la pantalla. */
+  let teamSheet=null;
+  function newSheetRow(player) {return {pid:player?.id||'',name:player?.name||'',number:player?.number||''};}
+  function openTeamSheet(teamId) {
+    const team=teamId?tournamentTeam(teamId):null;
+    teamSheet=team?{id:team.id,name:team.name,color:team.color,rows:team.players.map(newSheetRow)}:{id:'',name:'',color:TEAM_PRESETS[(state.tournament?.teams.length||0)%TEAM_PRESETS.length],rows:[]};
+    while(teamSheet.rows.length<SHEET_MIN_ROWS)teamSheet.rows.push(newSheetRow());
+    renderTournament();app.scrollTop=0;
+    if(!team)app.querySelector('.ts-team-name')?.focus({preventScroll:true});
+  }
+  function closeTeamSheet() {teamSheet=null;renderTournament();app.scrollTop=0;}
+  /* Lee la ficha desde la pantalla (si está dibujada) y la guarda en teamSheet. */
+  function captureTeamSheet() {
+    const form=app.querySelector('[data-form="t-team"]');if(!form||!teamSheet)return teamSheet;
+    teamSheet.name=form.elements.name.value;teamSheet.color=form.elements.color.value;
+    teamSheet.rows=[...form.querySelectorAll('.sheet-row')].map(row=>({pid:row.dataset.player||'',name:row.querySelector('.ts-name').value,number:row.querySelector('.ts-number').value}));
+    return teamSheet;
+  }
+  function sheetRowMarkup(row,i) {
+    return `<div class="sheet-row" data-player="${esc(row.pid)}"><span class="sheet-index" aria-hidden="true">${i+1}</span><input class="ts-number" inputmode="numeric" maxlength="${TN.LIMITS.number}" autocomplete="off" data-numeric="1" value="${esc(row.number)}" placeholder="${esc(t('N.º'))}" aria-label="${esc(t('Número del jugador {n} (opcional)',{n:i+1}))}"><input class="ts-name" maxlength="${TN.LIMITS.name}" autocomplete="off" value="${esc(row.name)}" placeholder="${esc(t('Nombre del jugador'))}" aria-label="${esc(t('Nombre del jugador {n}',{n:i+1}))}"><button type="button" class="player-remove" data-action="t-clear-row" aria-label="${esc(t('Borrar la fila {n}',{n:i+1}))}">×</button></div>`;
+  }
+  function renderTeamSheet() {
+    const s=teamSheet,editing=!!s.id;
+    app.innerHTML=`<section class="tournament-screen team-sheet"><div class="screen-head"><button class="back-button" type="button" data-action="t-cancel-sheet">← ${esc(t('Torneo'))}</button><div><span class="screen-eyebrow">${esc(state.tournament.name)}</span><h1>${esc(t(editing?'Ficha del equipo':'Nuevo equipo'))}</h1></div></div>
+      <form data-form="t-team" data-team="${esc(s.id)}" class="sheet-form" novalidate>
+        <section class="settings-section sheet-top" style="${teamStyle(s)}"><div class="field"><label for="ts-team-name">${esc(t('Nombre del equipo'))}</label><input id="ts-team-name" class="ts-team-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" value="${esc(s.name)}" placeholder="${esc(t('Ej.: Ñandúes'))}" ${editing?'':'autofocus'}></div>
+          <div class="field"><label>${esc(t('Color'))}</label><div class="sheet-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c.toLowerCase()===s.color.toLowerCase()?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="t-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c.toLowerCase()===s.color.toLowerCase()}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color" value="${esc(s.color)}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div></section>
+        <section class="settings-section"><div class="section-heading"><h2>${esc(t('Jugadores'))}</h2></div><p class="sheet-hint">${esc(t('El nombre es obligatorio; el número de camiseta es opcional.'))}</p>
+          <div class="sheet-rows">${s.rows.map(sheetRowMarkup).join('')}</div>
+          <button class="button sheet-add-row" type="button" data-action="t-add-row">＋ ${esc(t('AGREGAR JUGADOR'))}</button>
+          <details class="tournament-paste"><summary>${esc(t('Pegar una lista de jugadores'))}</summary><p>${esc(t('Uno por línea: "7 Ana", "Ana 7" o solo "Ana". Se completan las filas libres.'))}</p><textarea class="ts-paste" rows="5" aria-label="${esc(t('Lista de jugadores'))}"></textarea><button class="button" type="button" data-action="t-load-list">${esc(t('CARGAR LISTA'))}</button></details></section>
+        <div class="sheet-bar"><button class="button button-primary sheet-save" type="submit">${esc(t(editing?'GUARDAR EQUIPO':'AGREGAR EQUIPO'))}</button><button class="button" type="button" data-action="t-cancel-sheet">${esc(t('Cancelar'))}</button>${editing?`<button class="button button-danger" type="button" data-action="t-del-team" data-team="${esc(s.id)}">${esc(t('ELIMINAR EQUIPO'))}</button>`:''}</div>
+      </form></section>`;
+  }
   function renderTournament() {
     const tour=state.tournament;
+    captureTeamSheet();
+    if(!tour){teamSheet=null;}
+    else if(teamSheet){renderTeamSheet();return;}
     if(!tour){
       app.innerHTML=`<section class="tournament-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('MODO TORNEO'))}</span><h1>${esc(t('Torneo'))}</h1></div></div>
         <section class="settings-section"><p>${esc(t('Cargá los equipos y sus jugadores una sola vez. Al empezar un partido elegís los equipos de la lista y, al anotar un gol, elegís quién dio el pase y quién lo hizo. El número de camiseta es opcional.'))}</p>
+        <ol class="tournament-steps"><li>${esc(t('Poné el nombre del torneo.'))}</li><li>${esc(t('Completá la ficha de cada equipo: nombre, color y jugadores.'))}</li><li>${esc(t('Al empezar un partido, elegí los equipos de la lista.'))}</li></ol>
         <form data-form="t-create"><div class="field"><label for="t-name">${esc(t('Nombre del torneo'))}</label><input id="t-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" placeholder="${esc(t('Ej.: Copa Otoño'))}" required></div><button class="button button-primary" type="submit">${esc(t('CREAR TORNEO'))}</button></form>
         ${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section>
         <section class="settings-section"><div class="section-heading"><h2>${esc(t('¿Ya tenés un torneo?'))}</h2></div><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR ARCHIVO DE TORNEO'))}</button></section><input type="file" id="tournamentFile" accept=".json,application/json" hidden></section>`;
       return;
     }
     const played=TN.tournamentMatches(tour,state.savedMatches).length,rows=TN.stats(tour,state.savedMatches);
-    const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))}</span></button>`).join('');
+    const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))} · ${esc(t('EDITAR'))}</span></button>`).join('');
     app.innerHTML=`<section class="tournament-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('MODO TORNEO'))}</span><h1>${esc(tour.name)}</h1></div></div>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Equipos'))}</h2><span>${tour.teams.length}</span></div>
-        ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Agregá el primero.'))}</p>`}
-        <form data-form="t-addteam" class="tournament-add"><div class="field"><label for="t-team-name">${esc(t('Nombre del equipo'))}</label><input id="t-team-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" required></div><div class="field"><label for="t-team-color">${esc(t('Color'))}</label><input id="t-team-color" name="color" type="color" value="${TEAM_PRESETS[tour.teams.length%TEAM_PRESETS.length]}"></div><button class="button button-primary" type="submit">＋ ${esc(t('AGREGAR EQUIPO'))}</button></form></section>
+        ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Tocá el botón para completar la ficha del primero.'))}</p>`}
+        <button class="button button-primary tournament-new" type="button" data-action="t-new-team">＋ ${esc(t('AGREGAR EQUIPO'))}</button></section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Goleadores y pases'))}</h2><span>${played} ${esc(t(played===1?'PARTIDO GUARDADO':'PARTIDOS GUARDADOS'))}</span></div>
         ${rows.length?`<table class="tournament-stats"><thead><tr><th>${esc(t('Jugador'))}</th><th>${esc(t('Goles'))}</th><th>${esc(t('Pases'))}</th></tr></thead><tbody>${rows.slice(0,20).map(r=>`<tr><td><span class="dot" style="background:${esc(r.team.color)}"></span>${esc(TN.playerLabel(r.player))} <small>${esc(r.team.name)}</small></td><td>${r.goals}</td><td>${r.assists}</td></tr>`).join('')}</tbody></table>`:`<p>${esc(t('Todavía no hay goles de jugadores de la lista. Aparecen al guardar partidos donde elegiste jugadores.'))}</p>`}</section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Archivo del torneo'))}</h2><span>JSON · CSV</span></div><p>${esc(t('El archivo incluye equipos, jugadores y los partidos guardados del torneo.'))}</p>
         <div class="export-actions"><button class="button button-primary" type="button" data-action="t-export">${esc(t('EXPORTAR TORNEO'))}</button><button class="button" type="button" data-action="t-export-csv">CSV</button><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR'))}</button></div><input type="file" id="tournamentFile" accept=".json,application/json" hidden>
         <div class="tournament-danger"><button class="button" type="button" data-action="t-rename">${esc(t('CAMBIAR NOMBRE'))}</button><button class="button button-danger" type="button" data-action="t-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section></section>`;
   }
-  /* Ficha de un equipo: datos, jugadores y formularios para agregarlos uno a uno o pegando una lista. */
-  function openTournamentTeam(teamId,focus) {
-    const team=tournamentTeam(teamId);if(!team)return;
-    const players=TN.sortPlayers(team.players);
-    openModal(t('Ficha del equipo'),`<form data-form="t-editteam" data-team="${esc(team.id)}" class="tournament-add"><div class="field"><label for="t-edit-name">${esc(t('Nombre del equipo'))}</label><input id="t-edit-name" name="name" maxlength="${TN.LIMITS.name}" value="${esc(team.name)}" autocomplete="off" required></div><div class="field"><label for="t-edit-color">${esc(t('Color'))}</label><input id="t-edit-color" name="color" type="color" value="${esc(team.color)}"></div><button class="button" type="submit">${esc(t('GUARDAR EQUIPO'))}</button></form>
-      <h3 class="section-kicker">${esc(t('JUGADORES'))} · ${players.length}/${TN.LIMITS.players}</h3>
-      ${players.length?`<ul class="tournament-players">${players.map(p=>`<li><button type="button" class="player-edit" data-action="t-edit-player" data-team="${esc(team.id)}" data-player="${esc(p.id)}" aria-label="${esc(t('Editar a {name}',{name:p.name}))}"><b>${p.number!==''?esc(p.number):'–'}</b><span>${esc(p.name)}</span></button><button type="button" class="player-remove" data-action="t-del-player" data-team="${esc(team.id)}" data-player="${esc(p.id)}" aria-label="${esc(t('Quitar a {name}',{name:p.name}))}">×</button></li>`).join('')}</ul>`:`<p>${esc(t('Todavía no hay jugadores.'))}</p>`}
-      <form data-form="t-player" data-team="${esc(team.id)}" class="tournament-player-form"><input type="hidden" name="player" value=""><div class="field"><label for="t-player-name">${esc(t('Nombre del jugador'))}</label><input id="t-player-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" required ${focus==='player'?'autofocus':''}></div><div class="field"><label for="t-player-number">${esc(t('Número (opcional)'))}</label><input id="t-player-number" name="number" inputmode="numeric" maxlength="${TN.LIMITS.number}" autocomplete="off" data-numeric="1"></div><button class="button button-primary" type="submit">＋ ${esc(t('AGREGAR JUGADOR'))}</button></form>
-      <details class="tournament-paste"><summary>${esc(t('Pegar una lista de jugadores'))}</summary><form data-form="t-paste" data-team="${esc(team.id)}"><p>${esc(t('Uno por línea: "7 Ana", "Ana 7" o solo "Ana".'))}</p><textarea name="list" rows="6" aria-label="${esc(t('Lista de jugadores'))}"></textarea><button class="button" type="submit">${esc(t('AGREGAR LISTA'))}</button></form></details>
-      <div class="modal-actions"><button class="button button-danger" type="button" data-action="t-del-team" data-team="${esc(team.id)}">${esc(t('ELIMINAR EQUIPO'))}</button><button class="button" type="button" data-action="close-modal">${esc(t('CERRAR'))}</button></div>`);
-  }
-  function afterTournamentChange(teamId,focus) {saveState();renderTournament();if(teamId)openTournamentTeam(teamId,focus);}
   let pendingTournamentImport=null;
+  function addSheetRow(focus=true) {
+    const box=app.querySelector('.sheet-rows');if(!box)return;
+    const count=box.children.length;
+    if(count>=TN.LIMITS.players){showToast(t('Llegaste al máximo de jugadores.'));return;}
+    box.insertAdjacentHTML('beforeend',sheetRowMarkup(newSheetRow(),count));
+    if(focus)box.lastElementChild.querySelector('.ts-name').focus();
+  }
+  /* Pasar de una fila a la siguiente con Enter (y crear una nueva al final) en lugar de enviar la ficha. */
+  document.addEventListener('keydown',event=>{
+    if(event.key!=='Enter'||!event.target.matches?.('.sheet-row input'))return;
+    event.preventDefault();
+    const row=event.target.closest('.sheet-row');
+    if(event.target.matches('.ts-number')){row.querySelector('.ts-name').focus();return;}
+    if(!row.nextElementSibling)addSheetRow();else row.nextElementSibling.querySelector('.ts-name').focus();
+  });
   function tournamentAction(action,el) {
     if(!action.startsWith('t-'))return false;
     const tour=state.tournament,team=tournamentTeam(el.dataset.team);
-    if(action==='t-open-team')openTournamentTeam(el.dataset.team);
-    else if(action==='t-edit-player'){
-      const p=team?.players.find(x=>x.id===el.dataset.player),form=modalRoot.querySelector('[data-form="t-player"]');if(!p||!form)return true;
-      form.elements.player.value=p.id;form.elements.name.value=p.name;form.elements.number.value=p.number;form.querySelector('button[type="submit"]').textContent=t('GUARDAR JUGADOR');form.elements.name.focus();
+    if(action==='t-new-team'&&tour){if(tour.teams.length>=TN.LIMITS.teams)showToast(t('Llegaste al máximo de equipos.'));else openTeamSheet('');}
+    else if(action==='t-open-team'&&team)openTeamSheet(team.id);
+    else if(action==='t-cancel-sheet')closeTeamSheet();
+    else if(action==='t-add-row')addSheetRow();
+    else if(action==='t-clear-row'){const row=el.closest('.sheet-row');row.querySelectorAll('input').forEach(i=>{i.value='';});row.dataset.player='';row.querySelector('.ts-number').focus();}
+    else if(action==='t-color'){
+      const form=el.closest('form');form.elements.color.value=el.dataset.color;syncSheetColor(form);
     }
-    else if(action==='t-del-player'&&team){team.players=team.players.filter(x=>x.id!==el.dataset.player);afterTournamentChange(team.id);}
+    else if(action==='t-load-list'){
+      const box=app.querySelector('.ts-paste'),found=TN.parsePlayers(box.value);
+      if(!found.length){showToast(t('No encontré jugadores en la lista.'));return true;}
+      const rows=app.querySelector('.sheet-rows');let added=0;
+      for(const p of found){
+        let row=[...rows.children].find(r=>!r.querySelector('.ts-name').value.trim()&&!r.querySelector('.ts-number').value.trim());
+        if(!row){if(rows.children.length>=TN.LIMITS.players)break;addSheetRow(false);row=rows.lastElementChild;}
+        row.querySelector('.ts-name').value=p.name;row.querySelector('.ts-number').value=p.number;added++;
+      }
+      box.value='';showToast(added<found.length?t('Se agregaron {n} jugadores; el resto no entró (máximo {max}).',{n:added,max:TN.LIMITS.players}):t('Se agregaron {n} jugadores.',{n:added}));
+    }
     else if(action==='t-del-team'&&team)openModal(t('Eliminar equipo'),`<p>${esc(t('¿Eliminar {name} y sus jugadores? Los partidos guardados no se borran.',{name:team.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="t-confirm-del-team" data-team="${esc(team.id)}">${esc(t('ELIMINAR EQUIPO'))}</button></div>`);
-    else if(action==='t-confirm-del-team'&&team){tour.teams=tour.teams.filter(x=>x.id!==team.id);closeModal();afterTournamentChange();}
+    else if(action==='t-confirm-del-team'&&team){tour.teams=tour.teams.filter(x=>x.id!==team.id);teamSheet=null;closeModal();saveState();renderTournament();showToast(t('Equipo eliminado.'));}
     else if(action==='t-rename'&&tour)openModal(t('Cambiar nombre'),`<form data-form="t-rename"><div class="field"><label for="t-rename-name">${esc(t('Nombre del torneo'))}</label><input id="t-rename-name" name="name" maxlength="${TN.LIMITS.name}" value="${esc(tour.name)}" autocomplete="off" required autofocus></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar'))}</button></div></form>`);
     else if(action==='t-delete'&&tour)openModal(t('Eliminar torneo'),`<p>${esc(t('¿Eliminar el torneo {name}, sus equipos y jugadores? Las planillas guardadas no se borran. Exportá el torneo antes si querés conservarlo.',{name:tour.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="t-confirm-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>`);
-    else if(action==='t-confirm-delete'){state.tournament=null;closeModal();saveState();renderTournament();showToast(t('Torneo eliminado.'));}
+    else if(action==='t-confirm-delete'){state.tournament=null;teamSheet=null;closeModal();saveState();renderTournament();showToast(t('Torneo eliminado.'));}
     else if(action==='t-export'&&tour)exportData(TN.exportPayload(tour,state.savedMatches),`${exportSlug(tour.name)}.json`);
     else if(action==='t-export-csv'&&tour)download(TN.statsCSV(tour,state.savedMatches,{team:t('equipo'),number:t('numero'),player:t('jugador'),goals:t('goles'),assists:t('pases')}),'text/csv;charset=utf-8',`${exportSlug(tour.name)}-${t('jugadores')}.csv`);
     else if(action==='t-import')document.getElementById('tournamentFile')?.click();
     else if(action==='t-confirm-import'){applyTournamentImport();closeModal();}
     else return false;
     return true;
+  }
+  /* El encabezado de la ficha toma el color elegido. */
+  function syncSheetColor(form) {
+    const color=form.elements.color.value,top=form.querySelector('.sheet-top');
+    top.style.setProperty('--team-color',color);top.style.setProperty('--team-ink',contrastColor(color));
+    form.querySelectorAll('.sheet-colors .color-preset').forEach(b=>{const on=b.dataset.color.toLowerCase()===color.toLowerCase();b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
+  }
+  /* Valida y guarda la ficha: nombre del equipo obligatorio; filas con número deben tener nombre; sin números repetidos. */
+  function saveTeamSheet() {
+    const tour=state.tournament,s=captureTeamSheet();if(!tour||!s)return;
+    const form=app.querySelector('[data-form="t-team"]'),rowEls=[...form.querySelectorAll('.sheet-row')];
+    const problem=(message,el)=>{showToast(message);el?.focus();el?.scrollIntoView({block:'center'});};
+    const name=s.name.replace(/\s+/g,' ').trim().slice(0,TN.LIMITS.name);
+    if(!name)return problem(t('Escribí el nombre del equipo.'),form.elements.name);
+    const entries=[],seen=new Map();
+    for(let i=0;i<s.rows.length;i++){
+      const r=s.rows[i],playerName=r.name.replace(/\s+/g,' ').trim(),number=TN.cleanNumber(r.number);
+      if(!playerName&&!r.number.trim())continue;
+      if(!playerName)return problem(t('Falta el nombre del jugador de la fila {n}.',{n:i+1}),rowEls[i].querySelector('.ts-name'));
+      if(number!==''&&seen.has(number))return problem(t('El número {n} está repetido: {a} y {b}.',{n:number,a:seen.get(number),b:playerName}),rowEls[i].querySelector('.ts-number'));
+      if(number!=='')seen.set(number,playerName);
+      entries.push({pid:r.pid,name:playerName.slice(0,TN.LIMITS.name),number});
+    }
+    const color=isHexColor(s.color)?s.color:'#1b47e2';
+    let team=s.id?tournamentTeam(s.id):null;
+    if(!team){team=TN.makeTeam(name,color);tour.teams.push(team);}
+    const old=new Map(team.players.map(p=>[p.id,p]));
+    team.name=name;team.color=color;
+    team.players=entries.map(e=>{const p=old.get(e.pid);if(p){p.name=e.name;p.number=e.number;return p;}return TN.makePlayer(e.name,e.number);});
+    const added=!s.id;teamSheet=null;saveState();renderTournament();app.scrollTop=0;
+    showToast(t(added?'Equipo {name} agregado con {n} jugadores.':'Equipo {name} guardado con {n} jugadores.',{name,n:team.players.length}));
   }
   const exportSlug=name=>String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'torneo';
   function applyTournamentImport() {
@@ -943,36 +1029,17 @@
   }
   function tournamentSubmit(form,data,type) {
     if(!type.startsWith('t-'))return false;
-    const tour=state.tournament,team=tournamentTeam(form.dataset.team);
-    if(type==='t-create'){const created=TN.makeTournament(data.get('name'));if(created){state.tournament=created;saveState();renderTournament();showToast(t('Torneo creado. Agregá los equipos.'));document.getElementById('t-team-name')?.focus();}}
+    const tour=state.tournament;
+    if(type==='t-create'){const created=TN.makeTournament(data.get('name'));if(created){state.tournament=created;saveState();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');}}
     else if(type==='t-rename'&&tour){const name=String(data.get('name')||'').trim();if(name){tour.name=name.slice(0,TN.LIMITS.name);closeModal();saveState();renderTournament();}}
-    else if(type==='t-addteam'&&tour){
-      if(tour.teams.length>=TN.LIMITS.teams){showToast(t('Llegaste al máximo de equipos.'));return true;}
-      const created=TN.makeTeam(data.get('name'),data.get('color'));if(!created)return true;
-      tour.teams.push(created);saveState();renderTournament();document.getElementById('t-team-name')?.focus();showToast(t('Equipo agregado. Tocalo para cargar los jugadores.'));
-    }
-    else if(type==='t-editteam'&&team){const name=String(data.get('name')||'').trim().slice(0,TN.LIMITS.name),color=String(data.get('color'));if(name)team.name=name;if(isHexColor(color))team.color=color;afterTournamentChange(team.id);}
-    else if(type==='t-player'&&team){
-      const number=TN.cleanNumber(data.get('number')),editing=team.players.find(p=>p.id===data.get('player')),name=String(data.get('name')||'').replace(/\s+/g,' ').trim().slice(0,TN.LIMITS.name);
-      if(!name)return true;
-      const clash=number!==''&&team.players.find(p=>p.number===number&&p!==editing);
-      if(clash){showToast(t('El número {n} ya lo tiene {name}.',{n:number,name:clash.name}));return true;}
-      if(editing)Object.assign(editing,{name,number});
-      else if(team.players.length>=TN.LIMITS.players){showToast(t('Llegaste al máximo de jugadores.'));return true;}
-      else team.players.push(TN.makePlayer(name,number));
-      afterTournamentChange(team.id,'player');
-    }
-    else if(type==='t-paste'&&team){
-      const room=TN.LIMITS.players-team.players.length,found=TN.parsePlayers(data.get('list')),added=found.slice(0,Math.max(0,room));
-      team.players.push(...added);afterTournamentChange(team.id);
-      showToast(added.length<found.length?t('Se agregaron {n} jugadores; el resto no entró (máximo {max}).',{n:added.length,max:TN.LIMITS.players}):t('Se agregaron {n} jugadores.',{n:added.length}));
-    }
+    else if(type==='t-team')saveTeamSheet();
     else return false;
     return true;
   }
   /* Cambios en selectores/archivo del modo torneo; devuelve true si el evento era suyo. */
   function tournamentChange(el) {
     if(el.id==='tournamentFile'){const file=el.files?.[0];el.value='';if(file)importTournamentFile(file);return true;}
+    if(el.type==='color'&&el.closest('.sheet-top')){syncSheetColor(el.closest('form'));return true;}
     if(el.dataset.person){const input=el.closest('.field').querySelector('input');const other=el.value==='__other';input.hidden=!other;if(other)input.focus();return true;}
     if(el.dataset.pickTeam!==undefined){
       const picked=tournamentTeam(el.value);if(!picked)return true;
@@ -988,7 +1055,7 @@
     if(tournamentAction(action,element))return true;
     if(action==='changelog')openChangelog();
     else if(action==='sheet'){renderLiveSheet();}
-    else if(action==='tournament'){closeModal();renderTournament();}
+    else if(action==='tournament'){closeModal();teamSheet=null;renderTournament();}
     else if(action==='goal-picker')openGoalPicker();
     else if(action==='timeout-picker')openTimeoutPicker();
     else if(action==='quick-call')openCallPicker();
@@ -1092,7 +1159,7 @@
     if (action === "reset") openReset();
     if (action === "save") saveMatch();
     if (action === "history") renderLiveSheet();
-    if (action === "back-dashboard") { renderDashboard(); }
+    if (action === "back-dashboard") { teamSheet=null; renderDashboard(); }
     if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {resetMatch();openTeamsSetup();}}
     if (action === "close-modal") closeModal();
     if (action === "confirm-reset") resetMatch();
@@ -1156,6 +1223,7 @@
       const el=event.target,v=el.value.replace(/\D/g,'');
       if(v!==el.value)el.value=v;
     }
+    if (event.target.type==='color'&&event.target.closest('.sheet-top')) syncSheetColor(event.target.closest('form'));
     if (event.target.dataset.setupTeam) setSetupColor(Number(event.target.dataset.setupTeam), event.target.value);
     if (event.target.id === "team-color") {
       const preview = document.getElementById("colorPreview");
