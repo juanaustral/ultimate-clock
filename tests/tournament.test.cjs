@@ -74,3 +74,12 @@ test('standings: 3 points a win, 1 a draw, ordered by points, goal difference an
   assert.deepEqual(rows.map(r=>[r.team.name,r.played,r.won,r.drawn,r.lost,r.gf,r.ga,r.points]),[['C',2,1,1,0,3,2,4],['A',2,1,0,1,3,2,3],['B',2,0,1,1,3,5,1]]);
   assert.deepEqual(T.results(tour,list).map(x=>x.id),['2026-10-03','2026-10-02','2026-10-01']);
 });
+test('tournament time profile: official ids stay, own profiles carry a copy, broken ones fall back to WFDF',()=>{
+  assert.deepEqual(T.makeTournament('x').timing,{id:'wfdf',name:'',config:null});
+  assert.deepEqual(T.sanitizeTiming({id:'usau',name:'zz',config:{a:1}}),{id:'usau',name:'',config:null});
+  const own=T.sanitizeTiming({id:'profile-1',name:'Local',config:{gameCap:3600}});assert.equal(own.id,'profile-1');assert.equal(own.config.gameCap,3600);
+  assert.equal(T.sanitizeTiming({id:'profile-2'}).id,'wfdf');assert.equal(T.sanitizeTiming(null).id,'wfdf');assert.equal(T.sanitizeTiming({id:'x'.repeat(200),config:{a:1}}).id,'wfdf');
+  const tour=T.makeTournament('Liga');tour.timing=T.sanitizeTiming({id:'profile-9',name:'Mío',config:{gameCap:1}});
+  assert.equal(T.parseFile(JSON.stringify(T.exportPayload(tour,[]))).tournament.timing.id,'profile-9');
+  assert.equal(T.sanitize({name:'Vieja',teams:[]}).timing.id,'wfdf');
+});
