@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 2026-10-03 · v40 · Modo partido y modo torneo
+
+- El inicio y ＋ NUEVO PARTIDO ofrecen dos opciones: MODO PARTIDO (nombres de equipos, pase y gol escritos a mano, también desde la planilla) y MODO TORNEO (va directo al creador de equipos).
+- Encabezado con el cartel MODO PARTIDO / MODO TORNEO del partido actual (en pantallas de hasta 430 px se oculta el nombre ULTIMATE CLOCK y queda el logo).
+- Modo torneo: el partido se empieza desde la pantalla del torneo (EMPEZAR PARTIDO DEL TORNEO: dos equipos de la lista y perfil de tiempo); en el cuadro de gol, pase y gol solo se eligen de los jugadores cargados; los equipos del tablero se cambian eligiendo de la lista y solo antes de empezar.
+- Se corrige que, al elegir equipos del torneo, el cuadro de gol seguía pidiendo los nombres a mano: el vínculo equipo-torneo ahora se crea al empezar el partido y no depende de elegirlo aparte.
+
 ## 2026-10-03 · v39 · Ficha de equipo más intuitiva
 
 - Cada equipo del torneo se completa en una sola ficha: nombre, color y una lista de 14 casilleros (número opcional + nombre). AGREGAR JUGADOR suma una fila; AGREGAR EQUIPO al final guarda la ficha y vuelve a la lista, desde donde se agrega el siguiente.

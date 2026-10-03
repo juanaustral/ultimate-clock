@@ -98,6 +98,7 @@
       savedAt: null,
       ruleset,
       status: "active",
+      mode: "match",
       teams: TEAM_DEFAULTS.map(team => ({ ...team, name: t(team.name), score: 0, goals: [], adjustments: [] })),
       clock: { elapsed: 0, running: false, startedAt: null, halfAlerted: false, capAlerted: false, status: "Preparado", gameCap: config.gameCap, halfCap: config.halfCap, halftime: config.halftime },
       timers: {
@@ -175,6 +176,7 @@
     for(const timer of [m.timers.call,m.timers.call2,m.timers.timeout,m.breakTimer])timer.thresholds=[{at:timer.duration,label:'Tiempo cumplido'}];
     if(!m.timers.pull.running&&!m.timers.pull.completed)Object.assign(m.timers.pull,{duration:E.PULL.duration,elapsed:0,alerted:[]});
     m.timers.pull.thresholds=m.timers.pull.duration===E.PULL.duration?E.pullThresholds():[{at:m.timers.pull.duration,label:'Tiempo cumplido'}];
+    if(m.mode!=='tournament'&&m.mode!=='match')m.mode=m.teams.some(x=>x.tid)?'tournament':'match';
     m.pendingHalfPrompt ||= false;m.pendingSecondHalfPrompt ||= false;
     m.teams.forEach((team,i)=>{if(!isHexColor(team.color))team.color=TEAM_DEFAULTS[i].color;});
     return stored;
@@ -513,8 +515,14 @@
     </div></article>`;
   }
 
+  /* Cartel del encabezado: MODO PARTIDO o MODO TORNEO según el partido actual. */
+  function updateModeBadge() {
+    const badge=document.getElementById('modeBadge');if(!badge)return;
+    const tournament=isTournamentMode();
+    badge.textContent=t(tournament?'MODO TORNEO':'MODO PARTIDO');badge.classList.toggle('is-tournament',tournament);
+  }
   function renderDashboard() {
-    const match=activeMatch();updateTimerConfig(match);
+    const match=activeMatch();updateModeBadge();updateTimerConfig(match);
     const center=match.half===1&&match.clock.halfAlerted?breakMarkup(match):clockMarkup(match);
     app.innerHTML=`<section id="tablero" class="dashboard-screen"><div class="main-grid">${center}${teamMarkup(match.teams[0],0)}${teamMarkup(match.teams[1],1)}</div><div class="timer-grid">${timerMarkup(match,'call-0','LLAMADO',0)}${timerMarkup(match,'call-1','LLAMADO',1)}${timerMarkup(match,'pull','PULL')}${timeoutMarkup(match)}</div></section>`;
     updateDisplays();if(isLocked())app.querySelectorAll('[data-action="goal"],[data-action="minus"],[data-action="edit-team"],[data-action="toggle-clock"],[data-action="toggle-timer"],[data-action="timeout"]').forEach(el=>el.disabled=true);
@@ -577,7 +585,7 @@
     return `<section class="event-section saved-section"><div class="section-heading"><h2>${esc(t('Planillas guardadas'))}</h2><span>${items.length} · ${esc(t('DATOS LOCALES'))}</span></div>${items.length?`<div class="history-list">${items.map(match=>`<button class="history-item" type="button" data-history="${esc(match.id)}"><span><span class="history-teams">${esc(match.teams[0].name)} <small>vs</small> ${esc(match.teams[1].name)}</span><span class="history-date">${dateLabel(match.savedAt||match.createdAt)} · ${esc(rulesetLabel(match.ruleset,match))}</span></span><strong class="history-score">${match.teams[0].score} — ${match.teams[1].score}</strong></button>`).join('')}</div>`:`<p class="empty-events">${esc(t('Al tocar Guardar, la planilla del partido queda acá para abrirla y exportarla.'))}</p>`}</section>`;
   }
   function renderLiveSheet() {
-    const m=activeMatch(),events=[...m.events].reverse();
+    updateModeBadge();const m=activeMatch(),events=[...m.events].reverse();
     app.innerHTML=`<section class="sheet-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← <span>${esc(t('Tablero'))}</span></button><div><span class="screen-eyebrow">${esc(t(m.status==='saved'?'PARTIDO CERRADO':'PARTIDO ACTUAL'))}</span><h1>${esc(t('Planilla'))}</h1></div></div>
       <div class="sheet-live-strip"><span>${esc(t(m.status==='saved'?'CERRADO':m.clock.running?'EN CURSO':m.clock.elapsed>0?'PAUSADO':'PREPARADO'))} · ${esc(t(m.half===1?'1º TIEMPO':'2º TIEMPO'))}</span><strong class="sheet-live-clock">${fmt(Math.floor(m.clock.elapsed))}</strong><small>${esc(rulesetLabel(m.ruleset))}</small></div>
       <div class="sheet-score-grid">${m.teams.map((team,index)=>`<div class="sheet-score-team sheet-score-${index+1}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><b>${team.score}</b><small>${esc(t('TIME OUTS'))} ${Math.max(0,m.config.timeoutsPerTeam-m.timeoutState.usages[index])}/${m.config.timeoutsPerTeam}</small></div>`).join('')}</div>
@@ -594,6 +602,7 @@
   function openIncident() {openModal(t('Anotar incidencia'),`<form data-form="incident"><div class="field"><label for="incident-type">${esc(t('Tipo'))}</label><select id="incident-type" name="type"><option>TFR</option><option>PMF</option><option value="Otra">${esc(t('Otra'))}</option></select></div><div class="field"><label for="incident-note">${esc(t('Nota opcional'))}</label><input id="incident-note" name="note" maxlength="160"></div><p>${esc(t('Registro descriptivo. No aplica sanciones ni certifica decisiones.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary">${esc(t('Anotar'))}</button></div></form>`);}
 
   function renderSettings() {
+    updateModeBadge();
     const config=getRuleset(),locked=hasStarted()||isLocked();
     const currentProfile=state.customRulesets.find(p=>p.id===state.settings.ruleset);
     const editing=draftRuleset||!!currentProfile;
@@ -618,30 +627,34 @@
   let welcomeStep='teams';
   function profileChoices() {return [{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];}
   function profileConfig(id) {const profile=state.customRulesets.find(p=>p.id===id);return clone(profile?profile.config:E.defaults[id]||E.defaults.wfdf);}
-  /* Con un torneo cargado, cada equipo del partido se puede elegir de la lista (nombre, color y jugadores). */
-  function tournamentPicker(team,pick) {
-    const teams=state.tournament?.teams||[];if(!teams.length)return '';
-    return `<select class="tournament-pick" name="tid-${pick}" data-pick-team="${pick}" aria-label="${esc(t('Equipo del torneo'))}"><option value="">${esc(t('Equipo libre (escribir a mano)'))}</option>${teams.map(x=>`<option value="${esc(x.id)}" ${x.id===team.tid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
+  const isTournamentMode=match=>(match||activeMatch()).mode==='tournament';
+  /* Selector de equipos del torneo (solo en modo torneo). Los equipos se eligen de la lista, no se escriben. */
+  function tournamentSelect(name,selected,exclude='') {
+    const teams=(state.tournament?.teams||[]).filter(x=>x.id!==exclude||x.id===selected);
+    return `<select class="tournament-pick" name="${name}" aria-label="${esc(t('Equipo del torneo'))}">${teams.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.name)}</option>`).join('')}</select>`;
   }
-  function linkTournamentTeam(team,id) {team.tid=state.tournament?.teams.some(x=>x.id===id)?id:'';}
   function teamSetupMarkup(teams) {
-    return teams.map((team,i)=>`<div class="team-setup" role="group" aria-labelledby="team-setup-${i}" style="${teamStyle(team)}"><span class="team-setup-label" id="team-setup-${i}">${esc(t('Equipo {n}',{n:i+1}))}</span>${tournamentPicker(team,i)}<input name="name-${i}" value="${esc(team.name)}" maxlength="30" autocomplete="off" aria-label="${esc(t('Nombre del equipo {n}',{n:i+1}))}" ${i===0?'autofocus':''}><div class="team-setup-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c===team.color?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="setup-color" data-team="${i}" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c===team.color}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color-${i}" value="${esc(team.color)}" data-setup-team="${i}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div>`).join('');
+    return teams.map((team,i)=>`<div class="team-setup" role="group" aria-labelledby="team-setup-${i}" style="${teamStyle(team)}"><span class="team-setup-label" id="team-setup-${i}">${esc(t('Equipo {n}',{n:i+1}))}</span><input name="name-${i}" value="${esc(team.name)}" maxlength="30" autocomplete="off" aria-label="${esc(t('Nombre del equipo {n}',{n:i+1}))}" ${i===0?'autofocus':''}><div class="team-setup-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c===team.color?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="setup-color" data-team="${i}" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c===team.color}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color-${i}" value="${esc(team.color)}" data-setup-team="${i}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div>`).join('');
   }
   function applyTeamsForm(form) {
     const data=new FormData(form);
-    activeMatch().teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;linkTournamentTeam(team,String(data.get(`tid-${i}`)||''));});
+    activeMatch().teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});
     saveState();
   }
   function openWelcome(step=welcomeStep) {
     if(hasStarted()||isLocked())return;
-    welcomeStep=WELCOME_STEPS.includes(step)?step:'teams';
+    welcomeStep=step==='mode'||WELCOME_STEPS.includes(step)?step:'mode';
     const index=WELCOME_STEPS.indexOf(welcomeStep),m=activeMatch();
     const steps=`<p class="welcome-step" aria-hidden="true">${esc(t('PASO {n} DE {total}',{n:index+1,total:WELCOME_STEPS.length}))}</p>`;
     const back=`<button class="button welcome-back" type="button" data-action="welcome-back">← ${esc(t('ATRÁS'))}</button>`;
     let title,body;
-    if(welcomeStep==='teams'){
+    if(welcomeStep==='mode'){
+      modeFlow='welcome';
       title=t('Te damos la bienvenida');
-      body=`<div class="welcome-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p></div></div>${langSwitch()}${steps}<form data-form="welcome-teams" class="teams-setup welcome-flow"><p>${esc(t('Escribí el nombre y elegí el color de cada equipo.'))}</p>${teamSetupMarkup(m.teams)}<div class="modal-actions"><button class="button button-primary" type="submit">${esc(t('SIGUIENTE'))} →</button></div></form>`;
+      body=`<div class="welcome-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p></div></div>${langSwitch()}<div class="welcome-flow"><p>${esc(t('¿Cómo vas a usar la app?'))}</p>${modeChoices()}</div>`;
+    } else if(welcomeStep==='teams'){
+      title=t('Te damos la bienvenida');
+      body=`<div class="welcome-hero">${LOGO_SVG}<div><strong class="info-name">ULTIMATE CLOCK</strong><p>${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p></div></div>${langSwitch()}${steps}<form data-form="welcome-teams" class="teams-setup welcome-flow"><p>${esc(t('Escribí el nombre y elegí el color de cada equipo.'))}</p>${teamSetupMarkup(m.teams)}<div class="modal-actions">${back}<button class="button button-primary" type="submit">${esc(t('SIGUIENTE'))} →</button></div></form>`;
     } else if(welcomeStep==='profile') {
       const current=profileChoices().some(p=>p.id===selectedProfileId)?selectedProfileId:state.settings.ruleset;
       selectedProfileId=current;
@@ -652,6 +665,20 @@
       body=`<form data-form="welcome-profile" class="welcome-flow" novalidate>${steps}<div class="field"><label for="profile-name">${esc(t('Nombre del perfil'))}</label><input id="profile-name" name="name" maxlength="40" autocomplete="off" placeholder="${esc(t('Ej.: Torneo local'))}" required></div><div class="duration-grid">${durationRows(profileConfig(selectedProfileId)).map(([key,label,value,unit])=>durationField(key,label,value,unit,false,true)).join('')}</div><button class="button button-primary" type="submit">${esc(t('GUARDAR PERFIL Y EMPEZAR'))}</button>${back}${storageNote(t('Este perfil se guarda en la sesión de este navegador y quedará disponible en la lista de perfiles. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierde.'))}</form>`;
     }
     openModal(title,body);
+  }
+  /* Las dos opciones del inicio y de ＋ NUEVO PARTIDO: partido suelto (se escribe todo) o torneo (se elige de listas). */
+  let modeFlow='welcome';
+  function modeChoices() {
+    return `<div class="mode-choices"><button class="mode-choice" type="button" data-action="choose-mode" data-mode="match"><strong>${esc(t('MODO PARTIDO'))}</strong><span>${esc(t('Un partido suelto. Escribís el nombre de los equipos y, si querés, de quienes hacen el pase y el gol.'))}</span></button><button class="mode-choice mode-choice-tournament" type="button" data-action="choose-mode" data-mode="tournament"><strong>${esc(t('MODO TORNEO'))}</strong><span>${esc(t('Cargás los equipos y sus jugadores una sola vez y los elegís de listas al empezar y al anotar goles.'))}</span></button></div>`;
+  }
+  function openModeChooser() {modeFlow='new';openModal(t('Nuevo partido'),`<div class="welcome-flow"><p>${esc(t('¿Cómo vas a usar la app?'))}</p>${modeChoices()}</div>`);}
+  /* MODO PARTIDO: nombres libres. MODO TORNEO: va directo al creador de equipos. */
+  function chooseMode(mode) {
+    const m=activeMatch();if(hasStarted()&&!isLocked()){closeModal();return;}
+    closeModal();
+    if(mode==='tournament'){teamSheet=null;renderTournament();app.scrollTop=0;return;}
+    m.mode='match';m.teams.forEach(team=>{team.tid='';});saveState();
+    if(modeFlow==='welcome')openWelcome('teams');else openTeamsSetup();
   }
   /* Borra un perfil guardado. El partido en curso conserva sus tiempos; si no empezó y lo usaba, vuelve a WFDF. */
   function deleteProfile(id) {
@@ -758,27 +785,25 @@
   }
   function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
   /* Jugadores de la ficha del torneo para un equipo del partido (vacío si no está vinculado). */
-  function rosterFor(team) {return TN.sortPlayers(state.tournament?.teams.find(x=>x.id===team?.tid)?.players||[]);}
-  /* Lista para elegir quién dio el pase / hizo el gol; "Otro" deja escribir un nombre a mano. */
+  function rosterFor(team) {return isTournamentMode()?TN.sortPlayers(state.tournament?.teams.find(x=>x.id===team?.tid)?.players||[]):[];}
+  /* Modo torneo: pase y gol se eligen de la lista del equipo (no se escribe). */
   function personPicker(key,label,roster,goal,autofocus) {
-    const known=roster.some(p=>p.id===goal[key+'Id']),other=!known&&!!goal[key];
-    return `<div class="field"><label for="${key}-pick">${esc(label)}</label><select id="${key}-pick" name="${key}-pick" data-person="${key}" ${autofocus?'autofocus':''}><option value="">${esc(t('Sin dato'))}</option>${roster.map(p=>`<option value="${esc(p.id)}" ${known&&p.id===goal[key+'Id']?'selected':''}>${esc(TN.playerLabel(p))}</option>`).join('')}<option value="__other" ${other?'selected':''}>${esc(t('Otro (escribir)'))}</option></select><input id="${key}" name="${key}" autocomplete="off" maxlength="40" value="${esc(other?goal[key]:'')}" placeholder="${esc(t('Escribí el nombre'))}" ${other?'':'hidden'}></div>`;
+    return `<div class="field"><label for="${key}-pick">${esc(label)}</label><select id="${key}-pick" name="${key}-pick" ${autofocus?'autofocus':''}><option value="">${esc(t('Sin dato'))}</option>${roster.map(p=>`<option value="${esc(p.id)}" ${p.id===goal[key+'Id']?'selected':''}>${esc(TN.playerLabel(p))}</option>`).join('')}</select></div>`;
   }
-  /* Lee los campos de pase y gol del cuadro de gol, con o sin ficha de jugadores. */
-  function readPerson(data,key,roster) {
-    const pick=data.get(key+'-pick');
-    if(pick===null)return {name:String(data.get(key)||'').trim(),id:''};
-    const player=roster.find(p=>p.id===pick);
-    if(player)return {name:TN.playerLabel(player),id:player.id};
-    return {name:pick==='__other'?String(data.get(key)||'').trim():'',id:''};
+  /* Lee pase y gol del cuadro: lista en modo torneo, texto libre en modo partido. */
+  function readPerson(data,key,roster,tournament) {
+    if(!tournament)return {name:String(data.get(key)||'').trim(),id:''};
+    const player=roster.find(p=>p.id===data.get(key+'-pick'));
+    return player?{name:TN.playerLabel(player),id:player.id}:{name:'',id:''};
   }
   /* fresh: opened right after the goal, so it also offers to undo it. */
   function openGoal(teamIndex,goalId,origin='dashboard',fresh=false) {
     const team = activeMatch().teams[teamIndex],goal=team?.goals.find(g=>g.id===goalId);
     if(!goal)return;
-    const roster=rosterFor(team);
-    const field=(key,label,hint)=>roster.length?personPicker(key,label,roster,goal,key==='assist'):`<div class="field"><label for="${key}">${esc(label)}</label><input id="${key}" name="${key}" autocomplete="off" value="${esc(goal[key])}" placeholder="${esc(hint)}" ${key==='assist'?'autofocus':''}></div>`;
-    openModal(t("Detalle del gol"), `<p class="goal-note">${t('Gol de <strong>{team}</strong> a los {time}. Los dos campos son opcionales.',{team:esc(team.name),time:fmt(goal.elapsed)})}</p><form data-form="goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}">${field('assist',t('Pase'),t('Quién dio el pase gol'))}${field('scorer',t('Gol'),t('Quién recibió y anotó'))}<div class="modal-actions">${fresh?`<button class="button button-danger" type="button" data-action="undo-goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}">${esc(t('DESHACER GOL'))}</button>`:''}<button class="button" type="button" data-action="close-modal">${esc(t(fresh?'OMITIR':'Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar detalle'))}</button></div></form>`);
+    const tournament=isTournamentMode(),roster=rosterFor(team),listed=tournament&&roster.length>0;
+    const field=(key,label,hint)=>tournament?(listed?personPicker(key,label,roster,goal,key==='assist'):''):`<div class="field"><label for="${key}">${esc(label)}</label><input id="${key}" name="${key}" autocomplete="off" value="${esc(goal[key])}" placeholder="${esc(hint)}" ${key==='assist'?'autofocus':''}></div>`;
+    const note=tournament?(listed?t('Gol de <strong>{team}</strong> a los {time}. Elegí los jugadores de la lista; los dos campos son opcionales.',{team:esc(team.name),time:fmt(goal.elapsed)}):t('Gol de <strong>{team}</strong> a los {time}. Este equipo no tiene jugadores cargados: sumalos en MENU → MODO TORNEO.',{team:esc(team.name),time:fmt(goal.elapsed)})):t('Gol de <strong>{team}</strong> a los {time}. Los dos campos son opcionales.',{team:esc(team.name),time:fmt(goal.elapsed)});
+    openModal(t("Detalle del gol"), `<p class="goal-note">${note}</p><form data-form="goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}">${field('assist',t('Pase'),t('Quién dio el pase gol'))}${field('scorer',t('Gol'),t('Quién recibió y anotó'))}<div class="modal-actions">${fresh?`<button class="button button-danger" type="button" data-action="undo-goal" data-team="${teamIndex}" data-goal="${esc(goalId)}" data-origin="${esc(origin)}">${esc(t('DESHACER GOL'))}</button>`:''}<button class="button" type="button" data-action="close-modal">${esc(t(fresh?'OMITIR':'Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar detalle'))}</button></div></form>`);
   }
 
   function openMinus(teamIndex) {
@@ -799,9 +824,10 @@
     fieldset.querySelectorAll('.color-preset').forEach(b=>{const on=b.dataset.color===color.toLowerCase();b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   }
   function openTeamEditor(teamIndex) {
+    if(isTournamentMode()){openTournamentTeamSwap(teamIndex);return;}
     const team = activeMatch().teams[teamIndex];
     const ink = contrastColor(team.color);
-    openModal(t('Equipo {n}',{n:teamIndex + 1}), `<form data-form="team" data-team="${teamIndex}">${state.tournament?.teams.length?`<div class="field"><label>${esc(t('Equipo del torneo'))}</label>${tournamentPicker(team,'edit').replace('data-pick-team','name="tid" data-pick-team')}</div>`:''}<div class="field"><label for="team-name">${esc(t('Nombre del equipo'))}</label><input id="team-name" name="name" value="${esc(team.name)}" maxlength="30" autocomplete="off"></div><div class="team-color-options">${['#1b47e2','#f59e0b','#16a34a','#c62525','#16171b','#ffffff'].map(c=>`<button type="button" class="color-preset" style="background:${c};color:${E.ink(c)}" data-action="team-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}">●</button>`).join('')}</div><button class="button more-colors" type="button" data-action="more-colors">${esc(t('MÁS COLORES'))}</button><div class="field extended-colors" id="extendedColors" hidden><label for="team-color">${esc(t('Elegí cualquier color'))}</label><input id="team-color" name="color" type="color" value="${esc(team.color)}"></div><div class="color-preview" id="colorPreview" style="background:${esc(team.color)};color:${ink}">${esc(t('Vista previa del equipo'))}</div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar equipo'))}</button></div></form>`);
+    openModal(t('Equipo {n}',{n:teamIndex + 1}), `<form data-form="team" data-team="${teamIndex}"><div class="field"><label for="team-name">${esc(t('Nombre del equipo'))}</label><input id="team-name" name="name" value="${esc(team.name)}" maxlength="30" autocomplete="off"></div><div class="team-color-options">${['#1b47e2','#f59e0b','#16a34a','#c62525','#16171b','#ffffff'].map(c=>`<button type="button" class="color-preset" style="background:${c};color:${E.ink(c)}" data-action="team-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}">●</button>`).join('')}</div><button class="button more-colors" type="button" data-action="more-colors">${esc(t('MÁS COLORES'))}</button><div class="field extended-colors" id="extendedColors" hidden><label for="team-color">${esc(t('Elegí cualquier color'))}</label><input id="team-color" name="color" type="color" value="${esc(team.color)}"></div><div class="color-preview" id="colorPreview" style="background:${esc(team.color)};color:${ink}">${esc(t('Vista previa del equipo'))}</div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar equipo'))}</button></div></form>`);
   }
 
   function openChangelog() {
@@ -828,9 +854,10 @@
   }
 
   function resetMatch() {
-    const teams=state.activeMatch?.teams.map(({name,color})=>({name,color}));
+    const teams=state.activeMatch?.teams.map(({name,color,tid})=>({name,color,tid:tid||''})),mode=state.activeMatch?.mode;
     state.activeMatch = makeMatch(state.settings.ruleset);
     if(teams)state.activeMatch.teams.forEach((team,i)=>Object.assign(team,teams[i]));
+    if(mode)state.activeMatch.mode=mode;
     state.pendingAlerts=[];ClockAlerts.clear();
     saveState();
     closeModal();
@@ -903,7 +930,7 @@
       </form></section>`;
   }
   function renderTournament() {
-    const tour=state.tournament;
+    const tour=state.tournament;updateModeBadge();
     captureTeamSheet();
     if(!tour){teamSheet=null;}
     else if(teamSheet){renderTeamSheet();return;}
@@ -921,12 +948,40 @@
     app.innerHTML=`<section class="tournament-screen"><div class="screen-head"><button class="back-button" data-action="back-dashboard">← ${esc(t('Tablero'))}</button><div><span class="screen-eyebrow">${esc(t('MODO TORNEO'))}</span><h1>${esc(tour.name)}</h1></div></div>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Equipos'))}</h2><span>${tour.teams.length}</span></div>
         ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Tocá el botón para completar la ficha del primero.'))}</p>`}
-        <button class="button button-primary tournament-new" type="button" data-action="t-new-team">＋ ${esc(t('AGREGAR EQUIPO'))}</button></section>
+        <button class="button ${tour.teams.length>=2?'':'button-primary '}tournament-new" type="button" data-action="t-new-team">＋ ${esc(t('AGREGAR EQUIPO'))}</button>
+        ${tour.teams.length>=2?`<button class="button button-primary tournament-new tournament-start" type="button" data-action="t-start-match">▶ ${esc(t('EMPEZAR PARTIDO DEL TORNEO'))}</button>`:`<p class="sheet-hint">${esc(t('Agregá al menos dos equipos para empezar un partido del torneo.'))}</p>`}</section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Goleadores y pases'))}</h2><span>${played} ${esc(t(played===1?'PARTIDO GUARDADO':'PARTIDOS GUARDADOS'))}</span></div>
         ${rows.length?`<table class="tournament-stats"><thead><tr><th>${esc(t('Jugador'))}</th><th>${esc(t('Goles'))}</th><th>${esc(t('Pases'))}</th></tr></thead><tbody>${rows.slice(0,20).map(r=>`<tr><td><span class="dot" style="background:${esc(r.team.color)}"></span>${esc(TN.playerLabel(r.player))} <small>${esc(r.team.name)}</small></td><td>${r.goals}</td><td>${r.assists}</td></tr>`).join('')}</tbody></table>`:`<p>${esc(t('Todavía no hay goles de jugadores de la lista. Aparecen al guardar partidos donde elegiste jugadores.'))}</p>`}</section>
       <section class="settings-section"><div class="section-heading"><h2>${esc(t('Archivo del torneo'))}</h2><span>JSON · CSV</span></div><p>${esc(t('El archivo incluye equipos, jugadores y los partidos guardados del torneo.'))}</p>
         <div class="export-actions"><button class="button button-primary" type="button" data-action="t-export">${esc(t('EXPORTAR TORNEO'))}</button><button class="button" type="button" data-action="t-export-csv">CSV</button><button class="button" type="button" data-action="t-import">${esc(t('IMPORTAR'))}</button></div><input type="file" id="tournamentFile" accept=".json,application/json" hidden>
         <div class="tournament-danger"><button class="button" type="button" data-action="t-rename">${esc(t('CAMBIAR NOMBRE'))}</button><button class="button button-danger" type="button" data-action="t-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>${storageNote(t('El torneo se guarda solo en este navegador. Exportalo para llevarlo a otro dispositivo o conservarlo.'))}</section></section>`;
+  }
+  /* Empezar un partido del torneo: se eligen los dos equipos de la lista y el perfil de tiempo. */
+  function openTournamentMatchSetup() {
+    const tour=state.tournament;if(!tour||tour.teams.length<2)return;
+    if(hasStarted()&&!isLocked()){showToast(t('Hay un partido en curso. Guardalo o prepará uno nuevo desde MENU antes de empezar otro.'));return;}
+    const m=activeMatch(),ids=[isTournamentMode()&&tournamentTeam(m.teams[0].tid)?m.teams[0].tid:tour.teams[0].id,isTournamentMode()&&tournamentTeam(m.teams[1].tid)&&m.teams[1].tid!==m.teams[0].tid?m.teams[1].tid:tour.teams.find(x=>x.id!==tour.teams[0].id).id];
+    if(ids[0]===ids[1])ids[1]=tour.teams.find(x=>x.id!==ids[0]).id;
+    const current=profileChoices().some(p=>p.id===state.settings.ruleset)?state.settings.ruleset:'wfdf';
+    openModal(t('Partido del torneo'),`<form data-form="t-match" class="welcome-flow"><div class="field"><label>${esc(t('Equipo {n}',{n:1}))}</label>${tournamentSelect('tid-0',ids[0])}</div><div class="field"><label>${esc(t('Equipo {n}',{n:2}))}</label>${tournamentSelect('tid-1',ids[1])}</div><div class="field"><label for="t-match-profile">${esc(t('Perfil de tiempo'))}</label><select id="t-match-profile" name="profile">${profileChoices().map(p=>`<option value="${esc(p.id)}" ${p.id===current?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('EMPEZAR PARTIDO'))}</button></div></form>`);
+  }
+  function startTournamentMatch(data) {
+    const a=tournamentTeam(String(data.get('tid-0'))),b=tournamentTeam(String(data.get('tid-1')));
+    if(!a||!b)return;
+    if(a.id===b.id){showToast(t('Elegí dos equipos distintos.'));return;}
+    if(hasStarted()&&!isLocked())return;
+    state.pendingAlerts=[];ClockAlerts.clear();
+    state.activeMatch=makeMatch(state.settings.ruleset);
+    const m=state.activeMatch;m.mode='tournament';
+    [a,b].forEach((team,i)=>Object.assign(m.teams[i],{name:team.name,color:team.color,tid:team.id}));
+    startWithProfile(String(data.get('profile')));
+  }
+  /* En modo torneo los equipos del tablero se cambian eligiendo de la lista, y solo antes de empezar. */
+  function openTournamentTeamSwap(index) {
+    const m=activeMatch();
+    if(hasStarted()||isLocked()){showToast(t('En modo torneo los equipos no se pueden cambiar con el partido empezado.'));return;}
+    const other=m.teams[1-index].tid;
+    openModal(t('Equipo {n}',{n:index+1}),`<form data-form="t-swap" data-team="${index}"><div class="field"><label>${esc(t('Equipo del torneo'))}</label>${tournamentSelect('tid',m.teams[index].tid,other)}</div><p class="sheet-hint">${esc(t('Para sumar o cambiar jugadores y equipos, usá MENU → MODO TORNEO.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar equipo'))}</button></div></form>`);
   }
   let pendingTournamentImport=null;
   function addSheetRow(focus=true) {
@@ -950,6 +1005,7 @@
     if(action==='t-new-team'&&tour){if(tour.teams.length>=TN.LIMITS.teams)showToast(t('Llegaste al máximo de equipos.'));else openTeamSheet('');}
     else if(action==='t-open-team'&&team)openTeamSheet(team.id);
     else if(action==='t-cancel-sheet')closeTeamSheet();
+    else if(action==='t-start-match'&&tour)openTournamentMatchSetup();
     else if(action==='t-add-row')addSheetRow();
     else if(action==='t-clear-row'){const row=el.closest('.sheet-row');row.querySelectorAll('input').forEach(i=>{i.value='';});row.dataset.player='';row.querySelector('.ts-number').focus();}
     else if(action==='t-color'){
@@ -1033,6 +1089,8 @@
     if(type==='t-create'){const created=TN.makeTournament(data.get('name'));if(created){state.tournament=created;saveState();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');}}
     else if(type==='t-rename'&&tour){const name=String(data.get('name')||'').trim();if(name){tour.name=name.slice(0,TN.LIMITS.name);closeModal();saveState();renderTournament();}}
     else if(type==='t-team')saveTeamSheet();
+    else if(type==='t-match')startTournamentMatch(data);
+    else if(type==='t-swap'){const team=tournamentTeam(String(data.get('tid'))),index=Number(form.dataset.team),m=activeMatch();if(team&&!hasStarted()&&team.id!==m.teams[1-index].tid){Object.assign(m.teams[index],{name:team.name,color:team.color,tid:team.id});closeModal();saveState();renderDashboard();}else closeModal();}
     else return false;
     return true;
   }
@@ -1041,12 +1099,6 @@
     if(el.id==='tournamentFile'){const file=el.files?.[0];el.value='';if(file)importTournamentFile(file);return true;}
     if(el.type==='color'&&el.closest('.sheet-top')){syncSheetColor(el.closest('form'));return true;}
     if(el.dataset.person){const input=el.closest('.field').querySelector('input');const other=el.value==='__other';input.hidden=!other;if(other)input.focus();return true;}
-    if(el.dataset.pickTeam!==undefined){
-      const picked=tournamentTeam(el.value);if(!picked)return true;
-      if(el.dataset.pickTeam==='edit'){const name=document.getElementById('team-name'),color=document.getElementById('team-color');if(name)name.value=picked.name;if(color){color.value=picked.color;color.dispatchEvent(new Event('input',{bubbles:true}));}}
-      else{const i=Number(el.dataset.pickTeam),name=el.closest('form')?.querySelector(`[name="name-${i}"]`);if(name)name.value=picked.name;setSetupColor(i,picked.color);}
-      return true;
-    }
     return false;
   }
 
@@ -1086,7 +1138,7 @@
       updateRunningValue(m.breakTimer);if(!m.breakTimer.completed){showToast(t('El medio tiempo todavía está en curso.'));return true;}
       m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
     }
-    else if(action==='save-and-new'){if(saveMatch()){resetMatch();openTeamsSetup();}}
+    else if(action==='save-and-new'){if(saveMatch()){resetMatch();openModeChooser();}}
     else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset,sheet),t,locale:lang==='en'?'en-US':'es-AR'}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet,{t}),'text/csv;charset=utf-8',`${name}.csv`);else if(format==='whatsapp')shareWhatsApp(SheetExport.toWhatsApp(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset,sheet),t,locale:lang==='en'?'en-US':'es-AR'}));else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,`ultimate-clock-${t('respaldo')}.json`);
     else if(action==='retry-storage'){
@@ -1103,7 +1155,7 @@
     if(type==='ruleset-profile'){saveRulesetProfile(form);return true;}
     if(type==='welcome-teams'){if(!hasStarted()&&!isLocked()){applyTeamsForm(form);openWelcome('profile');}else closeModal();return true;}
     if(type==='welcome-profile'){saveWelcomeProfile(form);return true;}
-    if(type==='teams'){if(!hasStarted()&&!isLocked())m.teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;linkTournamentTeam(team,String(data.get(`tid-${i}`)||''));});closeModal();saveState();renderDashboard();showToast(t('Equipos listos.'));return true;}
+    if(type==='teams'){if(!hasStarted()&&!isLocked())m.teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});closeModal();saveState();renderDashboard();showToast(t('Equipos listos.'));return true;}
     if(!['call','timeout'].includes(type))return false;
     if(isLocked()){closeModal();return true;}
     unlockAudio();
@@ -1153,14 +1205,15 @@
       return;
     }
     if(action==='confirm-delete-profile'){const ok=deleteProfile(actionElement.dataset.profile);closeModal();if(ok){draftRuleset=false;renderSettings();}return;}
-    if(action==='welcome-back'){openWelcome(welcomeStep==='custom'?'profile':'teams');return;}
+    if(action==='welcome-back'){openWelcome(welcomeStep==='custom'?'profile':welcomeStep==='profile'?'teams':'mode');return;}
     if (action === "settings") { closeModal(); renderSettings(); }
     if (action === "info") openInfo();
     if (action === "reset") openReset();
     if (action === "save") saveMatch();
     if (action === "history") renderLiveSheet();
     if (action === "back-dashboard") { teamSheet=null; renderDashboard(); }
-    if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {resetMatch();openTeamsSetup();}}
+    if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {resetMatch();openModeChooser();}}
+    if(action==='choose-mode'){chooseMode(actionElement.dataset.mode);return;}
     if (action === "close-modal") closeModal();
     if (action === "confirm-reset") resetMatch();
     if (action === "confirm-minus") {
@@ -1204,14 +1257,17 @@
       const m = activeMatch(), team = m.teams[Number(form.dataset.team)], goal = team?.goals.find(g => g.id === form.dataset.goal);
       if (!goal) { closeModal(); return; }
       const data = new FormData(form);
-      const roster = rosterFor(team), assist = readPerson(data,'assist',roster), scorer = readPerson(data,'scorer',roster);
+      const tournament = isTournamentMode(), roster = rosterFor(team);
+      if (!(tournament && !roster.length)) {
+      const assist = readPerson(data,'assist',roster,tournament), scorer = readPerson(data,'scorer',roster,tournament);
       Object.assign(goal, { assist: assist.name, assistId: assist.id, scorer: scorer.name, scorerId: scorer.id });
+      }
       const event = m.events.find(e => e.goal === goal.id); if (event) Object.assign(event, { assist: goal.assist, assistId: goal.assistId, scorer: goal.scorer, scorerId: goal.scorerId });
       closeModal(); saveState(); rerender(form.dataset.origin); showToast(t("Detalle del gol guardado."));
     }
     if (form.dataset.form === "team") {
       const index = Number(form.dataset.team); const data = new FormData(form); const team = activeMatch().teams[index];
-      team.name = String(data.get("name") || "").trim() || t('Equipo {n}',{n:index + 1}); team.color = String(data.get("color") || team.color);if(data.has("tid"))linkTournamentTeam(team,String(data.get("tid")||''));
+      team.name = String(data.get("name") || "").trim() || t('Equipo {n}',{n:index + 1}); team.color = String(data.get("color") || team.color);
       closeModal(); saveState(); renderDashboard(); showToast(t("Datos del equipo guardados."));
     }
   });
@@ -1259,7 +1315,7 @@
     document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
     document.querySelectorAll('[data-i18n-label]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nLabel)));
     document.querySelectorAll('.header-actions [data-action="set-lang"]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.lang===lang)));
-    updateAudioControls();updateFullscreenControl();
+    updateAudioControls();updateFullscreenControl();updateModeBadge();
   }
   /* Los equipos con el nombre por defecto ("Equipo 1" / "Team 1") siguen al idioma; los nombres propios no se tocan. */
   function relabelDefaultTeams() {
@@ -1297,7 +1353,7 @@
   updateAudioControls();
   updateFullscreenControl();
   renderDashboard();
-  if(!hasStarted()&&!isLocked())openWelcome('teams');
+  if(!hasStarted()&&!isLocked())openWelcome('mode');
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();
   let otherTabLocked=false;

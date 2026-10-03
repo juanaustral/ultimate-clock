@@ -92,3 +92,7 @@ La planilla guardada apareció en Historial y su detalle conservó 17 eventos: g
 ## Ficha de equipo del 03/10/2026 (v39)
 
 - 42/42 pruebas. En Chromium a 390×844: crear torneo abre la ficha con 14 filas; guardar vacío avisa del nombre; número sin nombre y número repetido avisan y enfocan; Enter avanza y crea filas; AGREGAR JUGADOR llega a 15 filas; pegar lista rellena filas libres; el equipo se agrega y se puede cargar un segundo; editar, vaciar una fila y cambiar de idioma conserva el borrador; la lista del cuadro de gol refleja la ficha. Sin errores de consola.
+
+## Modo partido y modo torneo del 03/10/2026 (v40)
+
+- 42/42 pruebas. Chromium a 390×844: el inicio muestra MODO PARTIDO / MODO TORNEO; modo partido → equipos escritos, cartel MODO PARTIDO, gol y gol desde la planilla con campos de texto; nuevo partido → MODO TORNEO → pantalla del torneo, crear torneo y tres equipos, EMPEZAR PARTIDO DEL TORNEO → cartel MODO TORNEO, nombres y colores de la lista, cuadro de gol solo con listas (sin campos de texto, sin «Otro»), equipo sin jugadores con aviso, cambio de equipo bloqueado con el partido empezado, estadísticas tras guardar. Sin errores de consola. Encabezado sin desborde a 320×568, 390×844 y 844×390.

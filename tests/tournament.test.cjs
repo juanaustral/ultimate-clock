@@ -44,3 +44,12 @@ test('app wires the tournament module: script tag, cache entry, publish list and
   for(const f of ['index.html','ultimate-clock.html'])assert.ok(r(f).includes('<script src="tournament.js" defer></script>')&&r(f).includes('data-action="tournament"'));
   assert.ok(r('sw.js').includes("'./tournament.js'"));assert.ok(r('scripts/publicar-vps.sh').includes('tournament.js'));
 });
+test('start screen offers match and tournament modes and the header shows the current one',()=>{
+  const fs=require('fs'),r=f=>fs.readFileSync(__dirname+'/../'+f,'utf8'),js=r('ultimate-clock.js');
+  for(const f of ['index.html','ultimate-clock.html'])assert.ok(r(f).includes('id="modeBadge"'));
+  assert.ok(js.includes('data-mode="match"')&&js.includes('data-mode="tournament"'));
+  assert.ok(js.includes("openWelcome('mode')"));
+  /* en modo torneo el cuadro de gol no ofrece campos de texto: la rama de lista no incluye <input> */
+  const picker=js.slice(js.indexOf('function personPicker'),js.indexOf('function readPerson'));
+  assert.ok(!picker.includes('<input')&&!picker.includes('__other'));
+});
