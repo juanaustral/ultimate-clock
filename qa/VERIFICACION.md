@@ -96,3 +96,7 @@ La planilla guardada apareció en Historial y su detalle conservó 17 eventos: g
 ## Modo partido y modo torneo del 03/10/2026 (v40)
 
 - 42/42 pruebas. Chromium a 390×844: el inicio muestra MODO PARTIDO / MODO TORNEO; modo partido → equipos escritos, cartel MODO PARTIDO, gol y gol desde la planilla con campos de texto; nuevo partido → MODO TORNEO → pantalla del torneo, crear torneo y tres equipos, EMPEZAR PARTIDO DEL TORNEO → cartel MODO TORNEO, nombres y colores de la lista, cuadro de gol solo con listas (sin campos de texto, sin «Otro»), equipo sin jugadores con aviso, cambio de equipo bloqueado con el partido empezado, estadísticas tras guardar. Sin errores de consola. Encabezado sin desborde a 320×568, 390×844 y 844×390.
+
+## Auditoría de modos del 03/10/2026 (v41)
+
+- 45/45 pruebas. Chromium a 390×844: inicio → modo partido → equipos → jugadores (paso 2 de 4) → gol con lista y «Otro», equipo sin lista con texto libre, editor de equipo con jugadores; menú en modo partido (ENTRAR AL MODO TORNEO) y en torneo (EQUIPOS DEL TORNEO + SALIR); entrar y salir con partido empezado piden guardar; volver de la pantalla del torneo abre la elección de equipos; ＋ NUEVO PARTIDO en torneo abre directo la elección y en partido deja nombres en blanco; recarga con partido guardado arranca vacío y conserva la planilla; menú en inglés. Sin errores de consola.

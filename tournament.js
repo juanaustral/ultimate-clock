@@ -36,6 +36,16 @@
     }
     return out;
   }
+  /* Lista de jugadores como texto, una persona por línea ("7 Ana"), y de vuelta: conserva el id de quien no cambió. */
+  const rosterToText = players => (players || []).map(p => (p.number !== '' ? `${p.number} ${p.name}` : p.name)).join('\n');
+  function rosterFromText(input, existing = []) {
+    const used = new Set();
+    return parsePlayers(input).slice(0, LIMITS.players).map(p => {
+      const same = existing.find(e => !used.has(e.id) && e.name === p.name && e.number === p.number);
+      if (same) { used.add(same.id); return same; }
+      return p;
+    });
+  }
   const playerLabel = player => player ? (player.number !== '' ? `#${player.number} ${player.name}` : player.name) : '';
   const sortPlayers = players => [...players].sort((a, b) => (a.number === '' ) - (b.number === '') || (Number(a.number) - Number(b.number)) || a.name.localeCompare(b.name));
 
@@ -101,6 +111,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, parsePlayers, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, exportPayload, parseFile, statsCSV };
+  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

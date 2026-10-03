@@ -49,7 +49,20 @@ test('start screen offers match and tournament modes and the header shows the cu
   for(const f of ['index.html','ultimate-clock.html'])assert.ok(r(f).includes('id="modeBadge"'));
   assert.ok(js.includes('data-mode="match"')&&js.includes('data-mode="tournament"'));
   assert.ok(js.includes("openWelcome('mode')"));
-  /* en modo torneo el cuadro de gol no ofrece campos de texto: la rama de lista no incluye <input> */
-  const picker=js.slice(js.indexOf('function personPicker'),js.indexOf('function readPerson'));
-  assert.ok(!picker.includes('<input')&&!picker.includes('__other'));
+  /* en modo torneo el cuadro de gol no deja escribir: «Otro» y el texto libre solo existen con allowOther (modo partido) */
+  assert(js.includes("personPicker(key,label,roster,goal,key==='assist',!tournament)"));
+  assert(js.includes("${allowOther?`<option value=\"__other\""));
+  assert(js.includes("!tournament&&pick==='__other'"));
+});
+test('roster text round trips and keeps ids of unchanged players',()=>{
+  const a=T.parsePlayers('7 Ana\nBeto');assert.equal(T.rosterToText(a),'7 Ana\nBeto');
+  const b=T.rosterFromText('7 Ana\nBeto\n9 Cris',a);assert.equal(b[0].id,a[0].id);assert.equal(b[1].id,a[1].id);assert.equal(b.length,3);
+  assert.deepEqual(T.rosterFromText('',a),[]);assert.equal(T.rosterFromText(Array.from({length:80},(_,i)=>'P'+i).join('\n')).length,T.LIMITS.players);
+});
+test('menu has the mode entry and exit buttons and new matches never prefill the previous teams',()=>{
+  const fs=require('fs'),r=f=>fs.readFileSync(__dirname+'/../'+f,'utf8'),js=r('ultimate-clock.js');
+  for(const f of ['index.html','ultimate-clock.html'])assert.ok(r(f).includes('id="menuExitTournament"')&&r(f).includes('data-action="exit-tournament"'));
+  const fresh=js.slice(js.indexOf('function freshMatch'),js.indexOf('function startNextMatch'));
+  assert.ok(fresh.includes('makeMatch(')&&!fresh.includes('.teams'));
+  assert.ok(js.includes("action==='new-match'")&&js.includes('startNextMatch()'));
 });
