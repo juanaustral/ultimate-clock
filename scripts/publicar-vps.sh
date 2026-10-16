@@ -23,6 +23,9 @@ echo "1/4 Descargando $REF"
 git clone --quiet "$REPO" "$WORK/repo"
 git -C "$WORK/repo" checkout --quiet "$REF"
 echo "    commit $(git -C "$WORK/repo" rev-parse --short HEAD)"
+# El manual y sus capturas (manual/img/*.webp) viajan con la app.
+FILES+=(manual.html)
+while IFS= read -r img; do FILES+=("$img"); done < <(cd "$WORK/repo" && ls manual/img/*.webp)
 for f in "${FILES[@]}"; do [ -f "$WORK/repo/$f" ] || { echo "Falta $f en el repositorio; no se publica nada."; exit 1; }; done
 
 echo "2/4 Respaldando la versión publicada"
@@ -33,7 +36,7 @@ tar -tzf "$BACKUP" >/dev/null
 echo "    $BACKUP"
 
 echo "3/4 Copiando archivos"
-for f in "${FILES[@]}"; do install -m 644 "$WORK/repo/$f" "$DEST/$f"; done
+for f in "${FILES[@]}"; do install -D -m 644 "$WORK/repo/$f" "$DEST/$f"; done
 
 echo "4/4 Comprobando lo que sirve $URL"
 fail=0

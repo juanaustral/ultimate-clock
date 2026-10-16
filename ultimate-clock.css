@@ -51,6 +51,8 @@ h1,h2,h3,p{margin:0}
 .header-actions .menu-help{background:var(--help);color:#fff;border-color:var(--help)}
 .menu-group-label{grid-column:1/-1;margin:8px 2px 0;font:800 10px/1 var(--font-body);letter-spacing:.14em;color:var(--muted)}
 .icon-button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:var(--touch);padding:6px 10px;background:var(--bg-2);font:700 12px/1.15 var(--font-body);letter-spacing:.03em;text-transform:uppercase;text-align:center}
+a.icon-button{text-decoration:none;color:inherit;box-sizing:border-box;border-radius:var(--radius-sm)}
+.header-actions a.menu-manual{color:#fff}
 .icon-button:hover{background:var(--line)}
 .icon-button svg{flex:none}
 .audio-header[aria-pressed="true"]{color:var(--accent)}

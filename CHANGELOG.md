@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## 2026-10-16 · v44 · Manual de usuario
+
+- `manual.html`: manual en español e inglés con capturas (`manual/img/`, 18 por idioma). Explica cómo empezar, el tablero, el menú, la planilla, el modo torneo y la exportación e importación de torneos, incluido cómo juntar los partidos de varias canchas.
+- MENU → MANUAL DE USUARIO (grupo AYUDA). El manual usa el idioma y el tema de la app; `?lang=en` lo abre en inglés.
+- `sw.js` guarda `manual.html` para uso sin internet; las capturas se guardan al verlas. `publicar-vps.sh` publica también el manual y sus capturas.
+- Prueba nueva `tests/manual.test.cjs` (48/48).
+
 ## 2026-10-03 · v43 · Tiempos por torneo
 
 - Cada torneo guarda su perfil de tiempos (`timing`: WFDF, USA Ultimate o uno propio con copia de su configuración) y todos sus partidos lo usan. Un torneo nuevo hereda el perfil que estaba en uso.

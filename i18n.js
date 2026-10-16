@@ -110,7 +110,7 @@
     'El half-time cap debe ser menor que el time cap.':'The half-time cap must be shorter than the time cap.',
     'PERFIL DE TIEMPO':'TIME PROFILE','El partido actual ya comenzó. Su perfil queda fijo hasta preparar otro partido.':'The current game has started. Its profile is fixed until you set up another game.',
     'Elegí los tiempos para este partido antes de empezar.':'Choose the times for this game before you start.',
-    'SELECCIONADO':'SELECTED','ELEGIR':'CHOOSE','USAR ESTE PERFIL':'USE THIS PROFILE','CREAR NUEVO PERFIL':'CREATE NEW PROFILE','CÓMO USAR LA APP':'HOW TO USE THE APP',
+    'MANUAL DE USUARIO':'USER MANUAL','SELECCIONADO':'SELECTED','ELEGIR':'CHOOSE','USAR ESTE PERFIL':'USE THIS PROFILE','CREAR NUEVO PERFIL':'CREATE NEW PROFILE','CÓMO USAR LA APP':'HOW TO USE THE APP',
     'Claro':'Light','Oscuro':'Dark',
     /* Tutorial */
     'PASO {n} DE {total}':'STEP {n} OF {total}','Cerrar tutorial':'Close tutorial','ANTERIOR':'BACK','TERMINAR':'FINISH','SIGUIENTE →':'NEXT →','Cerrar':'Close',
