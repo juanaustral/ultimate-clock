@@ -594,6 +594,7 @@
   }
   /* wa.me opens the WhatsApp app on phones and WhatsApp Web on computers, with the message ready to pick a chat. */
   function shareWhatsApp(text) {
+    if(navigator.share){navigator.share({title:'Ultimate Clock',text}).catch(()=>{window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank','noopener');});return;}
     const opened=window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank','noopener');
     if(!opened)location.href=`https://wa.me/?text=${encodeURIComponent(text)}`;
   }
