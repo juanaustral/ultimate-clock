@@ -368,7 +368,11 @@
         if((match.pendingHalfPrompt||match.pendingSecondHalfPrompt)&&!modalRoot.querySelector('dialog[open]')){if(app.querySelector('.dashboard-screen'))renderDashboard();showPendingTimePrompt();}
         updateWakeLock(changed);
       }else updateWakeLock(false);
-    } finally {window.requestAnimationFrame(tick);}
+    } finally {
+      const match=state.activeMatch;
+      const hasRunning = match?.status==='active' && [match.clock,...Object.values(match.timers),match.breakTimer].some(t=>t && t.running);
+      if (hasRunning) window.requestAnimationFrame(tick); else window.setTimeout(tick,1000);
+    }
   }
   window.requestAnimationFrame(tick);
 
