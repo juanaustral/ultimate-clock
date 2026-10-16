@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 # Publica la rama main de juanaustral/ultimate-clock en https://iona.ar/ultimateclock/.
-# Se ejecuta en el VPS (Contabo vmi3378085, sitio iona-web), con permiso de escritura en la carpeta pública.
-# Respalda la versión publicada, copia solo los archivos estáticos de la app y compara los SHA-256
-# de lo que sirve el sitio con los del repositorio. No toca Caddy, DNS ni otras carpetas.
-#
-# Uso:  bash publicar-vps.sh            (publica main)
-#       bash publicar-vps.sh <commit>   (publica un commit o etiqueta concreta)
 set -euo pipefail
-
 REF="${1:-main}"
 REPO="${REPO:-https://github.com/juanaustral/ultimate-clock}"
 DEST="${DEST:-/opt/iona-web/site/ultimateclock}"
@@ -19,26 +12,28 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-echo "1/4 Descargando $REF"
-git clone --quiet "$REPO" "$WORK/repo"
+echo "1/5 Descargando $REF"
+git clone --quiet --depth 1 "$REPO" "$WORK/repo"
+git -C "$WORK/repo" fetch --quiet --depth 1 origin "$REF" 2>/dev/null || true
 git -C "$WORK/repo" checkout --quiet "$REF"
 echo "    commit $(git -C "$WORK/repo" rev-parse --short HEAD)"
-# El manual y sus capturas (manual/img/*.webp) viajan con la app.
-FILES+=(manual.html)
-while IFS= read -r img; do FILES+=("$img"); done < <(cd "$WORK/repo" && ls manual/img/*.webp)
 for f in "${FILES[@]}"; do [ -f "$WORK/repo/$f" ] || { echo "Falta $f en el repositorio; no se publica nada."; exit 1; }; done
 
-echo "2/4 Respaldando la versión publicada"
+mkdir -p "$WORK/release"
+for f in "${FILES[@]}"; do install -m 644 "$WORK/repo/$f" "$WORK/release/$f"; done
+
+echo "2/5 Respaldando la versión publicada"
 mkdir -p "$BACKUPS"
 BACKUP="$BACKUPS/ultimateclock-pre-$STAMP.tar.gz"
 tar -czf "$BACKUP" -C "$(dirname "$DEST")" "$(basename "$DEST")"
 tar -tzf "$BACKUP" >/dev/null
 echo "    $BACKUP"
 
-echo "3/4 Copiando archivos"
-for f in "${FILES[@]}"; do install -D -m 644 "$WORK/repo/$f" "$DEST/$f"; done
+echo "3/5 Cambio atómico"
+mv "$DEST" "$BACKUPS/ultimateclock-prev-$STAMP"
+mv "$WORK/release" "$DEST"
 
-echo "4/4 Comprobando lo que sirve $URL"
+echo "4/5 Comprobando $URL"
 fail=0
 for f in "${FILES[@]}"; do
   local_sum="$(sha256sum "$WORK/repo/$f" | cut -d' ' -f1)"
@@ -48,7 +43,8 @@ done
 grep -o "ultimate-clock-offline-v[0-9]*" "$DEST/sw.js" | sed 's/^/    caché: /'
 
 if [ "$fail" -ne 0 ]; then
-  echo "Hay diferencias. Para volver atrás: tar -xzf $BACKUP -C $(dirname "$DEST")"
+  echo "Hay diferencias. Restaurando: mv $BACKUPS/ultimateclock-prev-$STAMP $DEST"
+  rm -rf "$DEST"; mv "$BACKUPS/ultimateclock-prev-$STAMP" "$DEST"
   exit 1
 fi
-echo "Publicado. Respaldo en $BACKUP"
+echo "5/5 Publicado. Respaldo en $BACKUP"
