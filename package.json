@@ -1,0 +1,28 @@
+{
+  "name": "ultimate-clock",
+  "version": "1.0.0",
+  "description": "> Tablero táctil local-first para operar un partido de Ultimate Frisbee.",
+  "main": "ultimate-clock.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juanaustral/ultimate-clock.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/juanaustral/ultimate-clock/issues"
+  },
+  "homepage": "https://github.com/juanaustral/ultimate-clock#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}
