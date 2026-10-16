@@ -77,7 +77,34 @@
     return { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), teams };
   }
 
-  /* Partidos guardados en los que juega algún equipo del torneo (los equipos se vinculan con `tid`). */
+  /* Valida un partido leído de un archivo o del almacenamiento. Devuelve una copia limpia o null. */
+  function sanitizeMatch(input) {
+    if (!input || typeof input !== 'object') return null;
+    if (typeof input.id !== 'string' || !input.id) return null;
+    if (input.status !== 'saved') return null;
+    if (!Array.isArray(input.teams) || input.teams.length !== 2) return null;
+    if (!input.clock || typeof input.clock !== 'object' || !Number.isFinite(input.clock.elapsed)) return null;
+    if (!Array.isArray(input.events)) return null;
+    const colors = ['#1b47e2', '#f25f4c'];
+    const teams = input.teams.map((team, i) => ({
+      name: text(team?.name, LIMITS.name) || `Equipo ${i + 1}`,
+      color: isHex(team?.color) ? team.color : colors[i],
+      score: Number.isFinite(team?.score) && team.score >= 0 ? Math.trunc(team.score) : 0,
+      tid: typeof team?.tid === 'string' && team.tid ? team.tid : null,
+      roster: Array.isArray(team?.roster) ? team.roster.slice(0, LIMITS.players) : [],
+    }));
+    return {
+      id: input.id,
+      status: 'saved',
+      mode: input.mode === 'tournament' ? 'tournament' : 'match',
+      teams,
+      clock: { ...input.clock, elapsed: Math.max(0, Math.trunc(input.clock.elapsed)) },
+      timers: input.timers && typeof input.timers === 'object' ? input.timers : {},
+      breakTimer: input.breakTimer && typeof input.breakTimer === 'object' ? input.breakTimer : null,
+      events: input.events.slice(0, 10000),
+      savedAt: typeof input.savedAt === 'string' ? input.savedAt : new Date().toISOString(),
+    };
+  }
   function tournamentMatches(tournament, matches) {
     const ids = new Set((tournament?.teams || []).map(team => team.id));
     return (matches || []).filter(match => match?.status === 'saved' && (match.teams || []).some(team => ids.has(team.tid)));
@@ -126,7 +153,7 @@
     if (!data || data.format !== FORMAT || data.version !== 1) return null;
     const tournament = sanitize(data.tournament);
     if (!tournament) return null;
-    const matches = (Array.isArray(data.matches) ? data.matches : []).filter(m => m && typeof m.id === 'string' && m.status === 'saved' && Array.isArray(m.teams) && m.teams.length === 2 && m.clock && Array.isArray(m.events));
+    const matches = (Array.isArray(data.matches) ? data.matches : []).map(sanitizeMatch).filter(Boolean);
     return { tournament, matches };
   }
   const csvCell = value => { let s = String(value ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
@@ -139,6 +166,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
+  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, sanitizeMatch, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -186,7 +186,8 @@
   }
 
   function saveState() {
-    if(storageBlocked) return false;
+    // Si un guardado falló antes, reintentar en cada cambio en vez de apagar el guardado para siempre.
+    storageBlocked = false;
     try { state.writerId=writerId; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }
     catch { storageBlocked=true; showStorageError(); return false; }
   }
