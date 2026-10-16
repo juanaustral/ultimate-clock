@@ -15,7 +15,7 @@ trap 'rm -rf "$WORK"' EXIT
 echo "1/5 Descargando $REF"
 git clone --quiet --depth 1 "$REPO" "$WORK/repo"
 git -C "$WORK/repo" fetch --quiet --depth 1 origin "$REF" 2>/dev/null || true
-git -C "$WORK/repo" checkout --quiet "$REF"
+git -C "$WORK/repo" checkout --quiet FETCH_HEAD 2>/dev/null || git -C "$WORK/repo" checkout --quiet "$REF"
 echo "    commit $(git -C "$WORK/repo" rev-parse --short HEAD)"
 for f in "${FILES[@]}"; do [ -f "$WORK/repo/$f" ] || { echo "Falta $f en el repositorio; no se publica nada."; exit 1; }; done
 

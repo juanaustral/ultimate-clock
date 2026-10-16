@@ -77,6 +77,7 @@
     const action = actionElement.dataset.action;
     if(action!=='toggle-menu'){document.querySelector('.header-actions').classList.remove('is-open');document.querySelector('.menu-button').setAttribute('aria-expanded','false');document.body.classList.remove('menu-open');}
     if(action==='start-tutorial'){startTutorial();return;}
+    if(action==='help-board'||action==='help-sheet'||action==='help-settings'||action==='help-tournament'){openHelp(action);return;}
     if(action==='tour-close'){closeTutorial();return;}
     if(action==='tour-prev'){showTutorialStep(tutorialIndex-1);return;}
     if(action==='tour-next'){showTutorialStep(tutorialIndex+1);return;}
