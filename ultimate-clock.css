@@ -97,7 +97,7 @@ body.menu-open::before{content:"";position:fixed;inset:0;z-index:19;background:#
 /* Equipo: color pleno del equipo; el número manda. */
 .team-card{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:4px;padding:clamp(8px,1.4vmin,16px);background:var(--team-color);color:var(--team-ink);border-color:transparent}
 .team-name-button{display:flex;align-items:center;gap:6px;min-height:36px;min-width:0;padding:0 4px;margin:-4px -4px 0;text-align:left;justify-self:start;max-width:100%}
-.team-name{font:800 clamp(13px,min(9cqh,7.5cqw),24px)/1.1 var(--font-display);text-transform:uppercase;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.team-name{font:800 clamp(13px,min(9cqh,7.5cqw),24px)/1.2 var(--font-display);text-transform:uppercase;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .team-edit{font-size:13px;opacity:.65}
 .score-display{display:grid;place-items:center;min-height:0;font:800 max(32px,min(calc(100cqh - 80px),56cqw))/.85 var(--font-display);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
 .score-actions{display:grid;grid-template-columns:minmax(44px,1fr) minmax(0,2.2fr);gap:6px}
