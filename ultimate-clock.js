@@ -1,7 +1,10 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "ultimate-clock-v2";
+  const STORAGE_KEY = "ultimate-clock-v2"; /* Legacy: migración a tres claves */
+  const KEY_MATCH = "ultimate-clock-match";
+  const KEY_SHEETS = "ultimate-clock-sheets";
+  const KEY_TOURNAMENTS = "ultimate-clock-tournaments";
   const app = document.getElementById("app");
   const modalRoot = document.getElementById("modalRoot");
   const tutorialRoot = document.getElementById("tutorialRoot");
@@ -145,8 +148,29 @@
   try {writerId=sessionStorage.getItem('ultimate-clock-tab')||writerId;sessionStorage.setItem('ultimate-clock-tab',writerId);}catch{}
   try {
     storageRaw = localStorage.getItem(STORAGE_KEY);
-    const stored = JSON.parse(storageRaw || "null");
-    state = stored ? mergeState(stored) : freshState();
+    if (storageRaw) {
+      // Migración: partir la clave única legacy en tres claves
+      const stored = JSON.parse(storageRaw);
+      state = mergeState(stored);
+      saveState(); try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    } else {
+      const matchRaw = localStorage.getItem(KEY_MATCH);
+      if (matchRaw) {
+        storageRaw = matchRaw;
+        const matchData = JSON.parse(matchRaw);
+        const sheetsRaw = localStorage.getItem(KEY_SHEETS);
+        const tournamentsRaw = localStorage.getItem(KEY_TOURNAMENTS);
+        const tournamentsData = tournamentsRaw ? JSON.parse(tournamentsRaw) : {};
+        state = mergeState({
+          version: 2, ...matchData,
+          savedMatches: sheetsRaw ? JSON.parse(sheetsRaw) : [],
+          tournament: tournamentsData.tournament ?? null,
+          otherTournaments: tournamentsData.otherTournaments || []
+        });
+      } else {
+        state = freshState();
+      }
+    }
   } catch {
     storageBlocked = true;
     storageInvalid = !!storageRaw;
@@ -185,12 +209,23 @@
     return stored;
   }
 
-  function saveState() {
-    // Si un guardado falló antes, reintentar en cada cambio en vez de apagar el guardado para siempre.
+  function persistMatch() {
     storageBlocked = false;
-    try { state.writerId=writerId; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }
+    try { localStorage.setItem(KEY_MATCH, JSON.stringify({version:2,writerId,settings:state.settings,customThemes:state.customThemes,customRulesets:state.customRulesets,pendingAlerts:state.pendingAlerts,activeMatch:state.activeMatch})); return true; }
     catch { storageBlocked=true; showStorageError(); return false; }
   }
+  function persistSheets() {
+    storageBlocked = false;
+    try { localStorage.setItem(KEY_SHEETS, JSON.stringify(state.savedMatches)); return true; }
+    catch { storageBlocked=true; showStorageError(); return false; }
+  }
+  function persistTournaments() {
+    storageBlocked = false;
+    try { localStorage.setItem(KEY_TOURNAMENTS, JSON.stringify({tournament:state.tournament,otherTournaments:state.otherTournaments})); return true; }
+    catch { storageBlocked=true; showStorageError(); return false; }
+  }
+  // Si un guardado falló antes, reintentar en cada cambio en vez de apagar el guardado para siempre.
+  function saveState() { const a=persistMatch(),b=persistSheets(),c=persistTournaments(); return a&&b&&c; }
   function showStorageError() {
     let banner=document.getElementById('storageWarning');
     if(!banner){banner=document.createElement('div');banner.id='storageWarning';banner.className='storage-warning';banner.setAttribute('role','alert');document.body.prepend(banner);}
@@ -231,7 +266,7 @@
     const style=getComputedStyle(root),fallback=THEME_FALLBACKS[id]||THEME_FALLBACKS.light,bg=style.getPropertyValue('--bg').trim()||fallback.bg,panel=style.getPropertyValue('--panel').trim()||fallback.panel,accent=style.getPropertyValue('--accent').trim()||fallback.accent;
     root.style.setProperty('--accent-ink',E.ink(accent));
     root.style.setProperty('--panel-display',E.ink(panel));
-    state.settings.theme=id; if(persist)saveState();updateThemeMeta();
+    state.settings.theme=id; if(persist)persistMatch();updateThemeMeta();
   }
 
   function updateThemeMeta() {
@@ -291,11 +326,11 @@
     if(!state.settings.sound)return false;
     const ready=await ClockAlerts.unlock();
     ClockAlerts.setSound(ready);
-    if(!ready){state.settings.sound=false;saveState();const field=document.getElementById('sound');if(field)field.value='off';showToast(t('El navegador no habilitó el sonido. Usá PROBAR SONIDO en MENU.'));}
+    if(!ready){state.settings.sound=false;persistMatch();const field=document.getElementById('sound');if(field)field.value='off';showToast(t('El navegador no habilitó el sonido. Usá PROBAR SONIDO en MENU.'));}
     updateAudioControls();
     return ready;
   }
-  function dispatchAlert(item) {ClockAlerts.enqueue(item.kind,()=>{alertVisual(item.kind,item.timer,item.count);announce(item.message);state.pendingAlerts=(state.pendingAlerts||[]).filter(a=>a.id!==item.id);saveState();});}
+  function dispatchAlert(item) {ClockAlerts.enqueue(item.kind,()=>{alertVisual(item.kind,item.timer,item.count);announce(item.message);state.pendingAlerts=(state.pendingAlerts||[]).filter(a=>a.id!==item.id);persistMatch();});}
   function queueAlert(kind,id,message,count=0) {const item={id:uid('alert'),kind,timer:id,message,count};state.pendingAlerts||=[];state.pendingAlerts.push(item);dispatchAlert(item);}
 
   function alertVisual(kind, timerId, count = 0) {
@@ -315,7 +350,7 @@
   function triggerTimerAlert(timer, threshold, kind = "threshold") {
     logEvent('limit',{timer:timer.id,label:threshold.label,limit:threshold.at});
     queueAlert(kind,timer.id,`${timerLabel(timer)}: ${t(threshold.label)}`,threshold.whistles||0);
-    saveState();
+    persistMatch();
   }
 
   function timerLabel(timer) {
@@ -338,18 +373,18 @@
     clock.elapsed=E.elapsed(clock);clock.startedAt=Date.now();
     if(match.half===1&&!clock.halfAlerted&&clock.elapsed>=clock.halfCap){
       clock.elapsed=clock.halfCap;clock.running=false;clock.startedAt=null;clock.halfAlerted=true;clock.status='Primer tiempo cumplido';match.pendingHalfPrompt=true;
-      logEvent('limit',{timer:'clock',label:'Primer tiempo cumplido',limit:clock.halfCap});queueAlert('complete','clock',t('Primer tiempo cumplido'));saveState();
+      logEvent('limit',{timer:'clock',label:'Primer tiempo cumplido',limit:clock.halfCap});queueAlert('complete','clock',t('Primer tiempo cumplido'));persistMatch();
     }else if(match.half===2&&!clock.capAlerted&&clock.elapsed>=clock.gameCap){
       clock.elapsed=clock.gameCap;clock.running=false;clock.startedAt=null;clock.capAlerted=true;clock.status='Tiempo total cumplido';
-      logEvent('limit',{timer:'clock',label:'Tiempo total cumplido',limit:clock.gameCap});queueAlert('complete','clock',t('Tiempo total cumplido'));saveState();
+      logEvent('limit',{timer:'clock',label:'Tiempo total cumplido',limit:clock.gameCap});queueAlert('complete','clock',t('Tiempo total cumplido'));persistMatch();
     }
     return true;
   }
 
   function showPendingTimePrompt() {
     const match=state.activeMatch;if(!match||modalRoot.querySelector('dialog[open]'))return;
-    if(match.pendingHalfPrompt){match.pendingHalfPrompt=false;saveState();openModal(t('PRIMER TIEMPO CUMPLIDO'),`<div class="milestone-modal"><div class="milestone-clock">${fmt(match.clock.elapsed)}</div><p>${esc(t('El reloj del partido se detuvo al llegar al primer tiempo.'))}</p><button class="button button-primary" data-action="start-break">${esc(t('INICIAR MEDIO TIEMPO'))}</button></div>`);}
-    else if(match.pendingSecondHalfPrompt){match.pendingSecondHalfPrompt=false;saveState();openModal(t('MEDIO TIEMPO CUMPLIDO'),`<div class="milestone-modal"><div class="milestone-clock">00:00</div><p>${esc(t('El descanso terminó. El reloj del partido se reanudará al comenzar la segunda mitad.'))}</p><button class="button button-primary" data-action="second-half">${esc(t('INICIAR SEGUNDO TIEMPO'))}</button></div>`);}
+    if(match.pendingHalfPrompt){match.pendingHalfPrompt=false;persistMatch();openModal(t('PRIMER TIEMPO CUMPLIDO'),`<div class="milestone-modal"><div class="milestone-clock">${fmt(match.clock.elapsed)}</div><p>${esc(t('El reloj del partido se detuvo al llegar al primer tiempo.'))}</p><button class="button button-primary" data-action="start-break">${esc(t('INICIAR MEDIO TIEMPO'))}</button></div>`);}
+    else if(match.pendingSecondHalfPrompt){match.pendingSecondHalfPrompt=false;persistMatch();openModal(t('MEDIO TIEMPO CUMPLIDO'),`<div class="milestone-modal"><div class="milestone-clock">00:00</div><p>${esc(t('El descanso terminó. El reloj del partido se reanudará al comenzar la segunda mitad.'))}</p><button class="button button-primary" data-action="second-half">${esc(t('INICIAR SEGUNDO TIEMPO'))}</button></div>`);}
   }
 
   /* Timers keep start anchors, so the state saved on each discrete change is
@@ -414,19 +449,19 @@
     if(id==='clock'){
       if(m.clock.capAlerted){showToast(t('El tiempo total ya se cumplió.'));return;}
       if(m.half===1&&m.clock.halfAlerted){showToast(t('Iniciá el medio tiempo para continuar.'));return;}
-      updateClock();if(m.clock.capAlerted||(m.half===1&&m.clock.halfAlerted)){saveState();renderDashboard();return;}
+      updateClock();if(m.clock.capAlerted||(m.half===1&&m.clock.halfAlerted)){persistMatch();renderDashboard();return;}
       m.clock.running=!m.clock.running;m.clock.startedAt=m.clock.running?Date.now():null;m.clock.status=m.clock.running?'Corriendo':'Pausado';
       logEvent(m.clock.running?'resume':'pause',{timer:'clock'});
     }else{
       if(!['pull','call-0','call-1'].includes(id))return;
       const index=id==='call-1'?1:0,timer=id==='pull'?m.timers.pull:index===0?m.timers.call:m.timers.call2;
       /* Pull y Llamado: mientras corren, el botón es REINICIAR (vuelve a cero). Tocar la tarjeta no reinicia. */
-      if(timer.running){if(fromCard)return;Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});saveState();renderDashboard();return;}
-      if(timer.completed){Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});saveState();renderDashboard();return;}
+      if(timer.running){if(fromCard)return;Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});persistMatch();renderDashboard();return;}
+      if(timer.completed){Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});persistMatch();renderDashboard();return;}
       if(id!=='pull'){openCall(index);return;}
       setRunning(timer,true);logEvent('start',{timer:id});
     }
-    saveState();renderDashboard();
+    persistMatch();renderDashboard();
   }
   /* El llamado arranca al tocarlo; mientras corre se elige la categoría. Cerrar el cuadro lo registra con la categoría marcada. */
   let pendingCall=null;
@@ -435,18 +470,18 @@
     const m=activeMatch(),timer=callTimer(m,teamIndex);
     if(timer.running){showToast(t('El llamado corre hasta el final.'));return;}
     if(timer.completed)Object.assign(timer,{elapsed:0,completed:false,alerted:[],startedAt:null});
-    unlockAudio();m.callTypes[teamIndex]='';setRunning(timer,true);saveState();renderDashboard();
+    unlockAudio();m.callTypes[teamIndex]='';setRunning(timer,true);persistMatch();renderDashboard();
     openModal(t('Llamado de {team}',{team:m.teams[teamIndex].name}),`<form data-form="call" data-team="${teamIndex}"><fieldset class="call-types"><legend>${esc(t('Categoría de llamado'))}</legend>${CALL_CATEGORIES.map((x,i)=>`<label class="call-type"><input type="radio" name="type" value="${esc(x)}" ${i===0?'checked':''}><span>${esc(t(x))}</span></label>`).join('')}</fieldset><p class="call-guidance" id="call-guidance">${esc(t(CALL_GUIDANCE.Falta))}</p><p>${esc(t('El reloj registra el llamado; no aplica sanciones ni reemplaza las reglas.'))} <a href="${m.ruleset==='usau'?'https://usaultimate.org/rules/':'https://rules.wfdf.sport/'}" target="_blank" rel="noopener noreferrer">${esc(t('Consultar reglamento ↗'))}</a></p><div class="modal-actions"><button class="button" type="button" data-action="cancel-call" data-team="${teamIndex}">${esc(t('CANCELAR LLAMADO'))}</button><button class="button button-primary">${esc(t('REGISTRAR'))}</button></div></form>`);
     pendingCall=teamIndex;
   }
   function registerCall(index,category) {
     const m=activeMatch(),timer=callTimer(m,index);
     if(!CALL_CATEGORIES.includes(category))category=CALL_CATEGORIES[0];
-    m.callTypes[index]=category;logEvent('call',{team:index,timer:timer.id,label:category});saveState();renderDashboard();
+    m.callTypes[index]=category;logEvent('call',{team:index,timer:timer.id,label:category});persistMatch();renderDashboard();
   }
   function cancelCall(index) {
     const m=activeMatch(),timer=callTimer(m,index);
-    Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});m.callTypes[index]='';saveState();renderDashboard();
+    Object.assign(timer,{elapsed:0,running:false,startedAt:null,completed:false,alerted:[]});m.callTypes[index]='';persistMatch();renderDashboard();
   }
   function startTimeout(teamIndex) {
     const m=activeMatch(),timer=m.timers.timeout;
@@ -660,7 +695,7 @@
   function applyTeamsForm(form) {
     const data=new FormData(form);
     activeMatch().teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});
-    saveState();
+    persistMatch();
   }
   function openWelcome(step=welcomeStep) {
     if(hasStarted()||isLocked())return;
@@ -697,7 +732,7 @@
   function freshMatch(mode) {
     state.pendingAlerts=[];ClockAlerts.clear();
     state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;
-    saveState();renderDashboard();
+    persistMatch();renderDashboard();
   }
   /* Un partido nuevo sin salir del modo actual: partido → nombres en blanco; torneo → equipos de la lista. */
   function startNextMatch() {
@@ -730,7 +765,7 @@
     if(hasStarted()&&!isLocked()){closeModal();return;}
     closeModal();
     if(mode==='tournament'){enterTournamentMode();return;}
-    activeMatch().mode='match';saveState();openWelcome('teams');
+    activeMatch().mode='match';persistMatch();openWelcome('teams');
   }
   /* Borra un perfil guardado. El partido en curso conserva sus tiempos; si no empezó y lo usaba, vuelve a WFDF. */
   function deleteProfile(id) {
@@ -749,7 +784,7 @@
     const profile=state.customRulesets.find(p=>p.id===id);
     if(!profile&&!['wfdf','usau'].includes(id))return;
     state.settings.ruleset=id;state.settings.baseRuleset=profile?'wfdf':id;state.settings.overrides=profile?clone(profile.config):{};
-    activeMatch().ruleset=id;updateTimerConfig(activeMatch());saveState();renderDashboard();enterFullscreen();closeModal();
+    activeMatch().ruleset=id;updateTimerConfig(activeMatch());persistMatch();renderDashboard();enterFullscreen();closeModal();
   }
   function storageNote(text=t('Perfiles, planillas y el torneo se guardan solo en este navegador. Si borrás sus datos, usás modo incógnito o cambiás de equipo, se pierden. En iPhone, agregá la app a la pantalla de inicio. Exportá lo que quieras conservar.')) {
     return `<p class="storage-note"><span aria-hidden="true">🔒</span> ${esc(text)}</p>`;
@@ -827,14 +862,14 @@
     const m=activeMatch(),team=m.teams[teamIndex];if(!team)return;
     const goal={id:uid('goal'),elapsed:m.clock.elapsed,at:nowIso(),assist:'',scorer:''};
     team.score+=1;team.goals.push(goal);logEvent('goal',{team:teamIndex,goal:goal.id,assist:'',scorer:''});
-    closeModal();saveState();rerender(origin);announce(t('Gol de {team}. {a} a {b}',{team:team.name,a:m.teams[0].score,b:m.teams[1].score}));
+    closeModal();persistMatch();rerender(origin);announce(t('Gol de {team}. {a} a {b}',{team:team.name,a:m.teams[0].score,b:m.teams[1].score}));
     openGoal(teamIndex,goal.id,origin,true);
   }
   function undoGoal(teamIndex,goalId,origin) {
     const m=activeMatch(),team=m.teams[teamIndex],at=team?.goals.findIndex(g=>g.id===goalId);
     if(!team||at<0){showToast(t('Ese gol ya no se puede deshacer.'));return;}
     team.goals.splice(at,1);team.score=Math.max(0,team.score-1);m.events=m.events.filter(e=>e.goal!==goalId);
-    saveState();rerender(origin);showToast(t('Gol de {team} deshecho.',{team:team.name}));
+    persistMatch();rerender(origin);showToast(t('Gol de {team} deshecho.',{team:team.name}));
   }
   function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
   /* Jugadores de la ficha del torneo para un equipo del partido (vacío si no está vinculado). */
@@ -877,7 +912,7 @@
   function applyPlayersForm(form) {
     const data=new FormData(form);
     activeMatch().teams.forEach((team,i)=>{team.roster=TN.rosterFromText(data.get(`players-${i}`),team.roster);});
-    saveState();
+    persistMatch();
   }
   function openPlayersSetup() {
     if(isLocked())return;
@@ -929,7 +964,7 @@
     if(teams)state.activeMatch.teams.forEach((team,i)=>Object.assign(team,teams[i]));
     if(mode)state.activeMatch.mode=mode;
     state.pendingAlerts=[];ClockAlerts.clear();
-    saveState();
+    persistMatch();
     closeModal();
     renderDashboard();
     showToast(t("Contadores reiniciados."));
@@ -952,7 +987,7 @@
     let profile=state.customRulesets.find(p=>p.id===form.dataset.profile);
     if(profile){profile.name=name;profile.config=clone(config);}else{profile={id:uid('profile'),name,config:clone(config)};state.customRulesets.push(profile);}
     if(!active){state.settings.ruleset=profile.id;state.settings.baseRuleset='wfdf';state.settings.overrides=clone(config);activeMatch().ruleset=profile.id;updateTimerConfig(activeMatch());}
-    draftRuleset=false;saveState();renderDashboard();showToast(t(active?'Perfil {name} guardado para el próximo partido.':'Perfil {name} guardado.',{name}));
+    draftRuleset=false;persistMatch();renderDashboard();showToast(t(active?'Perfil {name} guardado para el próximo partido.':'Perfil {name} guardado.',{name}));
   }
   function saveWelcomeProfile(form) {
     if(hasStarted()||isLocked()){closeModal();return;}
@@ -1123,14 +1158,14 @@
       box.value='';showToast(added<found.length?t('Se agregaron {n} jugadores; el resto no entró (máximo {max}).',{n:added,max:TN.LIMITS.players}):t('Se agregaron {n} jugadores.',{n:added}));
     }
     else if(action==='t-del-team'&&team)openModal(t('Eliminar equipo'),`<p>${esc(t('¿Eliminar {name} y sus jugadores? Los partidos guardados no se borran.',{name:team.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="t-confirm-del-team" data-team="${esc(team.id)}">${esc(t('ELIMINAR EQUIPO'))}</button></div>`);
-    else if(action==='t-confirm-del-team'&&team){tour.teams=tour.teams.filter(x=>x.id!==team.id);teamSheet=null;closeModal();saveState();renderTournament();showToast(t('Equipo eliminado.'));}
+    else if(action==='t-confirm-del-team'&&team){tour.teams=tour.teams.filter(x=>x.id!==team.id);teamSheet=null;closeModal();persistTournaments();renderTournament();showToast(t('Equipo eliminado.'));}
     else if(action==='t-rename'&&tour)openModal(t('Cambiar nombre'),`<form data-form="t-rename"><div class="field"><label for="t-rename-name">${esc(t('Nombre del torneo'))}</label><input id="t-rename-name" name="name" maxlength="${TN.LIMITS.name}" value="${esc(tour.name)}" autocomplete="off" required autofocus></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar'))}</button></div></form>`);
     else if(action==='t-delete'&&tour)openModal(t('Eliminar torneo'),`<p>${esc(t('¿Eliminar el torneo {name}, sus equipos y jugadores? Las planillas guardadas no se borran. Exportá el torneo antes si querés conservarlo.',{name:tour.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="t-confirm-delete">${esc(t('ELIMINAR TORNEO'))}</button></div>`);
-    else if(action==='t-confirm-delete'){state.tournament=state.otherTournaments.shift()||null;teamSheet=null;creatingTournament=false;closeModal();saveState();renderTournament();showToast(t('Torneo eliminado.'));}
+    else if(action==='t-confirm-delete'){state.tournament=state.otherTournaments.shift()||null;teamSheet=null;creatingTournament=false;closeModal();persistTournaments();renderTournament();showToast(t('Torneo eliminado.'));}
     else if(action==='t-new-timing'&&tour)openTournamentProfileForm();
     else if(action==='t-new-tournament'){creatingTournament=true;renderTournament();app.scrollTop=0;document.getElementById('t-name')?.focus({preventScroll:true});}
     else if(action==='t-cancel-new-tournament'){creatingTournament=false;renderTournament();}
-    else if(action==='t-switch'){const next=state.otherTournaments.find(x=>x.id===el.dataset.id);if(next){state.otherTournaments=state.otherTournaments.filter(x=>x!==next);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=next;saveState();renderTournament();app.scrollTop=0;}}
+    else if(action==='t-switch'){const next=state.otherTournaments.find(x=>x.id===el.dataset.id);if(next){state.otherTournaments=state.otherTournaments.filter(x=>x!==next);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=next;persistTournaments();renderTournament();app.scrollTop=0;}}
     else if(action==='t-export'&&tour)exportData(TN.exportPayload(tour,state.savedMatches),`${exportSlug(tour.name)}.json`);
     else if(action==='t-export-csv'&&tour)download(TN.statsCSV(tour,state.savedMatches,{team:t('equipo'),number:t('numero'),player:t('jugador'),goals:t('goles'),assists:t('pases')}),'text/csv;charset=utf-8',`${exportSlug(tour.name)}-${t('jugadores')}.csv`);
     else if(action==='t-import')document.getElementById('tournamentFile')?.click();
@@ -1166,7 +1201,7 @@
     const old=new Map(team.players.map(p=>[p.id,p]));
     team.name=name;team.color=color;
     team.players=entries.map(e=>{const p=old.get(e.pid);if(p){p.name=e.name;p.number=e.number;return p;}return TN.makePlayer(e.name,e.number);});
-    const added=!s.id;teamSheet=null;saveState();renderTournament();app.scrollTop=0;
+    const added=!s.id;teamSheet=null;persistTournaments();renderTournament();app.scrollTop=0;
     showToast(t(added?'Equipo {name} agregado con {n} jugadores.':'Equipo {name} guardado con {n} jugadores.',{name,n:team.players.length}));
   }
   const exportSlug=name=>String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'torneo';
@@ -1200,19 +1235,19 @@
       if(allTournaments().length>=TN.LIMITS.tournaments){showToast(t('Llegaste al máximo de torneos.'));return true;}
       if(state.tournament)state.otherTournaments.unshift(state.tournament);
       setTournamentTiming(created,state.settings.ruleset);
-      state.tournament=created;creatingTournament=false;saveState();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');
+      state.tournament=created;creatingTournament=false;persistTournaments();showToast(t('Torneo creado. Completá la ficha del primer equipo.'));openTeamSheet('');
     }
-    else if(type==='t-rename'&&tour){const name=String(data.get('name')||'').trim();if(name){tour.name=name.slice(0,TN.LIMITS.name);closeModal();saveState();renderTournament();}}
+    else if(type==='t-rename'&&tour){const name=String(data.get('name')||'').trim();if(name){tour.name=name.slice(0,TN.LIMITS.name);closeModal();persistTournaments();renderTournament();}}
     else if(type==='t-team')saveTeamSheet();
     else if(type==='t-profile'&&tour){const made=profileFromForm(form,profileConfig(tour.timing?.id||'wfdf'));if(!made)return true;const profile={id:uid('profile'),name:made.name,config:clone(made.config)};state.customRulesets.push(profile);setTournamentTiming(tour,profile.id);closeModal();saveState();renderTournament();showToast(t('Tiempos del torneo: {name}.',{name:profile.name}));}
     else if(type==='t-match')startTournamentMatch(data);
-    else if(type==='t-swap'){const team=tournamentTeam(String(data.get('tid'))),index=Number(form.dataset.team),m=activeMatch();if(team&&!hasStarted()&&team.id!==m.teams[1-index].tid){Object.assign(m.teams[index],{name:team.name,color:team.color,tid:team.id});closeModal();saveState();renderDashboard();}else closeModal();}
+    else if(type==='t-swap'){const team=tournamentTeam(String(data.get('tid'))),index=Number(form.dataset.team),m=activeMatch();if(team&&!hasStarted()&&team.id!==m.teams[1-index].tid){Object.assign(m.teams[index],{name:team.name,color:team.color,tid:team.id});closeModal();persistMatch();renderDashboard();}else closeModal();}
     else return false;
     return true;
   }
   /* Cambios en selectores/archivo del modo torneo; devuelve true si el evento era suyo. */
   function tournamentChange(el) {
-    if(el.dataset.tsetting==='timing'&&state.tournament){setTournamentTiming(state.tournament,el.value);saveState();showToast(t('Tiempos del torneo: {name}.',{name:timingName(state.tournament)}));renderTournament();return true;}
+    if(el.dataset.tsetting==='timing'&&state.tournament){setTournamentTiming(state.tournament,el.value);persistTournaments();showToast(t('Tiempos del torneo: {name}.',{name:timingName(state.tournament)}));renderTournament();return true;}
     if(el.id==='tournamentFile'){const file=el.files?.[0];el.value='';if(file)importTournamentFile(file);return true;}
     if(el.type==='color'&&el.closest('.sheet-top')){syncSheetColor(el.closest('form'));return true;}
     if(el.dataset.person){const input=el.closest('.field').querySelector('input');if(!input)return true;const other=el.value==='__other';input.hidden=!other;if(other)input.focus();return true;}
@@ -1236,12 +1271,12 @@
     else if(action==='incident')openIncident();
     else if(action==='quick-theme'){const view=app.firstElementChild?.className||'';applyTheme(element.dataset.theme);if(view.includes('settings-screen'))renderSettings();else if(view.includes('tournament-screen'))renderTournament();else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();}
     else if(action==='enable-audio'){
-      if(ClockAlerts.ready){state.settings.sound=false;ClockAlerts.setSound(false);saveState();updateAudioControls();showToast(t('Sonido desactivado.'));}
-      else ClockAlerts.unlock().then(ok=>{state.settings.sound=ok;ClockAlerts.setSound(ok);saveState();updateAudioControls();showToast(t(ok?'Sonido activado.':'No se pudo activar el sonido en este navegador.'));});
+      if(ClockAlerts.ready){state.settings.sound=false;ClockAlerts.setSound(false);persistMatch();updateAudioControls();showToast(t('Sonido desactivado.'));}
+      else ClockAlerts.unlock().then(ok=>{state.settings.sound=ok;ClockAlerts.setSound(ok);persistMatch();updateAudioControls();showToast(t(ok?'Sonido activado.':'No se pudo activar el sonido en este navegador.'));});
     }
     else if(action==='test-audio'){
       ClockAlerts.unlock().then(ok=>{
-        state.settings.sound=ok;ClockAlerts.setSound(ok);saveState();updateAudioControls();
+        state.settings.sound=ok;ClockAlerts.setSound(ok);persistMatch();updateAudioControls();
         const played=ok&&ClockAlerts.test();
         showToast(t(played?'Sonido de prueba: cinco alarmas. Revisá el volumen del dispositivo.':'No se pudo reproducir el sonido de prueba.'));
       });
@@ -1256,15 +1291,15 @@
     else if(action==='more-colors'){const field=document.getElementById('extendedColors');field.hidden=false;document.getElementById('team-color').click();}
     else if(action==='start-break'){
       if(m.half!==1||!m.clock.halfAlerted||m.breakTimer.running||m.breakTimer.completed){showToast(t('El medio tiempo todavía no está disponible.'));return true;}
-      m.breakTimer=makeTimer('break','Medio tiempo',m.config.halftime,[{at:m.config.halftime,label:'Tiempo cumplido'}]);setRunning(m.breakTimer,true);logEvent('half',{label:'Inicio del medio tiempo'});unlockAudio();closeModal();saveState();renderDashboard();
+      m.breakTimer=makeTimer('break','Medio tiempo',m.config.halftime,[{at:m.config.halftime,label:'Tiempo cumplido'}]);setRunning(m.breakTimer,true);logEvent('half',{label:'Inicio del medio tiempo'});unlockAudio();closeModal();persistMatch();renderDashboard();
     }
     else if(action==='second-half'){
       if(m.half===2){showToast(t('La segunda mitad ya está activa.'));return true;}
       updateRunningValue(m.breakTimer);if(!m.breakTimer.completed){showToast(t('El medio tiempo todavía está en curso.'));return true;}
-      m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();saveState();renderDashboard();
+      m.half=2;m.timeoutState.usages=[0,0];m.timeoutState.activeTeam=null;m.timers.timeout=makeTimer('timeout','Time out',m.config.timeoutDuration,[{at:m.config.timeoutDuration,label:'Tiempo cumplido'}]);m.clock.running=true;m.clock.startedAt=Date.now();m.clock.status='Corriendo';logEvent('half',{label:'Inicio de segunda mitad; time outs de la nueva mitad disponibles'});closeModal();persistMatch();renderDashboard();
     }
     else if(action==='delete-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match);if(sheet)openModal(t('Eliminar planilla'),`<p>${esc(t('¿Eliminar la planilla {a} vs {b}? No se puede deshacer. Exportala antes si querés conservarla.',{a:sheet.teams[0].name,b:sheet.teams[1].name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="confirm-delete-sheet" data-match="${esc(sheet.id)}">${esc(t('ELIMINAR PLANILLA'))}</button></div>`);}
-    else if(action==='confirm-delete-sheet'){state.savedMatches=state.savedMatches.filter(x=>x.id!==element.dataset.match);closeModal();saveState();if(app.querySelector('.sheet-screen'))renderLiveSheet();showToast(t('Planilla eliminada.'));}
+    else if(action==='confirm-delete-sheet'){state.savedMatches=state.savedMatches.filter(x=>x.id!==element.dataset.match);closeModal();persistSheets();if(app.querySelector('.sheet-screen'))renderLiveSheet();showToast(t('Planilla eliminada.'));}
     else if(action==='save-and-new'){if(saveMatch())startNextMatch();}
     else if(action==='export-sheet'){const sheet=state.savedMatches.find(x=>x.id===element.dataset.match)||(m.id===element.dataset.match?m:null),format=element.dataset.format,name=sheet&&exportName(sheet);if(!sheet);else if(format==='pdf')download(SheetExport.toPDF(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset,sheet),t,locale:lang==='en'?'en-US':'es-AR'}),'application/pdf',`${name}.pdf`);else if(format==='csv')download(SheetExport.toCSV(sheet,{t}),'text/csv;charset=utf-8',`${name}.csv`);else if(format==='whatsapp')shareWhatsApp(SheetExport.toWhatsApp(sheet,{rulesetLabel:rulesetLabel(sheet.ruleset,sheet),t,locale:lang==='en'?'en-US':'es-AR'}));else exportData(sheet,`${name}.json`);}
     else if(action==='export-backup')exportData(storageRaw&&storageBlocked?{original:storageRaw,current:state}:state,`ultimate-clock-${t('respaldo')}.json`);
@@ -1278,19 +1313,19 @@
   function extraSubmit(form) {
     const data=new FormData(form),m=activeMatch(),type=form.dataset.form;
     if(tournamentSubmit(form,data,type))return true;
-    if(type==='incident'){logEvent('incident',{label:String(data.get('type')),note:String(data.get('note')||'').trim()});closeModal();saveState();renderLiveSheet();showToast(t('Incidencia anotada.'));return true;}
+    if(type==='incident'){logEvent('incident',{label:String(data.get('type')),note:String(data.get('note')||'').trim()});closeModal();persistMatch();renderLiveSheet();showToast(t('Incidencia anotada.'));return true;}
     if(type==='ruleset-profile'){saveRulesetProfile(form);return true;}
     if(type==='welcome-teams'){if(!hasStarted()&&!isLocked()){applyTeamsForm(form);openWelcome('players');}else closeModal();return true;}
     if(type==='welcome-players'){if(!hasStarted()&&!isLocked()){applyPlayersForm(form);openWelcome('profile');}else closeModal();return true;}
-    if(type==='players'){applyPlayersForm(form);closeModal();saveState();renderDashboard();showToast(t('Equipos listos.'));return true;}
+    if(type==='players'){applyPlayersForm(form);closeModal();persistMatch();renderDashboard();showToast(t('Equipos listos.'));return true;}
     if(type==='welcome-profile'){saveWelcomeProfile(form);return true;}
-    if(type==='teams'){if(!hasStarted()&&!isLocked())m.teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});closeModal();saveState();renderDashboard();openPlayersSetup();return true;}
+    if(type==='teams'){if(!hasStarted()&&!isLocked())m.teams.forEach((team,i)=>{team.name=String(data.get(`name-${i}`)||'').trim()||t('Equipo {n}',{n:i+1});const color=String(data.get(`color-${i}`)||'');if(isHexColor(color))team.color=color;});closeModal();persistMatch();renderDashboard();openPlayersSetup();return true;}
     if(!['call','timeout'].includes(type))return false;
     if(isLocked()){closeModal();return true;}
     unlockAudio();
     if(type==='call'){const index=Number(form.dataset.team);if(![0,1].includes(index)||pendingCall!==index)return true;pendingCall=null;registerCall(index,String(data.get('type')));closeModal();return true;}
     else {const index=Number(form.dataset.team),timer=m.timers.timeout;if(timer.running||m.timeoutState.usages[index]>=m.config.timeoutsPerTeam){showToast(t('Ese time out no está disponible.'));return true;}m.timeoutState.activeTeam=index;m.timeoutState.mode='';m.timeoutState.usages[index]++;timer.elapsed=0;timer.alerted=[];timer.completed=false;configureTimeout(m,'');setRunning(timer,true);logEvent('timeout',{team:index});}
-    closeModal();saveState();renderDashboard();return true;
+    closeModal();persistMatch();renderDashboard();return true;
   }
 
   function handleAction(actionElement) {
@@ -1355,7 +1390,7 @@
     if (action === "confirm-minus") {
       const index = Number(actionElement.dataset.team); const team = activeMatch().teams[index];
       if (team.score > 0) { team.score -= 1; team.adjustments.push({ at: nowIso(), delta: -1 }); logEvent('adjustment', { team: index }); }
-      closeModal(); saveState(); renderDashboard(); showToast(t("Puntaje corregido."));
+      closeModal(); persistMatch(); renderDashboard(); showToast(t("Puntaje corregido."));
     }
     if (action === "goal") addGoal(Number(actionElement.dataset.team),actionElement.dataset.origin||'dashboard');
     if (action === "goal-details") { hideToast(); openGoal(Number(actionElement.dataset.team),actionElement.dataset.goal,actionElement.dataset.origin); }
@@ -1401,12 +1436,12 @@
       Object.assign(goal, { assist: assist.name, assistId: assist.id, scorer: scorer.name, scorerId: scorer.id });
       }
       const event = m.events.find(e => e.goal === goal.id); if (event) Object.assign(event, { assist: goal.assist, assistId: goal.assistId, scorer: goal.scorer, scorerId: goal.scorerId });
-      closeModal(); saveState(); rerender(form.dataset.origin); showToast(t("Detalle del gol guardado."));
+      closeModal(); persistMatch(); rerender(form.dataset.origin); showToast(t("Detalle del gol guardado."));
     }
     if (form.dataset.form === "team") {
       const index = Number(form.dataset.team); const data = new FormData(form); const team = activeMatch().teams[index];
       team.name = String(data.get("name") || "").trim() || t('Equipo {n}',{n:index + 1}); team.color = String(data.get("color") || team.color);if(data.has("players"))team.roster = TN.rosterFromText(data.get("players"),team.roster);
-      closeModal(); saveState(); renderDashboard(); showToast(t("Datos del equipo guardados."));
+      closeModal(); persistMatch(); renderDashboard(); showToast(t("Datos del equipo guardados."));
     }
   });
 
@@ -1436,13 +1471,13 @@
       const profile=state.customRulesets.find(p=>p.id===id);
       if(!profile&&!['wfdf','usau'].includes(id))return;
       state.settings.ruleset=id;state.settings.baseRuleset=profile?'wfdf':id;state.settings.overrides=profile?clone(profile.config):{};
-      const match=activeMatch();match.ruleset=id;updateTimerConfig(match);saveState();renderSettings();showToast(t('Perfil {name} activo.',{name:rulesetLabel(id)}));
+      const match=activeMatch();match.ruleset=id;updateTimerConfig(match);persistMatch();renderSettings();showToast(t('Perfil {name} activo.',{name:rulesetLabel(id)}));
     }
     if (event.target.dataset.setting === "sound") {
       state.settings.sound=event.target.value==='on';
       if(state.settings.sound)unlockAudio().then(ok=>{if(!ok)showToast(t('No se pudo activar el sonido en este navegador.'));else showToast(t('Alertas sonoras activas.'));});
       else {ClockAlerts.setSound(false);updateAudioControls();showToast(t('Alertas sonoras desactivadas.'));}
-      saveState();
+      persistMatch();
     }
   });
 
@@ -1462,7 +1497,7 @@
   function setLang(next) {
     if(!UCI18N.languages.includes(next)||next===lang)return;
     const teamsForm=modalRoot.querySelector('[data-form="welcome-teams"]');if(teamsForm)applyTeamsForm(teamsForm);
-    lang=next;state.settings.lang=next;relabelDefaultTeams();saveState();applyStaticText();
+    lang=next;state.settings.lang=next;relabelDefaultTeams();persistMatch();applyStaticText();
     const profileOpen=!!modalRoot.querySelector('.welcome-flow');
     const view=app.firstElementChild?.className||'';
     if(view.includes('settings-screen'))renderSettings();else if(view.includes('tournament-screen'))renderTournament();else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();
@@ -1473,7 +1508,7 @@
 
   ClockAlerts.onAudioFailure=()=>{
     state.settings.sound=false;
-    saveState();
+    persistMatch();
     const field=document.getElementById('sound');
     if(field)field.value='off';
     updateAudioControls();
@@ -1493,14 +1528,14 @@
   renderDashboard();
   if(isLocked()){
     /* El partido de la sesión anterior ya está guardado en Planilla: la app arranca con uno nuevo y vacío. */
-    const mode=state.activeMatch.mode;state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;saveState();renderDashboard();
+    const mode=state.activeMatch.mode;state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;persistMatch();renderDashboard();
   }
   if(!hasStarted()&&!isLocked()){if(isTournamentMode()){if(state.tournament&&state.tournament.teams.length>=2)openTournamentMatchSetup();else{renderTournament();}}else openWelcome('mode');}
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();
   let otherTabLocked=false;
   window.addEventListener('storage',e=>{
-    if(otherTabLocked||e.key!==STORAGE_KEY||!e.newValue)return;
+    if(otherTabLocked||(e.key!==KEY_MATCH&&e.key!==STORAGE_KEY)||!e.newValue)return;
     let writer;try{writer=JSON.parse(e.newValue).writerId;}catch{return;}
     if(writer===writerId)return;
     otherTabLocked=storageBlocked=true;showToast(t('Otra pestaña cambió el partido. Recargá esta pestaña antes de continuar.'));app.inert=true;document.querySelector('.topbar').inert=true;
