@@ -234,9 +234,7 @@ body.flash-complete::after{content:"";position:fixed;inset:0;z-index:50;pointer-
 .screen-head h1{font:800 clamp(20px,5vw,30px)/1 var(--font-display);text-transform:uppercase}
 .screen-eyebrow,.section-kicker{display:block;margin-bottom:3px;font:800 10px/1 var(--font-body);letter-spacing:.14em;color:var(--muted)}
 .back-button,.screen-utility{min-height:var(--touch);padding:0 12px;background:var(--panel);border:var(--rule);font:800 12px var(--font-body);text-transform:uppercase}
-.help-button{min-height:var(--touch);min-width:var(--touch);padding:0 10px;background:var(--panel);border:var(--rule);font:800 16px/1 var(--font-body);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
-.help-button:hover{background:var(--line)}
-.topbar .help-button{margin-left:4px}
+
 .screen-context{font:800 10px var(--font-body);letter-spacing:.1em;color:var(--muted)}
 .section-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
 .section-heading h2{font:800 16px/1.1 var(--font-display);text-transform:uppercase}
