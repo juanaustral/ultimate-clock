@@ -477,8 +477,8 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .mode-choice{display:grid;gap:6px;min-height:88px;padding:14px;text-align:left;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2);color:var(--ink)}
 .mode-choice strong{font:800 18px/1.1 var(--font-display);letter-spacing:.02em}
 .mode-choice span{font-size:13px;line-height:1.35;color:var(--muted)}
-.mode-choice-tournament{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.mode-choice-tournament span{color:inherit;opacity:.9}
+.mode-choice-tournament{background:var(--bg-2);border-color:var(--rule);color:var(--ink)}
+.mode-choice-tournament span{color:var(--muted)}
 .tournament-start{margin-top:var(--gap)}
 .tournament-new+.tournament-new{margin-top:var(--gap)}
 @media (max-width:350px){.brand-copy{display:none}}
