@@ -1241,7 +1241,11 @@
         showToast(t(played?'Sonido de prueba: cinco alarmas. Revisá el volumen del dispositivo.':'No se pudo reproducir el sonido de prueba.'));
       });
     }
-    else if(action==='fullscreen'){enterFullscreen();updateFullscreenControl();}
+    else if(action==='fullscreen'){
+      if(document.fullscreenElement) { document.exitFullscreen?.().catch(()=>{}); }
+      else enterFullscreen();
+      updateFullscreenControl();
+    }
     else if(action==='setup-color')setSetupColor(Number(element.dataset.team),element.dataset.color);
     else if(action==='team-color'){const input=document.getElementById('team-color');input.value=element.dataset.color;input.dispatchEvent(new Event('input',{bubbles:true}));}
     else if(action==='more-colors'){const field=document.getElementById('extendedColors');field.hidden=false;document.getElementById('team-color').click();}
@@ -1329,13 +1333,20 @@
     if (action === "settings") { closeModal(); renderSettings(); }
     if (action === "info") openInfo();
     if (action === "reset") openReset();
-    if (action === "save") saveMatch();
+    if (action === "save") {
+      const m=activeMatch();
+      if(m.status==='saved'){renderLiveSheet();return;}
+      if(Object.values(m.timers).some(t=>t.running)||m.breakTimer.running){closeModal();showToast(t('Esperá a que terminen las cuentas activas antes de guardar.'));return;}
+      openModal(t('¿Terminó el partido?'),`<p>${esc(t('{a} {sa} – {sb} {b}',{a:m.teams[0].name,sa:m.teams[0].score,sb:m.teams[1].score,b:m.teams[1].name}))}</p><div class=\"modal-actions\"><button class=\"button\" type=\"button\" data-action=\"close-modal\">${esc(t('Cancelar'))}</button><button class=\"button button-primary\" type=\"button\" data-action=\"confirm-save\">${esc(t('GUARDAR'))}</button></div>`);
+      return;
+    }
     if (action === "history") renderLiveSheet();
     if (action === "back-dashboard") { teamSheet=null; renderDashboard(); }
     if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {startNextMatch();}}
     if(action==='choose-mode'){chooseMode(actionElement.dataset.mode);return;}
     if (action === "close-modal") closeModal();
-    if (action === "confirm-reset") resetMatch();
+    if(action==='confirm-reset') resetMatch();
+    if(action==='confirm-save'){closeModal();saveMatch();}
     if (action === "confirm-minus") {
       const index = Number(actionElement.dataset.team); const team = activeMatch().teams[index];
       if (team.score > 0) { team.score -= 1; team.adjustments.push({ at: nowIso(), delta: -1 }); logEvent('adjustment', { team: index }); }
