@@ -499,3 +499,33 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .tournament-results .res-team:last-child{text-align:right}
 .tournament-results .res-score{font:800 16px var(--font-display);font-variant-numeric:tabular-nums}
 .sheet-delete{width:100%;margin-top:var(--gap)}
+
+/* Cuenta, sincronización y fixture */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.login-gate{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:var(--gap);background:var(--bg);overflow:auto}
+.login-card{display:grid;gap:12px;width:min(420px,100%);padding:20px;border:var(--rule);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink)}
+.login-card h1{margin:0;font:800 22px/1.1 var(--font-display);letter-spacing:.06em}
+.login-card p{margin:0}
+.login-error{color:var(--danger);font-weight:700}
+.sync-badge{flex:0 0 auto;display:inline-grid;place-items:center;width:34px;height:30px;padding:0;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2);cursor:pointer}
+.sync-badge[hidden]{display:none}
+.sync-badge.is-ok{color:#1a8f4c;border-color:#1a8f4c}
+.sync-badge.is-bad{color:#d4282c;border-color:#d4282c}
+.order-list,.fixture-list,.history-games{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.order-row,.fixture-match{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2)}
+.order-row{border-left:6px solid var(--team-color,var(--accent))}
+.order-actions{display:flex;gap:6px}
+.order-actions .icon-button{min-width:44px;min-height:44px}
+.fixture-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap);margin:12px 0}
+.fixture-controls select{min-height:44px}
+.fixture-round{margin:14px 0 6px;font:800 12px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase}
+.fixture-match em{font-style:normal;opacity:.6}
+.fixture-match .button{min-height:44px}
+.fixture-match.is-terminado{opacity:.85}
+.fixture-match.is-jugando{border-color:var(--accent)}
+.fixture-status{font-weight:800}
+.scoring-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--gap);align-items:end}
+.scoring-form .button{grid-column:1/-1}
+.conflict-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.history-games li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:6px 0;border-bottom:var(--rule)}
+.history-totals{font-weight:800}

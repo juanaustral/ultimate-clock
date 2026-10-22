@@ -24,7 +24,9 @@
     const h = { 'Content-Type': 'application/json', ...(opciones.headers || {}) };
     const t = token();
     if (t) h.Authorization = 'Bearer ' + t;
-    return fetchFn(apiBase() + ruta, { ...opciones, headers: h });
+    /* Sin tiempo máximo, un pedido colgado por un corte de red dejaría la sincronización trabada. */
+    const signal = typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(opciones.tiempo || 10000) : undefined;
+    return fetchFn(apiBase() + ruta, { ...opciones, headers: h, signal });
   }
 
   /* Devuelve { ok:true, usuario } o { ok:false, motivo: 'credenciales' | 'bloqueado' | 'red' }. */

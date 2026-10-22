@@ -94,6 +94,7 @@
         publicar({ verde: n === 0 && !hayConflictos, razon: hayConflictos ? 'conflicto' : n ? 'pendientes' : 'ok', pendientes: n });
         if (hayConflictos && o.alConflicto) o.alConflicto([...conflictos.values()]);
       } catch (e) {
+        if (root.console && !e.sesion) root.console.warn('sync:', e && e.message);
         if (e.sesion) { sesion.vencida(); publicar({ verde: false, razon: 'sesion-vencida' }); }
         else publicar({ verde: false, razon: 'sin-conexion' });
         try { publicar({ pendientes: (await sincronizables()).length }); } catch { /* sin acceso a la base local */ }

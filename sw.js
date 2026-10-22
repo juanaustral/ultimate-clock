@@ -7,7 +7,9 @@ self.addEventListener('activate',event=>event.waitUntil(Promise.all([self.client
    Each release changes CACHE, so the new worker installs every file together and the next load gets them all. */
 self.addEventListener('fetch',event=>{
   const request=event.request;
-  if(request.method!=='GET'||new URL(request.url).origin!==self.location.origin)return;
+  const url=new URL(request.url);
+  /* La API nunca se sirve de la caché: sin esto, las bajadas de sincronización devolverían siempre la primera respuesta. */
+  if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.includes('/api/'))return;
   const network=fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;});
   event.respondWith(caches.match(request,{ignoreSearch:true}).then(hit=>hit||(request.mode==='navigate'?caches.match('./index.html'):undefined)).then(hit=>{
     if(!hit)return network;
