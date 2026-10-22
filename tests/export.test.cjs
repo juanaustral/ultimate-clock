@@ -18,3 +18,8 @@ test('WhatsApp message strips formatting marks from names and notes and handles 
 test('WhatsApp message is translated through t',()=>{const tr=(s,v)=>({'Ganó {team}':'{team} won','Gol de {team}':'Goal by {team}'}[s]||s).replace(/\{(\w+)\}/g,(x,k)=>v[k]);const text=X.toWhatsApp(match([{type:'goal',elapsed:5,team:0}]),{t:tr});assert.ok(text.includes('*Ñandúes* won'));assert.ok(text.includes('Goal by Ñandúes'));});
 test('every call category and incident type has its own WhatsApp emoji',()=>{const src=require('fs').readFileSync(__dirname+'/../ultimate-clock.js','utf8');const cats=JSON.parse(/CALL_CATEGORIES = (\[[^\]]+\])/.exec(src)[1].replace(/'/g,'"'));for(const c of [...cats,'TFR','PMF','Otra'])assert.ok(X.CATEGORY_EMOJI[c],c);assert.equal(new Set(Object.values(X.CATEGORY_EMOJI)).size,Object.keys(X.CATEGORY_EMOJI).length);});
 test('version matches the service worker cache and the newest changelog entry',()=>{const C=require('../changelog.js');const sw=require('fs').readFileSync(__dirname+'/../sw.js','utf8');assert.ok(sw.includes(`ultimate-clock-offline-v${C.VERSION}'`));assert.ok(sw.includes('./changelog.js'));assert.equal(C.ENTRIES[0].version,C.VERSION);for(const e of C.ENTRIES){assert.match(e.date,/^\d{4}-\d{2}-\d{2}$/);assert.equal(e.es.length,e.en.length);}});
+test('el service worker no guarda en caché la API ni deja fuera los módulos de cuenta',()=>{
+  const sw=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','sw.js'),'utf8');
+  assert.ok(sw.includes("/api/"));
+  for(const f of ['fixture.js','local-store.js','session.js','sync.js'])assert.ok(sw.includes(`'./${f}'`),f);
+});
