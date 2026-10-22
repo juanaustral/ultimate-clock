@@ -17,8 +17,8 @@ Se sincronizan `partidos` y `torneos`. El partido en curso y los ajustes quedan 
 ## Cuentas (las crea Juan en el servidor, no la app)
 
 ```
-UC_DB=/var/lib/ultimate-clock/ultimate-clock.sqlite node server/cuentas.js crear Mendoza
-UC_DB=... node server/cuentas.js clave Mendoza      # cambia la clave y cierra las sesiones
+docker exec -i ultimate-clock-api node server/cuentas.js crear Mendoza
+docker exec -i ultimate-clock-api node server/cuentas.js clave Mendoza   # cambia la clave y cierra las sesiones
 ```
 
 La contraseña se pide por la terminal (o `UC_CLAVE`); nunca por argumento ni al repositorio.
@@ -31,10 +31,14 @@ UC_PORT=8766 node server/dev.js           # app + API con base en memoria y cuen
 node qa/navegador/sync-dos-dispositivos.cjs   # dos dispositivos, corte de red y conflicto (Chromium)
 ```
 
-## Puesta en producción (requiere aprobación de Juan: toca el servidor)
+## Puesta en producción
 
-1. Copiar `server/` a `/opt/ultimate-clock-api/`, crear el usuario `ultimateclock` y `/var/lib/ultimate-clock/`.
-2. Instalar `server/deploy/ultimate-clock-api.service` y arrancarlo; crear las cuentas con `server/cuentas.js`.
-3. Agregar `server/deploy/Caddyfile.fragmento` al `Caddyfile` de iona-web (respaldar antes). La CSP actual (`default-src 'self'`) ya permite la API en el mismo origen.
-4. Incluir `/var/lib/ultimate-clock/` en el backup diario.
-5. Publicar la app con `scripts/publicar-vps.sh` (sube también `fixture.js`, `local-store.js`, `session.js` y `sync.js`).
+Mismo esquema que la API de Ultimate Pixel: contenedor en la red `iona-web_default` (sin puerto público), ruta `/ultimateclock/api/*` en el Caddy de iona-web y base en `/opt/ultimate-clock-data` incluida en el backup diario.
+
+```
+sudo bash server/deploy.sh        # idempotente: construye el contenedor, agrega la ruta y el respaldo, valida y recarga Caddy
+docker exec -i ultimate-clock-api node server/cuentas.js crear Mendoza   # pide la contraseña por la terminal
+bash scripts/publicar-vps.sh      # publica la app (incluye fixture.js, local-store.js, session.js y sync.js)
+```
+
+El script respalda el Caddyfile y el script de backup antes de tocarlos. No crea cuentas ni contraseñas.
