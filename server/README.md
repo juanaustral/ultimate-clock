@@ -11,6 +11,7 @@ API HTTP chica con Node (≥ 22.5, usa `node:sqlite`) y cero dependencias. Cuent
 | `GET /me`, `POST /logout` | Sesión actual / cerrar |
 | `POST /sync/subir` `{dispositivo, cambios[]}` | Aplica cambios con `base` (versión conocida). Responde `ok` o `conflicto` con el dato actual |
 | `GET /sync/bajar?desde=N` | Registros cambiados después del `seq` N |
+| `GET /publico/<usuario>/<torneo>` | Sin sesión. Torneo compartido con el link en vivo (`vivo.html?u=&t=`): equipos, fixture, marcadores y partidos en juego, sin jugadores. 404 si no existe o se dejó de compartir |
 
 Se sincronizan `partidos` y `torneos`. El partido en curso y los ajustes quedan en cada dispositivo.
 

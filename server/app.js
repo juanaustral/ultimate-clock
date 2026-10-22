@@ -2,6 +2,7 @@
 // API HTTP de Ultimate Clock. Sin framework: un manejador (req, res).
 const auth = require('./auth');
 const sync = require('./sync');
+const publico = require('./publico');
 
 const MAX_CUERPO = 64 * 1024;
 const MAX_CUERPO_SYNC = 4 * 1024 * 1024;
@@ -50,6 +51,15 @@ function crearManejador(db, { prefijo = '/api' } = {}) {
       const sub = ruta.slice(prefijo.length) || '/';
 
       if (req.method === 'GET' && sub === '/health') return responder(res, 200, { ok: true });
+
+      // Torneo compartido: /publico/<usuario>/<slug>, sin sesión y solo lectura.
+      if (req.method === 'GET' && sub.startsWith('/publico/')) {
+        const [, , usuario, slug] = sub.split('/');
+        let datos = null;
+        try { datos = publico.obtener(db, decodeURIComponent(usuario || ''), decodeURIComponent(slug || '')); } catch (e) { if (e instanceof URIError) datos = null; else throw e; }
+        if (!datos) return responder(res, 404, { error: 'no encontrado' });
+        return responder(res, 200, datos);
+      }
 
       if (req.method === 'POST' && sub === '/login') {
         const { usuario, clave } = await leerJson(req);
