@@ -80,7 +80,7 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   await A.page.evaluate(() => window.dispatchEvent(new Event('offline')));
   await A.page.click('[data-action="t-fixture-generate"]');
   ok(await esperarBadge(A.page, 'is-bad', 5000), 'sin internet: indicador rojo');
-  ok((await A.page.$$('.fixture-match')).length === 3, 'fixture todos contra todos de 3 equipos: 3 cruces');
+  ok((await A.page.$$('.fx-match')).length === 3, 'fixture todos contra todos de 3 equipos: 3 cruces');
   await A.ctx.setOffline(false);
   await A.page.evaluate(() => window.dispatchEvent(new Event('online')));
   ok(await esperarBadge(A.page, 'is-ok'), 'al volver la conexión sube y queda en verde');
@@ -92,6 +92,7 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   await B.ctx.setOffline(true); await A.ctx.setOffline(true);
   await B.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuTournament').click(); });
   await B.page.waitForSelector('.tournament-screen');
+  await A.page.click('#tab-ajustes'); await B.page.click('#tab-ajustes');
   await A.page.fill('#sc-win', '2'); await A.page.click('.scoring-form [type=submit]');
   await B.page.fill('#sc-win', '5'); await B.page.click('.scoring-form [type=submit]');
   await A.ctx.setOffline(false); await A.page.evaluate(() => window.dispatchEvent(new Event('online')));
@@ -109,8 +110,9 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   // 5b) Cada evento se guarda en el servidor al instante; si el teléfono A falla, B retoma el partido
   await A.page.evaluate(() => { for (const b of document.querySelectorAll('#modalRoot [data-action="close-modal"]')) b.click(); });
   await A.page.evaluate(() => { const m = document.querySelector('.header-actions'); if (!m.classList.contains('is-open')) document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuTournament').click(); });
-  await A.page.waitForSelector('[data-action="t-fixture-play"]');
-  await A.page.click('[data-action="t-fixture-play"]');
+  await A.page.click('#tab-fixture');
+  await A.page.click('[data-action="t-fx-open"]');
+  await A.page.click('#modalRoot [data-action="t-fixture-play"]');
   await A.page.waitForSelector('.clock-card');
   await A.page.evaluate(() => document.querySelectorAll('[data-action="goal"]')[0].click());
   await A.page.waitForTimeout(400);

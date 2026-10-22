@@ -25,19 +25,22 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) p
     await page.waitForTimeout(600);
     await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuTournament').click(); });
     await page.waitForSelector('.tournament-screen');
-    // equipos ordenables
+    // equipos ordenables (pestaña EQUIPOS)
+    await page.click('#tab-equipos');
     await page.click('[data-action="t-move"][data-team="E1"][data-delta="1"]');
     const orden = await page.$$eval('.order-row strong', (n) => n.map((x) => x.textContent.replace(/^\d+\. /, '')));
     ok(orden.join() === 'Equipo 2,Equipo 1,Equipo 3', 'subir/bajar cambia el orden: ' + orden.join());
+    await page.click('#tab-fixture');
     await page.click('[data-action="t-fixture-generate"]');
-    ok((await page.$$('.fixture-match')).length === 3, 'todos contra todos: 3 cruces');
-    await page.selectOption('#fixture-type', 'elim');
-    await page.click('[data-action="t-fixture-generate"]');
-    ok((await page.$$('.fixture-match')).length === 3, 'eliminación de 3 equipos: 3 cruces (semifinal con libre, semifinal y final)');
-    await page.selectOption('#fixture-type', 'rr');
-    await page.click('[data-action="t-fixture-generate"]');
+    ok((await page.$$('.fx-match')).length === 3, 'todos contra todos: 3 cruces');
+    await page.click('[data-action="t-fx-mode"][data-type="elim"]');
+    await page.waitForSelector('.fx-bracket');
+    ok((await page.$$('.fx-match')).length === 3, 'eliminación de 3 equipos: 3 cruces (semifinal con libre, semifinal y final)');
+    await page.click('[data-action="t-fx-mode"][data-type="rr"]');
+    await page.waitForSelector('.fx-rounds');
     // jugar el primer cruce
-    await page.click('[data-action="t-fixture-play"]');
+    await page.click('[data-action="t-fx-open"]');
+    await page.click('#modalRoot [data-action="t-fixture-play"]');
     await page.waitForTimeout(600);
     const tablero = await page.evaluate(() => !!document.querySelector('.clock-card'));
     ok(tablero, 'JUGAR abre el tablero con los equipos del cruce');
