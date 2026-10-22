@@ -32,6 +32,17 @@ test('agregar un partido nuevo no modifica los registros de los demás',()=>{
   s.savedMatches.unshift(match('m3',[],'2026-04'));
   assert.deepEqual(L.diferencias(a.siguiente,L.entidades(s)).cambios.map(c=>c.id),['m3']);
 });
-test('solo partidos y torneos se sincronizan',()=>{
-  assert.deepEqual(L.SINCRONIZADAS,['partidos','torneos']);
+test('los ajustes no se sincronizan',()=>{
+  assert.deepEqual(L.SINCRONIZADAS,['partidos','torneos','partidoActivo']);
+});
+
+test('el partido en curso se guarda con el id del dispositivo y se reconstruye de ahí',()=>{
+  const s=estado();const regs=Object.values(L.entidades(s,'disp-1'));
+  assert.ok(regs.some(r=>r.tabla==='partidoActivo'&&r.id==='disp-1'));
+  assert.deepEqual(L.reconstruir(regs,'disp-1').activeMatch,s.activeMatch);
+  assert.ok(L.SINCRONIZADAS.includes('partidoActivo'));
+});
+test('el partido en curso de otro dispositivo no se escribe en este (solo en memoria)',async()=>{
+  // aplicarRemotos descarta la tabla partidoActivo antes de abrir la base
+  await L.aplicarRemotos({transaction(){throw new Error('no debe abrir transacción');}},[{tabla:'partidoActivo',id:'otro',op:'put',data:{}}]);
 });

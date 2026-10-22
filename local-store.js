@@ -7,15 +7,15 @@
   const DB_NAME = 'ultimate-clock-local';
   const DB_VERSION = 1;
   const TABLAS = ['ajustes', 'partidoActivo', 'partidos', 'torneos'];
-/* Solo estas tablas van al servidor; el partido en curso y los ajustes son de cada dispositivo. */
-const SINCRONIZADAS = ['partidos', 'torneos'];
+/* Estas tablas van al servidor. El partido en curso se guarda con el id del dispositivo (uno por dispositivo); los ajustes quedan locales. */
+const SINCRONIZADAS = ['partidos', 'torneos', 'partidoActivo'];
 
   const clon = (x) => JSON.parse(JSON.stringify(x));
   const uuid = () => (globalThis.crypto && crypto.randomUUID ? crypto.randomUUID()
     : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
 
   /* Estado completo -> { 'tabla:id': { tabla, id, data } }. Cada partido guardado y cada torneo es un registro. */
-  function entidades(state) {
+  function entidades(state, dispositivo) {
     const out = {};
     const poner = (tabla, id, data) => { out[tabla + ':' + id] = { tabla, id, data }; };
     poner('ajustes', 'ajustes', {
@@ -23,7 +23,7 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
       customRulesets: state.customRulesets || [], pendingAlerts: state.pendingAlerts || [], timerProfiles: state.timerProfiles || [],
       torneoActivo: state.tournament ? state.tournament.id : null
     });
-    poner('partidoActivo', 'activo', state.activeMatch);
+    poner('partidoActivo', dispositivo || 'activo', state.activeMatch);
     (state.savedMatches || []).forEach((m) => poner('partidos', m.id, { match: m }));
     if (state.tournament) poner('torneos', state.tournament.id, { tournament: state.tournament });
     (state.otherTournaments || []).forEach((t) => poner('torneos', t.id, { tournament: t }));
@@ -49,10 +49,10 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
   }
 
   /* Inversa de entidades(): arma el estado desde los registros guardados. null si faltan los esenciales. */
-  function reconstruir(registros) {
+  function reconstruir(registros, dispositivo) {
     const por = (tabla) => registros.filter((r) => r.tabla === tabla);
     const aj = por('ajustes').find((r) => r.id === 'ajustes');
-    const act = por('partidoActivo').find((r) => r.id === 'activo');
+    const act = por('partidoActivo').find((r) => r.id === dispositivo) || por('partidoActivo').find((r) => r.id === 'activo');
     if (!aj || !act) return null;
     const { torneoActivo, ...resto } = clon(aj.data);
     const torneos = por('torneos').map((r) => r.data.tournament).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
@@ -118,6 +118,8 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
   /* Registros que llegan del servidor: se guardan sin pasar por la cola (no se devuelven al servidor). */
   async function aplicarRemotos(db, cambios) {
     if (!cambios.length) return;
+    cambios = cambios.filter((c) => c.tabla !== 'partidoActivo');
+    if (!cambios.length) return;
     const tx = db.transaction(SINCRONIZADAS, 'readwrite');
     for (const c of cambios) {
       const store = tx.objectStore(c.tabla);
@@ -174,7 +176,7 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
         }
       },
       guardar(state, guardadoEn) {
-        const { cambios, siguiente } = diferencias(previo, entidades(state));
+        const { cambios, siguiente } = diferencias(previo, entidades(state, dispositivo));
         if (!cambios.length) return cola;
         const anteriorPrevio = previo;
         previo = siguiente;

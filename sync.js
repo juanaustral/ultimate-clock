@@ -124,6 +124,16 @@
       programar(100);
     }
 
+    /* Borra en el servidor un registro de otro dispositivo (p. ej. su partido en curso, ya retomado aquí). */
+    async function descartar(tabla, id) {
+      try {
+        const vers = await versiones();
+        const k = clave(tabla, id);
+        const r = await sesion.pedir('sync/subir', { method: 'POST', body: JSON.stringify({ dispositivo, cambios: [{ cambio: 'desc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), tabla, id, op: 'delete', base: vers[k] || 0 }] }) }, o.fetchFn);
+        if (r.ok) { const { resultados } = await r.json(); if (resultados[0].estado === 'ok') { vers[k] = resultados[0].version; await local.escribirMeta(db, 'versiones', vers); } }
+      } catch { /* sin conexión: queda como estaba */ }
+    }
+
     function iniciar() {
       intervalo = setInterval(sincronizar, 15000);
       if (root.addEventListener) {
@@ -135,7 +145,7 @@
     }
     function detener() { clearInterval(intervalo); clearTimeout(timer); }
 
-    return { sincronizar, programar, resolver, iniciar, detener, pendientes: async () => (await sincronizables()).length,
+    return { sincronizar, programar, resolver, descartar, iniciar, detener, pendientes: async () => (await sincronizables()).length,
       estado: () => estado, conflictos: () => [...conflictos.values()] };
   }
 

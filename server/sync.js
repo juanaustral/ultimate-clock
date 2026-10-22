@@ -1,7 +1,7 @@
 'use strict';
-// Sincronización por registros con control de versión. Se sincronizan partidos guardados y torneos;
-// el partido en curso y los ajustes quedan en cada dispositivo.
-const TABLAS = new Set(['partidos', 'torneos']);
+// Sincronización por registros con control de versión. Se sincronizan partidos guardados, torneos y el partido en curso
+// de cada dispositivo (id = dispositivo), para poder retomarlo en otro si el teléfono falla. Los ajustes quedan en cada dispositivo.
+const TABLAS = new Set(['partidos', 'torneos', 'partidoActivo']);
 const MAX_REGISTRO = 1024 * 1024;
 const MAX_CAMBIOS = 200;
 

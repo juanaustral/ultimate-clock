@@ -4,6 +4,12 @@
   'use strict';
   const EN = {
     /* Cuenta, sincronización y fixture */
+    'Partido en curso en otro dispositivo':'Match in progress on another device',
+    'Hay un partido sin terminar guardado en el servidor. ¿Querés retomarlo en este dispositivo?':'There is an unfinished match saved on the server. Do you want to resume it on this device?',
+    'Último evento: {when}. El reloj queda pausado en ese momento.':'Last event: {when}. The clock stays paused at that moment.',
+    'AHORA NO':'NOT NOW',
+    'RETOMAR AQUÍ':'RESUME HERE',
+    'Partido retomado. Revisá el reloj antes de seguir.':'Match resumed. Check the clock before continuing.',
     'Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.':'Sign in to save matches and tournaments on the server and use them from several devices.',
     'Usuario':'Username',
     'Contraseña':'Password',

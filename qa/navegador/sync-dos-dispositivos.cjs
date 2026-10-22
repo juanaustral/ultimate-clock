@@ -10,7 +10,7 @@ async function abrirDispositivo(browser) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
   page.errores = [];
-  page.on('pageerror', (e) => page.errores.push(String(e)));
+  page.on('pageerror', (e) => page.errores.push(String(e) + (process.env.DEBUG ? ' @ ' + (e.stack || '').split('\n').slice(1, 3).join(' ') : '')));
   page.on('console', (m) => { if (process.env.DEBUG && m.type() === 'warning') console.log('  [aviso]', m.text()); if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) page.errores.push(m.text()); });
   return { ctx, page };
 }
@@ -27,7 +27,11 @@ async function esperarBadge(page, clase, ms = 25000) {
   while (Date.now() - t0 < ms) { if ((await badge(page)).includes(clase)) return true; await esperar(300); }
   return false;
 }
-const estadoLS = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('ultimate-clock-v2') || 'null'));
+const estadoLS = (page) => page.evaluate(async () => { // estado reconstruido desde la copia por tablas
+  const db = await UCLocal.abrir();
+  return UCLocal.reconstruir((await UCLocal.leerTodo(db)).registros, localStorage.getItem('uc-dispositivo'));
+});
+const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-clock-v2'));
 
 (async () => {
   const browser = await chromium.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox'] });
@@ -41,20 +45,25 @@ const estadoLS = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('
   await A.page.waitForSelector('.login-error:not([hidden])');
   ok(/incorrectos|Wrong/.test(await A.page.textContent('.login-error')), 'clave errónea muestra mensaje genérico');
   ok(/USAR SIN CUENTA|USE WITHOUT/.test(await A.page.textContent('[data-gate=local]')), 'existe el botón USAR SIN CUENTA');
-  await A.page.fill('#lg-pass', 'clave-de-prueba-1');
-  await A.page.click('.login-card [type=submit]');
-  await A.page.waitForSelector('#syncBadge:not([hidden])');
-  ok(true, 'login correcto: aparece el indicador de sincronización');
-
-  // 2) Torneo de 3 equipos cargado en A (se inyecta en el almacenamiento y se recarga)
-  await A.page.evaluate(() => document.querySelector('[data-action="toggle-menu"]').click());
-  await A.page.evaluate(() => document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click());
-  const s = await estadoLS(A.page);
+  // 2) A empieza sin cuenta, arma un torneo de 3 equipos y después inicia sesión: los datos locales suben a la cuenta
+  await A.page.click('[data-gate=local]');
+  await A.page.waitForTimeout(500);
+  await A.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click(); });
+  const s = await A.page.evaluate(() => JSON.parse(localStorage.getItem('ultimate-clock-v2')));
   const eq = (i) => ({ id: 'E' + i, name: 'Equipo ' + i, color: '#1b47e2', players: [] });
   s.tournament = { id: 'T-1', name: 'Copa Prueba', createdAt: '2026-10-22T10:00:00Z', timing: s.tournament?.timing, teams: [eq(1), eq(2), eq(3)] };
   await A.page.evaluate((x) => localStorage.setItem('ultimate-clock-v2', JSON.stringify(x)), s);
   await A.page.reload();
+  await A.page.waitForTimeout(600);
+  await A.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuLogin').click(); });
+  await A.page.waitForSelector('.login-gate');
+  await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1');
+  await A.page.click('.login-card [type=submit]');
+  await A.page.waitForSelector('#syncBadge:not([hidden])');
+  ok(true, 'login correcto: aparece el indicador de sincronización');
   ok(await esperarBadge(A.page, 'is-ok'), 'A sincroniza y queda en verde');
+  await esperar(800);
+  ok(!(await lsLleno(A.page)), 'con sesión iniciada no queda el estado en localStorage');
 
   // 3) B entra con la misma cuenta y ve el torneo
   await login(B.page, 'Mendoza', 'clave-de-prueba-1');
@@ -96,6 +105,32 @@ const estadoLS = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('
   let win;
   for (let i = 0; i < 30 && win !== 5; i++) { await A.page.evaluate(() => window.dispatchEvent(new Event('online'))); await esperar(1500); win = (await estadoLS(A.page))?.tournament?.scoring?.win; }
   ok(win === 5, 'A recibe la versión oficial elegida (victoria = 5)');
+
+  // 5b) Cada evento se guarda en el servidor al instante; si el teléfono A falla, B retoma el partido
+  await A.page.evaluate(() => { for (const b of document.querySelectorAll('#modalRoot [data-action="close-modal"]')) b.click(); });
+  await A.page.evaluate(() => { const m = document.querySelector('.header-actions'); if (!m.classList.contains('is-open')) document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuTournament').click(); });
+  await A.page.waitForSelector('[data-action="t-fixture-play"]');
+  await A.page.click('[data-action="t-fixture-play"]');
+  await A.page.waitForSelector('.clock-card');
+  await A.page.evaluate(() => document.querySelectorAll('[data-action="goal"]')[0].click());
+  await A.page.waitForTimeout(400);
+  await A.page.evaluate(() => document.querySelector('#modalRoot [data-form] [type=submit]')?.click());
+  await A.page.waitForTimeout(1500);
+  const enServidor = await A.page.evaluate(async () => { const r = await UCSession.pedir('sync/bajar?desde=0'); return (await r.json()).cambios.filter((c) => c.tabla === 'partidoActivo').map((c) => ({ id: c.id, goles: (c.data?.events || []).filter((e) => e.type === 'goal').length })); });
+  ok(enServidor.some((x) => x.goles === 1), 'el gol ya está en el servidor 1,5 s después: ' + JSON.stringify(enServidor));
+  await A.ctx.close(); // el teléfono A "se rompe"
+  const C = await abrirDispositivo(browser);
+  await login(C.page, 'Mendoza', 'clave-de-prueba-1');
+  await C.page.waitForSelector('[data-action="resume-match"]', { timeout: 30000 });
+  ok(true, 'un dispositivo nuevo ofrece retomar el partido en curso');
+  await C.page.click('[data-action="resume-match"]');
+  await C.page.waitForTimeout(800);
+  const retomado = await estadoLS(C.page);
+  ok(retomado.activeMatch.events.some((e) => e.type === 'goal') && retomado.activeMatch.teams.reduce((n, t) => n + t.score, 0) === 1, 'el partido retomado conserva el gol');
+  ok(!retomado.activeMatch.clock.running, 'el reloj queda pausado al retomar');
+  ok(!(await lsLleno(C.page)), 'tampoco queda estado en localStorage en el dispositivo nuevo');
+  C.page.errores.length && console.log(C.page.errores);
+  C.ctx.close();
 
   // 6) Cerrar sesión con todo subido borra los datos locales de la cuenta
   await B.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuLogout').click(); });
