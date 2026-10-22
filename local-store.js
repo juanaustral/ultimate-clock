@@ -7,6 +7,8 @@
   const DB_NAME = 'ultimate-clock-local';
   const DB_VERSION = 1;
   const TABLAS = ['ajustes', 'partidoActivo', 'partidos', 'torneos'];
+/* Solo estas tablas van al servidor; el partido en curso y los ajustes son de cada dispositivo. */
+const SINCRONIZADAS = ['partidos', 'torneos'];
 
   const clon = (x) => JSON.parse(JSON.stringify(x));
   const uuid = () => (globalThis.crypto && crypto.randomUUID ? crypto.randomUUID()
@@ -18,12 +20,13 @@
     const poner = (tabla, id, data) => { out[tabla + ':' + id] = { tabla, id, data }; };
     poner('ajustes', 'ajustes', {
       version: state.version, settings: state.settings, customThemes: state.customThemes || [],
-      customRulesets: state.customRulesets || [], pendingAlerts: state.pendingAlerts || [], timerProfiles: state.timerProfiles || []
+      customRulesets: state.customRulesets || [], pendingAlerts: state.pendingAlerts || [], timerProfiles: state.timerProfiles || [],
+      torneoActivo: state.tournament ? state.tournament.id : null
     });
     poner('partidoActivo', 'activo', state.activeMatch);
-    (state.savedMatches || []).forEach((m, orden) => poner('partidos', m.id, { orden, match: m }));
-    if (state.tournament) poner('torneos', state.tournament.id, { activo: true, orden: 0, tournament: state.tournament });
-    (state.otherTournaments || []).forEach((t, i) => poner('torneos', t.id, { activo: false, orden: i, tournament: t }));
+    (state.savedMatches || []).forEach((m) => poner('partidos', m.id, { match: m }));
+    if (state.tournament) poner('torneos', state.tournament.id, { tournament: state.tournament });
+    (state.otherTournaments || []).forEach((t) => poner('torneos', t.id, { tournament: t }));
     return out;
   }
 
@@ -51,15 +54,18 @@
     const aj = por('ajustes').find((r) => r.id === 'ajustes');
     const act = por('partidoActivo').find((r) => r.id === 'activo');
     if (!aj || !act) return null;
-    const torneos = por('torneos').sort((a, b) => a.data.orden - b.data.orden);
+    const { torneoActivo, ...resto } = clon(aj.data);
+    const torneos = por('torneos').map((r) => r.data.tournament).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const activo = torneos.find((t) => t.id === torneoActivo) || null;
     return {
-      ...clon(aj.data),
-      tournament: (torneos.find((r) => r.data.activo) || { data: {} }).data.tournament || null,
-      otherTournaments: torneos.filter((r) => !r.data.activo).map((r) => r.data.tournament),
+      ...resto,
+      tournament: activo,
+      otherTournaments: torneos.filter((t) => t !== activo),
       activeMatch: act.data,
-      savedMatches: por('partidos').sort((a, b) => a.data.orden - b.data.orden).map((r) => r.data.match)
+      savedMatches: por('partidos').map((r) => r.data.match).sort(masNuevoPrimero)
     };
   }
+  const masNuevoPrimero = (a, b) => String(b.savedAt).localeCompare(String(a.savedAt));
 
   /* ---- IndexedDB ---- */
   function pedir(req) {
@@ -103,12 +109,35 @@
     for (const c of cambios) {
       const store = tx.objectStore(c.tabla);
       if (c.op === 'put') store.put({ id: c.id, data: c.data }); else store.delete(c.id);
-      tx.objectStore('outbox').add({ cambio: uuid(), tabla: c.tabla, id: c.id, op: c.op, dispositivo, creado: guardadoEn });
+      if (SINCRONIZADAS.includes(c.tabla)) tx.objectStore('outbox').add({ cambio: uuid(), tabla: c.tabla, id: c.id, op: c.op, dispositivo, creado: guardadoEn });
     }
     tx.objectStore('meta').put({ id: 'estado', guardadoEn });
     await fin(tx);
   }
 
+  /* Registros que llegan del servidor: se guardan sin pasar por la cola (no se devuelven al servidor). */
+  async function aplicarRemotos(db, cambios) {
+    if (!cambios.length) return;
+    const tx = db.transaction(SINCRONIZADAS, 'readwrite');
+    for (const c of cambios) {
+      const store = tx.objectStore(c.tabla);
+      if (c.op === 'delete') store.delete(c.id); else store.put({ id: c.id, data: c.data });
+    }
+    await fin(tx);
+  }
+  async function leerMeta(db, id) {
+    const f = await pedir(db.transaction('meta').objectStore('meta').get(id));
+    return f ? f.valor : null;
+  }
+  async function escribirMeta(db, id, valor) {
+    const tx = db.transaction('meta', 'readwrite');
+    tx.objectStore('meta').put({ id, valor });
+    await fin(tx);
+  }
+  async function leerRegistro(db, tabla, id) {
+    const f = await pedir(db.transaction(tabla).objectStore(tabla).get(id));
+    return f ? f.data : null;
+  }
   async function pendientes(db) {
     return pedir(db.transaction('outbox').objectStore('outbox').getAll());
   }
@@ -128,6 +157,13 @@
         previo = {};
         for (const r of registros) previo[r.tabla + ':' + r.id] = JSON.stringify(r.data);
       },
+      /* Tras aplicar registros remotos: el estado ya los contiene, no deben volver a salir como cambios. */
+      registrarRemotos(cambios) {
+        for (const c of cambios) {
+          const clave = c.tabla + ':' + c.id;
+          if (c.op === 'delete') delete previo[clave]; else previo[clave] = JSON.stringify(c.data);
+        }
+      },
       guardar(state, guardadoEn) {
         const { cambios, siguiente } = diferencias(previo, entidades(state));
         if (!cambios.length) return cola;
@@ -141,6 +177,6 @@
     };
   }
 
-  const api = { TABLAS, entidades, diferencias, reconstruir, abrir, leerTodo, aplicar, pendientes, quitarDeOutbox, crearGuardador };
+  const api = { TABLAS, SINCRONIZADAS, aplicarRemotos, leerMeta, escribirMeta, leerRegistro, entidades, diferencias, reconstruir, abrir, leerTodo, aplicar, pendientes, quitarDeOutbox, crearGuardador };
   if (typeof module !== 'undefined') module.exports = api; else root.UCLocal = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

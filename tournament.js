@@ -18,9 +18,31 @@
     const clean = text(name, LIMITS.name);
     return clean ? { id: uid('team'), name: clean, color: isHex(color) ? color : '#1b47e2', players: [] } : null;
   }
+  const TIEBREAKS = ['diff', 'gf', 'h2h'];
+  /* Puntos por resultado y orden de desempate: lo elige el usuario por torneo. Por defecto 3-1-0, diferencia, goles a favor, cabeza a cabeza. */
+  function sanitizeScoring(input) {
+    const n = (v, d) => (Number.isInteger(v) && v >= 0 && v <= 99 ? v : d);
+    const order = Array.isArray(input?.tiebreaks) ? input.tiebreaks.filter((t, i, a) => TIEBREAKS.includes(t) && a.indexOf(t) === i) : [];
+    for (const t of TIEBREAKS) if (!order.includes(t)) order.push(t);
+    return { win: n(input?.win, 3), draw: n(input?.draw, 1), loss: n(input?.loss, 0), tiebreaks: order };
+  }
+  /* Marcador de un partido recalculado desde sus eventos (goles menos correcciones); sin eventos, el marcador guardado. */
+  function finalScore(match) {
+    const events = Array.isArray(match?.events) ? match.events : [];
+    if (events.some(e => e.type === 'goal' || e.type === 'adjustment')) {
+      const score = [0, 0];
+      for (const e of events) {
+        if (e.team !== 0 && e.team !== 1) continue;
+        if (e.type === 'goal') score[e.team]++;
+        else if (e.type === 'adjustment') score[e.team] = Math.max(0, score[e.team] - 1);
+      }
+      return score;
+    }
+    return [Number(match?.teams?.[0]?.score) || 0, Number(match?.teams?.[1]?.score) || 0];
+  }
   function makeTournament(name) {
     const clean = text(name, LIMITS.name);
-    return clean ? { id: uid('tournament'), name: clean, createdAt: new Date().toISOString(), timing: sanitizeTiming(null), teams: [] } : null;
+    return clean ? { id: uid('tournament'), name: clean, createdAt: new Date().toISOString(), timing: sanitizeTiming(null), scoring: sanitizeScoring(null), fixture: null, teams: [] } : null;
   }
   /* "#7 Ana", "7 - Ana", "Ana 7", "Ana, 7" o solo "Ana": una persona por línea. */
   function parsePlayers(input) {
@@ -74,7 +96,8 @@
       }
       teams.push({ id: unique(team.id, 'team'), name: teamName, color: isHex(team.color) ? team.color : '#1b47e2', players });
     }
-    return { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), teams };
+    const fixture = root.UCFixture ? root.UCFixture.sanitize(input.fixture, teams.map(t => t.id)) : (typeof require !== 'undefined' ? require('./fixture.js').sanitize(input.fixture, teams.map(t => t.id)) : null);
+    return { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), scoring: sanitizeScoring(input.scoring), fixture, teams };
   }
 
   /* Partidos guardados en los que juega algún equipo del torneo (los equipos se vinculan con `tid`). */
@@ -95,20 +118,61 @@
     }
     return [...rows.values()].filter(r => r.goals || r.assists).sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists) || b.goals - a.goals || a.player.name.localeCompare(b.player.name));
   }
-  /* Tabla de posiciones con los partidos guardados entre equipos del torneo: victoria 3, empate 1, derrota 0. */
+  /* Tabla de posiciones con los partidos guardados entre equipos del torneo, según los puntos y desempates del torneo. */
   function standings(tournament, matches) {
+    const sc = sanitizeScoring(tournament?.scoring);
     const rows = new Map((tournament?.teams || []).map(team => [team.id, { team, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0 }]));
+    const duels = [];
     for (const match of matches || []) {
       if (match?.status !== 'saved' || !Array.isArray(match.teams) || match.teams.length !== 2) continue;
       const [a, b] = match.teams.map(team => rows.get(team?.tid));
       if (!a || !b || a === b) continue;
-      const sa = Number(match.teams[0].score) || 0, sb = Number(match.teams[1].score) || 0;
+      const [sa, sb] = finalScore(match);
       for (const [row, f, c] of [[a, sa, sb], [b, sb, sa]]) {
         row.played++; row.gf += f; row.ga += c;
-        if (f > c) { row.won++; row.points += 3; } else if (f === c) { row.drawn++; row.points += 1; } else row.lost++;
+        if (f > c) { row.won++; row.points += sc.win; } else if (f === c) { row.drawn++; row.points += sc.draw; } else { row.lost++; row.points += sc.loss; }
       }
+      duels.push({ a, b, sa, sb });
     }
-    return [...rows.values()].sort((x, y) => y.points - x.points || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || x.team.name.localeCompare(y.team.name));
+    /* Cabeza a cabeza: puntos solo en los partidos entre los equipos empatados. */
+    const miniPoints = group => {
+      const pts = new Map(group.map(r => [r, 0]));
+      for (const { a, b, sa, sb } of duels) {
+        if (!pts.has(a) || !pts.has(b)) continue;
+        pts.set(a, pts.get(a) + (sa > sb ? sc.win : sa === sb ? sc.draw : sc.loss));
+        pts.set(b, pts.get(b) + (sb > sa ? sc.win : sa === sb ? sc.draw : sc.loss));
+      }
+      return pts;
+    };
+    const keyFor = (name, group) => {
+      if (name === 'diff') return r => r.gf - r.ga;
+      if (name === 'gf') return r => r.gf;
+      const pts = miniPoints(group);
+      return r => pts.get(r);
+    };
+    const resolve = (group, order) => {
+      if (group.length < 2) return group;
+      if (!order.length) return group.slice().sort((x, y) => x.team.name.localeCompare(y.team.name));
+      const key = keyFor(order[0], group);
+      const sorted = group.slice().sort((x, y) => key(y) - key(x));
+      const out = [];
+      for (let i = 0; i < sorted.length;) {
+        let j = i;
+        while (j < sorted.length && key(sorted[j]) === key(sorted[i])) j++;
+        out.push(...resolve(sorted.slice(i, j), order.slice(1)));
+        i = j;
+      }
+      return out;
+    };
+    const all = [...rows.values()].sort((x, y) => y.points - x.points);
+    const out = [];
+    for (let i = 0; i < all.length;) {
+      let j = i;
+      while (j < all.length && all[j].points === all[i].points) j++;
+      out.push(...resolve(all.slice(i, j), sc.tiebreaks));
+      i = j;
+    }
+    return out;
   }
   /* Partidos del torneo entre dos de sus equipos, del más reciente al más antiguo. */
   function results(tournament, matches) {
@@ -139,6 +203,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
+  const api = { FORMAT, LIMITS, TIEBREAKS, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
