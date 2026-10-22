@@ -143,6 +143,8 @@
   let tutorialIndex = -1;
   let writerId=uid('tab');
   try {writerId=sessionStorage.getItem('ultimate-clock-tab')||writerId;sessionStorage.setItem('ultimate-clock-tab',writerId);}catch{}
+  /* Identifica este dispositivo ante el servidor (uno por navegador, no por pestaña). */
+  const deviceId=(()=>{try{let d=localStorage.getItem('uc-dispositivo');if(!d){d=uid('disp');localStorage.setItem('uc-dispositivo',d);}return d;}catch{return writerId;}})();
   /* Copia local por tablas (IndexedDB). Si falla, la app sigue con localStorage como hasta ahora. */
   let localDb=null,localSaver=null,localFailed=false,lastSavedAt=0,lsFailed=false;
   let idbSnapshot=null;
@@ -162,22 +164,23 @@
   }
   /* Si localStorage no tiene datos (o se llenó y quedó atrás) y IndexedDB tiene una copia más nueva, se recupera de ahí. */
   let recovered=false;
-  if(idbSnapshot&&idbSnapshot.guardadoEn>lastSavedAt&&!storageInvalid){
+  /* Con sesión iniciada manda la copia por tablas (el servidor es la fuente; localStorage ya no se usa). */
+  const withAccount=!!UCSession.token();
+  if(idbSnapshot&&idbSnapshot.registros.length&&(withAccount||idbSnapshot.guardadoEn>lastSavedAt)&&!storageInvalid){
     try {
-      const rebuilt=UCLocal.reconstruir(idbSnapshot.registros);
+      const rebuilt=UCLocal.reconstruir(idbSnapshot.registros,deviceId);
       if(rebuilt){state=mergeState(rebuilt);lastSavedAt=idbSnapshot.guardadoEn;storageBlocked=false;recovered=true;}
     } catch {}
   }
-  if(localDb){localSaver=UCLocal.crearGuardador(localDb,writerId);localSaver.precargar(idbSnapshot?idbSnapshot.registros:[]);localSaveMirror();}
+  if(localDb){localSaver=UCLocal.crearGuardador(localDb,deviceId);localSaver.precargar(idbSnapshot?idbSnapshot.registros:[]);localSaveMirror();}
   if(recovered)saveState();
   lang=UCI18N.initial(state.settings.lang);
 
   /* ---- Cuenta: pantalla de entrada, sincronización e indicador ---- */
-  const deviceId=(()=>{try{let d=localStorage.getItem('uc-dispositivo');if(!d){d=uid('disp');localStorage.setItem('uc-dispositivo',d);}return d;}catch{return writerId;}})();
   let engine=null,conflictSig='';
   function loginGate(cancelable=false) {
     return new Promise(resolve=>{
-      const box=document.createElement('div');box.className='login-gate';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Ultimate Clock');
+      const box=document.createElement('dialog');box.className='login-gate';box.setAttribute('aria-label','Ultimate Clock');
       box.innerHTML=`<form class="login-card" novalidate><h1>ULTIMATE CLOCK</h1><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
         <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
         <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
@@ -186,12 +189,15 @@
         <button class="button" type="button" data-gate="local">${esc(t(cancelable?'Cancelar':'USAR SIN CUENTA'))}</button>
         <p class="sheet-hint">${esc(t('Sin cuenta, todo queda solo en este dispositivo.'))}</p></form>`;
       document.body.append(box);
+      /* <dialog> modal: queda por encima de cualquier cuadro ya abierto (la capa superior del navegador). */
+      box.addEventListener('cancel',e=>e.preventDefault());
+      if(box.showModal)box.showModal();
       const form=box.querySelector('form'),err=box.querySelector('.login-error'),user=box.querySelector('#lg-user');
       user.focus();
       const done=ok=>{box.remove();resolve(ok);};
       box.querySelector('[data-gate="local"]').addEventListener('click',()=>{if(!cancelable)UCSession.usarLocal();done(false);});
       form.addEventListener('submit',async e=>{
-        e.preventDefault();const btn=form.querySelector('[type="submit"]');
+        e.preventDefault();e.stopPropagation();const btn=form.querySelector('[type="submit"]');
         if(!user.value.trim()||!form.clave.value){err.textContent=t('Escribí tu usuario y tu contraseña.');err.hidden=false;return;}
         btn.disabled=true;err.hidden=true;
         const r=await UCSession.entrar(user.value.trim(),form.clave.value);
@@ -237,11 +243,14 @@
   /* Escribe en IndexedDB lo que cambió desde el último guardado. Un fallo avisa, pero no apaga el guardado. */
   function localSaveMirror() {
     if(!localSaver)return;
-    localSaver.guardar(state,lastSavedAt||Date.now()).then(()=>{localFailed=false;engine?.programar();}).catch(()=>{if(!localFailed){localFailed=true;if(lsFailed)showStorageError();}});
+    localSaver.guardar(state,lastSavedAt||Date.now()).then(()=>{localFailed=false;engine?.programar(UCSession.token()?250:1500);}).catch(()=>{if(!localFailed){localFailed=true;if(lsFailed)showStorageError();}});
   }
   function saveState() {
     if(storageBlocked) return false;
     state.writerId=writerId;state.savedAt=Date.now();lastSavedAt=state.savedAt;
+    /* Con sesión iniciada no se guarda el estado completo en localStorage: la copia es la del servidor, y en el dispositivo
+       queda solo el respaldo por tablas (IndexedDB) que permite seguir sin internet. */
+    if(UCSession.token()&&localSaver){localSaveMirror();return !localFailed;}
     let lsOk=true;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lsFailed=false; }
     catch { lsOk=false; lsFailed=true; }
@@ -1199,9 +1208,18 @@
     if(!row.nextElementSibling)addSheetRow();else row.nextElementSibling.querySelector('.ts-name').focus();
   });
   /* Registros que llegan del servidor: se aplican al estado y se guardan sin volver a salir como cambios. */
+  /* Partidos en curso de otros dispositivos de la cuenta (id del dispositivo -> partido). */
+  const liveElsewhere=new Map();
+  let resumeAsked=new Set();
   async function applyRemote(regs) {
     const cambios=[];
     for(const r of regs){
+      if(r.tabla==='partidoActivo'){
+        /* Partido en curso de otro dispositivo: no se guarda aquí, solo se ofrece retomarlo. */
+        if(r.id===deviceId)continue;
+        if(r.op==='put'&&r.data?.id)liveElsewhere.set(r.id,r.data);else liveElsewhere.delete(r.id);
+        continue;
+      }
       if(r.tabla==='partidos'){
         state.savedMatches=state.savedMatches.filter(x=>x.id!==r.id);
         const match=r.op==='put'&&r.data?.match;
@@ -1220,8 +1238,38 @@
     state.savedMatches.sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));
     if(localSaver)localSaver.registrarRemotos(cambios);
     if(localDb)await UCLocal.aplicarRemotos(localDb,cambios);
-    try{state.savedAt=Date.now();lastSavedAt=state.savedAt;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{}
+    if(!UCSession.token())try{state.savedAt=Date.now();lastSavedAt=state.savedAt;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{}
+    localSaveMirror();
     if(app.querySelector('.tournament-screen')&&!teamSheet)renderTournament();
+    offerResume();
+  }
+  /* Retomar un partido que quedó en curso en otro dispositivo (por ejemplo, si el teléfono falló). */
+  function resumable() {
+    const limit=Date.now()-48*3600*1000;
+    return [...liveElsewhere.entries()].map(([id,m])=>({id,m})).filter(({id,m})=>{
+      if(resumeAsked.has(id+':'+(m.events?.length||0)))return false;
+      const last=m.events?.[m.events.length-1];
+      return m.status!=='saved'&&m.events?.length&&last&&Date.parse(last.at)>limit&&Array.isArray(m.teams)&&m.teams.length===2;
+    }).sort((a,b)=>Date.parse(b.m.events[b.m.events.length-1].at)-Date.parse(a.m.events[a.m.events.length-1].at));
+  }
+  function offerResume() {
+    if(!UCSession.token()||document.querySelector('.login-gate'))return;
+    if(hasStarted()&&!isLocked())return;
+    const list=resumable();if(!list.length)return;
+    if(modalRoot.querySelector('[data-action="resume-match"]'))return;
+    const item=list[0],m=item.m,last=m.events[m.events.length-1];
+    openModal(t('Partido en curso en otro dispositivo'),`<p>${esc(t('Hay un partido sin terminar guardado en el servidor. ¿Querés retomarlo en este dispositivo?'))}</p><p class="history-totals">${esc(m.teams[0].name)} ${m.teams[0].score} – ${m.teams[1].score} ${esc(m.teams[1].name)}</p><p class="sheet-hint">${esc(t('Último evento: {when}. El reloj queda pausado en ese momento.',{when:new Intl.DateTimeFormat(lang==='en'?'en-US':'es-AR',{dateStyle:'short',timeStyle:'short'}).format(new Date(last.at))}))}</p><div class="modal-actions"><button class="button" type="button" data-action="resume-later" data-id="${esc(item.id)}">${esc(t('AHORA NO'))}</button><button class="button button-primary" type="button" data-action="resume-match" data-id="${esc(item.id)}">${esc(t('RETOMAR AQUÍ'))}</button></div>`);
+  }
+  function resumeMatch(id) {
+    const remote=liveElsewhere.get(id);if(!remote)return;
+    const m=clone(remote),last=m.events[m.events.length-1];
+    /* El reloj se detiene en el último evento guardado: el tiempo transcurrido sin conexión no se cuenta. */
+    m.clock.running=false;m.clock.startedAt=null;m.clock.elapsed=Math.max(0,Number(last.elapsed)||m.clock.elapsed);
+    for(const timer of [...Object.values(m.timers),m.breakTimer]){timer.running=false;timer.startedAt=null;}
+    m.events.push({type:'resumed',at:nowIso(),elapsed:m.clock.elapsed});
+    state.activeMatch=m;liveElsewhere.delete(id);
+    saveState();closeModal();renderDashboard();showToast(t('Partido retomado. Revisá el reloj antes de seguir.'));
+    engine?.descartar('partidoActivo',id);
   }
   const SYNC_ARROWS='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg>';
   function renderSyncBadge(st) {
@@ -1241,6 +1289,8 @@
   function startSync() {
     if(!UCSession.token()){updateAccountUI();return;}
     if(!localDb){showToast(t('Este navegador no permite la copia local: no se puede sincronizar.'));updateAccountUI();return;}
+    /* El estado completo ya está en la copia por tablas (y se sube al servidor): se retira el de localStorage. */
+    localSaver?.esperar().then(()=>{if(!localFailed)try{localStorage.removeItem(STORAGE_KEY);}catch{}}).catch(()=>{});
     engine?.detener();
     engine=UCSync.crear({db:localDb,local:UCLocal,sesion:UCSession,dispositivo:deviceId,aplicar:applyRemote,alConflicto:openConflicts,alEstado:renderSyncBadge});
     engine.iniciar();updateAccountUI();
@@ -1380,7 +1430,7 @@
     openModal(t('Reemplazar torneo'),`<p>${esc(t('Ya tenés el torneo {name}. ¿Reemplazarlo por {other}? Las planillas guardadas se conservan.',{name:same.name,other:parsed.tournament.name}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="button" data-action="t-confirm-import">${esc(t('REEMPLAZAR'))}</button></div>`);
   }
   function tournamentSubmit(form,data,type) {
-    if(!type.startsWith('t-'))return false;
+    if(!type||!type.startsWith('t-'))return false;
     const tour=state.tournament;
     if(type==='t-create'){
       const created=TN.makeTournament(data.get('name'));if(!created)return true;
@@ -1410,6 +1460,8 @@
   function extraAction(action,element) {
     const m=activeMatch();
     if(tournamentAction(action,element))return true;
+    if(action==='resume-match'){resumeMatch(element.dataset.id);return true;}
+    if(action==='resume-later'){const m=liveElsewhere.get(element.dataset.id);if(m)resumeAsked.add(element.dataset.id+':'+(m.events?.length||0));closeModal();return true;}
     if(['account-login','account-logout','account-logout-confirm','sync-now','sync-badge','sync-resolve'].includes(action)){accountAction(action,element);return true;}
     if(action==='changelog')openChangelog();
     else if(action==='sheet'){renderLiveSheet();}

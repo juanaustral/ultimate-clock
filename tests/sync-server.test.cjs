@@ -95,3 +95,15 @@ test('la API exige sesión y sincroniza por HTTP', async () => {
   void a;
   srv.closeAllConnections(); srv.close();
 });
+
+test('el partido en curso de cada dispositivo es un registro propio y otro dispositivo puede bajarlo',() => {
+  const { db, a } = base();
+  sync.subir(db, a, 'tel1', [put('c1', 'tel1', 0, { id: 'm', events: [1] }, 'partidoActivo')]);
+  sync.subir(db, a, 'tel1', [put('c2', 'tel1', 1, { id: 'm', events: [1, 2] }, 'partidoActivo')]);
+  const b = sync.bajar(db, a, 0).cambios;
+  assert.strictEqual(b.length, 1);
+  assert.deepStrictEqual(b[0].data.events, [1, 2]);
+  // quien retoma borra el registro del otro dispositivo
+  sync.subir(db, a, 'tel2', [{ cambio: 'd1', tabla: 'partidoActivo', id: 'tel1', op: 'delete', base: 2 }]);
+  assert.strictEqual(sync.bajar(db, a, 0).cambios[0].borrado, true);
+});

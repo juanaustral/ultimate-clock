@@ -1,0 +1,17 @@
+services:
+  ultimate-clock-api:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: ultimate-clock-api
+    restart: unless-stopped
+    # Sin `ports`: solo se llega desde la red interna de Docker, a través de Caddy
+    # (iona.ar/ultimateclock/api/*).
+    volumes:
+      - /opt/ultimate-clock-data:/data
+    networks:
+      - iona-web_default
+
+networks:
+  iona-web_default:
+    external: true
