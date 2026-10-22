@@ -90,3 +90,19 @@ test('el torneo conserva puntos y cruces al sanear',()=>{
   assert.deepEqual(s.scoring,t.scoring);assert.equal(s.fixture.matches.length,3);
   assert.deepEqual(T.sanitize({name:'Viejo',teams:[]}).scoring,{win:3,draw:1,loss:0,tiebreaks:['diff','gf','h2h']});
 });
+
+test('historial del equipo: partidos, goles y goleadores',()=>{
+  const t=torneo(2);t.teams[0].players=[{id:'p1',name:'Ana',number:'7'}];
+  const g=(team,scorerId)=>({type:'goal',team,scorerId});
+  const partidos=[juego(null,'T1',0,'T2',0,{savedAt:'2026-10-20',events:[g(0,'p1'),g(0,'p1'),g(1,'')]}),juego(null,'T2',3,'T1',1,{savedAt:'2026-10-21'})];
+  const h=T.teamHistory(t,partidos,'T1');
+  assert.equal(h.played,2);assert.equal(h.won,1);assert.equal(h.lost,1);assert.equal(h.gf,3);assert.equal(h.ga,4);
+  assert.deepEqual(h.games.map(x=>x.result),['G','P']);
+  assert.equal(h.players[0].goals,2);
+  assert.equal(T.teamHistory(t,partidos,'nadie'),null);
+});
+test('no se cambia el tipo de fixture si ya hay cruces jugados',()=>{
+  const t=torneo(4);t.fixture=F.regenerate(t,'rr',[]).fixture;
+  const m=t.fixture.matches[0];
+  assert.equal(F.regenerate(t,'elim',[juego(m.id,m.home,1,m.away,0)]).reason,'started');
+});

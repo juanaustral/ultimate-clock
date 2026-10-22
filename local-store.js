@@ -138,6 +138,14 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
     const f = await pedir(db.transaction(tabla).objectStore(tabla).get(id));
     return f ? f.data : null;
   }
+  /* Al cerrar sesión: la cola y las versiones eran de esa cuenta y no deben pasar a la siguiente. */
+  async function limpiarSincronizacion(db) {
+    const tx = db.transaction(['outbox', 'meta'], 'readwrite');
+    tx.objectStore('outbox').clear();
+    tx.objectStore('meta').delete('versiones');
+    tx.objectStore('meta').delete('cursor');
+    await fin(tx);
+  }
   async function pendientes(db) {
     return pedir(db.transaction('outbox').objectStore('outbox').getAll());
   }
@@ -157,6 +165,7 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
         previo = {};
         for (const r of registros) previo[r.tabla + ':' + r.id] = JSON.stringify(r.data);
       },
+      esperar() { return cola; },
       /* Tras aplicar registros remotos: el estado ya los contiene, no deben volver a salir como cambios. */
       registrarRemotos(cambios) {
         for (const c of cambios) {
@@ -177,6 +186,6 @@ const SINCRONIZADAS = ['partidos', 'torneos'];
     };
   }
 
-  const api = { TABLAS, SINCRONIZADAS, aplicarRemotos, leerMeta, escribirMeta, leerRegistro, entidades, diferencias, reconstruir, abrir, leerTodo, aplicar, pendientes, quitarDeOutbox, crearGuardador };
+  const api = { TABLAS, SINCRONIZADAS, aplicarRemotos, limpiarSincronizacion, leerMeta, escribirMeta, leerRegistro, entidades, diferencias, reconstruir, abrir, leerTodo, aplicar, pendientes, quitarDeOutbox, crearGuardador };
   if (typeof module !== 'undefined') module.exports = api; else root.UCLocal = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

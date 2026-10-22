@@ -41,8 +41,11 @@
     <script src="clock-engine.js" defer></script>
     <script src="alerts.js" defer></script>
     <script src="sheet-export.js" defer></script>
+    <script src="fixture.js" defer></script>
     <script src="tournament.js" defer></script>
     <script src="local-store.js" defer></script>
+    <script src="session.js" defer></script>
+    <script src="sync.js" defer></script>
     <script src="changelog.js" defer></script>
     <script src="ultimate-clock.js" defer></script>
   </head>
@@ -52,6 +55,7 @@
       <header class="topbar">
         <a class="brand" href="#tablero" aria-label="ULTIMATE CLOCK, tablero" data-i18n-label="ULTIMATE CLOCK, tablero"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg><span class="brand-copy"><strong>ULTIMATE CLOCK</strong></span></a>
         <span class="mode-badge" id="modeBadge" role="status"></span>
+        <button class="sync-badge is-bad" id="syncBadge" type="button" data-action="sync-badge" hidden></button>
         <button class="menu-button" type="button" data-action="toggle-menu" aria-expanded="false" aria-controls="headerActions">MENU</button>
         <nav class="header-actions" id="headerActions" aria-label="Opciones del partido" data-i18n-label="Opciones del partido">
           <div class="menu-brand" aria-hidden="true"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg><strong>ULTIMATE CLOCK</strong></div>
@@ -64,6 +68,10 @@
           <span class="menu-group-label" aria-hidden="true" data-i18n="MODO">MODO</span>
           <button class="icon-button" type="button" id="menuTournament" data-action="tournament">ENTRAR AL MODO TORNEO</button>
           <button class="icon-button menu-exit" type="button" id="menuExitTournament" data-action="exit-tournament" hidden>SALIR DEL MODO TORNEO</button>
+          <span class="menu-group-label" aria-hidden="true" data-i18n="CUENTA">CUENTA</span>
+          <button class="icon-button" type="button" id="menuLogin" data-action="account-login">INICIAR SESIÓN</button>
+          <button class="icon-button" type="button" id="menuSync" data-action="sync-now" hidden>SINCRONIZAR AHORA</button>
+          <button class="icon-button" type="button" id="menuLogout" data-action="account-logout" hidden>CERRAR SESIÓN</button>
           <span class="menu-group-label" aria-hidden="true" data-i18n="SONIDO Y PANTALLA">SONIDO Y PANTALLA</span>
           <button class="icon-button audio-header" type="button" data-action="enable-audio" aria-label="ACTIVAR SONIDO" aria-pressed="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6a8 8 0 0 1 0 12"/></svg><span class="audio-label">ACTIVAR SONIDO</span></button>
           <button class="icon-button audio-test" type="button" data-action="test-audio"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6a8 8 0 0 1 0 12"/></svg><span data-i18n="PROBAR SONIDO">PROBAR SONIDO</span></button>

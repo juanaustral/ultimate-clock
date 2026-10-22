@@ -172,6 +172,37 @@
   if(recovered)saveState();
   lang=UCI18N.initial(state.settings.lang);
 
+  /* ---- Cuenta: pantalla de entrada, sincronización e indicador ---- */
+  const deviceId=(()=>{try{let d=localStorage.getItem('uc-dispositivo');if(!d){d=uid('disp');localStorage.setItem('uc-dispositivo',d);}return d;}catch{return writerId;}})();
+  let engine=null,conflictSig='';
+  function loginGate(cancelable=false) {
+    return new Promise(resolve=>{
+      const box=document.createElement('div');box.className='login-gate';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Ultimate Clock');
+      box.innerHTML=`<form class="login-card" novalidate><h1>ULTIMATE CLOCK</h1><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
+        <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
+        <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
+        <p class="login-error" role="alert" hidden></p>
+        <button class="button button-primary" type="submit">${esc(t('ENTRAR'))}</button>
+        <button class="button" type="button" data-gate="local">${esc(t(cancelable?'Cancelar':'USAR SIN CUENTA'))}</button>
+        <p class="sheet-hint">${esc(t('Sin cuenta, todo queda solo en este dispositivo.'))}</p></form>`;
+      document.body.append(box);
+      const form=box.querySelector('form'),err=box.querySelector('.login-error'),user=box.querySelector('#lg-user');
+      user.focus();
+      const done=ok=>{box.remove();resolve(ok);};
+      box.querySelector('[data-gate="local"]').addEventListener('click',()=>{if(!cancelable)UCSession.usarLocal();done(false);});
+      form.addEventListener('submit',async e=>{
+        e.preventDefault();const btn=form.querySelector('[type="submit"]');
+        if(!user.value.trim()||!form.clave.value){err.textContent=t('Escribí tu usuario y tu contraseña.');err.hidden=false;return;}
+        btn.disabled=true;err.hidden=true;
+        const r=await UCSession.entrar(user.value.trim(),form.clave.value);
+        btn.disabled=false;form.clave.value='';
+        if(r.ok){done(true);return;}
+        err.textContent=t(r.motivo==='bloqueado'?'Demasiados intentos. Probá de nuevo en unos minutos.':r.motivo==='red'?'No se pudo conectar con el servidor. Podés usar la app sin cuenta.':'Usuario o contraseña incorrectos.');err.hidden=false;
+      });
+    });
+  }
+  if(!UCSession.token()&&!UCSession.modoLocal())await loginGate();
+
   function mergeState(stored) {
     if(stored.version !== 2 || !stored.activeMatch || !Array.isArray(stored.savedMatches) || !Array.isArray(stored.customThemes)) throw new Error('Formato no compatible');
     const m=stored.activeMatch;
@@ -206,7 +237,7 @@
   /* Escribe en IndexedDB lo que cambió desde el último guardado. Un fallo avisa, pero no apaga el guardado. */
   function localSaveMirror() {
     if(!localSaver)return;
-    localSaver.guardar(state,lastSavedAt||Date.now()).then(()=>{localFailed=false;}).catch(()=>{if(!localFailed){localFailed=true;if(lsFailed)showStorageError();}});
+    localSaver.guardar(state,lastSavedAt||Date.now()).then(()=>{localFailed=false;engine?.programar();}).catch(()=>{if(!localFailed){localFailed=true;if(lsFailed)showStorageError();}});
   }
   function saveState() {
     if(storageBlocked) return false;
@@ -559,6 +590,7 @@
 
   /* Cartel del encabezado: MODO PARTIDO o MODO TORNEO según el partido actual. */
   function updateModeBadge() {
+    updateAccountUI();
     const badge=document.getElementById('modeBadge');if(!badge)return;
     const tournament=isTournamentMode();
     badge.textContent=t(tournament?'TORNEO':'PARTIDO');badge.title=t(tournament?'MODO TORNEO':'MODO PARTIDO');badge.setAttribute('aria-label',t(tournament?'MODO TORNEO':'MODO PARTIDO'));badge.classList.toggle('is-tournament',tournament);
@@ -1123,6 +1155,86 @@
     if(event.target.matches('.ts-number')){row.querySelector('.ts-name').focus();return;}
     if(!row.nextElementSibling)addSheetRow();else row.nextElementSibling.querySelector('.ts-name').focus();
   });
+  /* Registros que llegan del servidor: se aplican al estado y se guardan sin volver a salir como cambios. */
+  async function applyRemote(regs) {
+    const cambios=[];
+    for(const r of regs){
+      if(r.tabla==='partidos'){
+        state.savedMatches=state.savedMatches.filter(x=>x.id!==r.id);
+        const match=r.op==='put'&&r.data?.match;
+        if(match&&match.id===r.id){state.savedMatches.push(match);cambios.push({tabla:'partidos',id:r.id,op:'put',data:{match}});}
+        else cambios.push({tabla:'partidos',id:r.id,op:'delete'});
+      } else if(r.tabla==='torneos'){
+        const activeId=state.tournament?.id;
+        let list=allTournaments().filter(x=>x.id!==r.id);
+        const clean=r.op==='put'?TN.sanitize(r.data?.tournament):null;
+        if(clean&&clean.id===r.id){list.push(clean);cambios.push({tabla:'torneos',id:r.id,op:'put',data:{tournament:clean}});}
+        else cambios.push({tabla:'torneos',id:r.id,op:'delete'});
+        state.tournament=list.find(x=>x.id===activeId)||list[0]||null;
+        state.otherTournaments=list.filter(x=>x!==state.tournament);
+      }
+    }
+    state.savedMatches.sort((a,b)=>String(b.savedAt).localeCompare(String(a.savedAt)));
+    if(localSaver)localSaver.registrarRemotos(cambios);
+    if(localDb)await UCLocal.aplicarRemotos(localDb,cambios);
+    try{state.savedAt=Date.now();lastSavedAt=state.savedAt;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{}
+    if(app.querySelector('.tournament-screen')&&!teamSheet)renderTournament();
+  }
+  const SYNC_ARROWS='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg>';
+  function renderSyncBadge(st) {
+    const badge=document.getElementById('syncBadge');if(!badge)return;
+    const on=!!UCSession.token();badge.hidden=!on;if(!on)return;
+    const why={ok:'Sincronizado',pendientes:'Cambios pendientes de subir','sin-conexion':'Sin conexión: los cambios se suben al volver',conflicto:'Hay cambios para revisar','sesion-vencida':'La sesión venció: volvé a entrar','sin-sincronizar':'Sincronizando…','sin-sesion':'Sin sesión'}[st.razon]||'Sincronizando…';
+    const label=t(why)+(st.pendientes?` · ${st.pendientes}`:'');
+    badge.className='sync-badge '+(st.verde?'is-ok':'is-bad');badge.innerHTML=SYNC_ARROWS;badge.title=label;badge.setAttribute('aria-label',label);
+  }
+  function updateAccountUI() {
+    const user=UCSession.usuario(),login=document.getElementById('menuLogin'),logout=document.getElementById('menuLogout'),now=document.getElementById('menuSync');
+    if(login){login.hidden=!!user;login.textContent=t('INICIAR SESIÓN');}
+    if(logout){logout.hidden=!user;logout.textContent=`${t('CERRAR SESIÓN')} · ${user||''}`;}
+    if(now){now.hidden=!user;now.textContent=t('SINCRONIZAR AHORA');}
+    renderSyncBadge(engine?engine.estado():{verde:false,razon:'sin-sincronizar',pendientes:0});
+  }
+  function startSync() {
+    if(!UCSession.token()){updateAccountUI();return;}
+    if(!localDb){showToast(t('Este navegador no permite la copia local: no se puede sincronizar.'));updateAccountUI();return;}
+    engine?.detener();
+    engine=UCSync.crear({db:localDb,local:UCLocal,sesion:UCSession,dispositivo:deviceId,aplicar:applyRemote,alConflicto:openConflicts,alEstado:renderSyncBadge});
+    engine.iniciar();updateAccountUI();
+  }
+  function conflictLabel(c) {
+    if(c.tabla==='torneos')return t('Torneo {name}',{name:c.actual?.data?.tournament?.name||allTournaments().find(x=>x.id===c.id)?.name||''});
+    const m=c.actual?.data?.match||state.savedMatches.find(x=>x.id===c.id);
+    return t('Partido {a} vs {b}',{a:m?.teams?.[0]?.name||'',b:m?.teams?.[1]?.name||''});
+  }
+  /* Dos dispositivos cambiaron lo mismo: nunca se pisa en silencio, se elige cuál es el oficial. */
+  function openConflicts(list,force=false) {
+    const sig=list.map(c=>c.k+':'+c.version).join();
+    if(!force&&sig===conflictSig)return;conflictSig=sig;
+    if(!list.length){closeModal();return;}
+    openModal(t('Cambios en otro dispositivo'),`<p>${esc(t('Esto se modificó en otro dispositivo al mismo tiempo. Elegí cuál es el oficial; el otro se descarta.'))}</p><ul class="conflict-list">${list.map(c=>`<li><strong>${esc(conflictLabel(c))}</strong><div class="modal-actions"><button class="button button-primary" type="button" data-action="sync-resolve" data-key="${esc(c.k)}" data-choice="local">${esc(t('ESTE DISPOSITIVO ES EL OFICIAL'))}</button><button class="button" type="button" data-action="sync-resolve" data-key="${esc(c.k)}" data-choice="remoto">${esc(t('USAR EL OTRO DISPOSITIVO'))}</button></div></li>`).join('')}</ul>`);
+  }
+  async function accountAction(action,el) {
+    if(action==='account-login'){const ok=await loginGate(true);if(ok){showToast(t('Sesión iniciada.'));startSync();}}
+    else if(action==='sync-now'){if(engine){showToast(t('Sincronizando…'));engine.sincronizar();}}
+    else if(action==='sync-badge'){if(engine?.conflictos().length)openConflicts(engine.conflictos(),true);else{engine?.sincronizar();showToast(el.title||'');}}
+    else if(action==='sync-resolve'){await engine?.resolver(el.dataset.key,el.dataset.choice);closeModal();conflictSig='';if(engine?.conflictos().length)openConflicts(engine.conflictos(),true);}
+    else if(action==='account-logout'){
+      if(engine)await engine.sincronizar();
+      const pend=engine?await engine.pendientes():0;
+      openModal(t('Cerrar sesión'),`<p>${esc(t(pend?'Hay {n} cambios que todavía no se subieron. Si cerrás sesión, se pierden de este dispositivo.':'Se borrarán de este dispositivo los partidos y torneos de esta cuenta. Siguen guardados en el servidor.',{n:pend}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="account-logout-confirm">${esc(t('CERRAR SESIÓN'))}</button></div>`);
+    }
+    else if(action==='account-logout-confirm'){
+      engine?.detener();engine=null;
+      await UCSession.salir();
+      state.savedMatches=[];state.tournament=null;state.otherTournaments=[];
+      if(isTournamentMode())state.activeMatch=makeMatch(state.settings.ruleset);
+      saveState();
+      try{await localSaver?.esperar();await UCLocal.limpiarSincronizacion(localDb);}catch{}
+      location.reload();
+    }
+    return true;
+  }
   function tournamentAction(action,el) {
     if(!action.startsWith('t-'))return false;
     const tour=state.tournament,team=tournamentTeam(el.dataset.team);
@@ -1246,6 +1358,7 @@
   function extraAction(action,element) {
     const m=activeMatch();
     if(tournamentAction(action,element))return true;
+    if(['account-login','account-logout','account-logout-confirm','sync-now','sync-badge','sync-resolve'].includes(action)){accountAction(action,element);return true;}
     if(action==='changelog')openChangelog();
     else if(action==='sheet'){renderLiveSheet();}
     else if(action==='tournament'){if(isTournamentMode()){closeModal();teamSheet=null;renderTournament();}else enterTournamentMode();}
@@ -1509,6 +1622,7 @@
     const mode=state.activeMatch.mode;state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;saveState();renderDashboard();
   }
   if(!hasStarted()&&!isLocked()){if(isTournamentMode()){if(state.tournament&&state.tournament.teams.length>=2)openTournamentMatchSetup();else{renderTournament();}}else openWelcome('mode');}
+  startSync();
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();
   let otherTabLocked=false;

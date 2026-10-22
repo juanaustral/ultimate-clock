@@ -96,6 +96,7 @@
     const old = tournament.fixture;
     type = TYPES.includes(type) ? type : (old?.type || 'rr');
     if (ids.length < 2) return { ok: false, reason: 'teams' };
+    if (old && old.type !== type && startedIds(old, saved, activeFixtureId).size) return { ok: false, reason: 'started' };
     if (type === 'elim') {
       if (old && startedIds(old, saved, activeFixtureId).size) return { ok: false, reason: 'started' };
       return { ok: true, fixture: { type, matches: generateElimination(ids) } };

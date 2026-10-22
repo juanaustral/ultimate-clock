@@ -180,6 +180,24 @@
     return (matches || []).filter(m => m?.status === 'saved' && Array.isArray(m.teams) && m.teams.length === 2 && m.teams.every(team => ids.has(team?.tid)))
       .sort((x, y) => String(y.savedAt).localeCompare(String(x.savedAt)));
   }
+  /* Historial de un equipo: partidos del torneo con su resultado, goles a favor y en contra, y goleadores y pases. */
+  function teamHistory(tournament, matches, teamId) {
+    const team = (tournament?.teams || []).find(x => x.id === teamId);
+    if (!team) return null;
+    const games = [];
+    const out = { team, games, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, players: [] };
+    for (const match of results(tournament, matches).reverse()) {
+      const i = match.teams.findIndex(x => x.tid === teamId);
+      if (i < 0) continue;
+      const score = finalScore(match), f = score[i], c = score[1 - i];
+      const rival = (tournament.teams.find(x => x.id === match.teams[1 - i].tid) || {}).name || match.teams[1 - i].name;
+      games.push({ id: match.id, savedAt: match.savedAt, rival, gf: f, ga: c, result: f > c ? 'G' : f === c ? 'E' : 'P' });
+      out.played++; out.gf += f; out.ga += c;
+      if (f > c) out.won++; else if (f === c) out.drawn++; else out.lost++;
+    }
+    out.players = stats(tournament, matches).filter(r => r.team.id === teamId);
+    return out;
+  }
   function exportPayload(tournament, matches) {
     return { format: FORMAT, version: 1, exportedAt: new Date().toISOString(), tournament, matches: tournamentMatches(tournament, matches) };
   }
@@ -203,6 +221,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, TIEBREAKS, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
+  const api = { FORMAT, LIMITS, TIEBREAKS, teamHistory, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
