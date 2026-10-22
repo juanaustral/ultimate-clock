@@ -529,3 +529,4 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .conflict-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .history-games li{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:6px 0;border-bottom:var(--rule)}
 .history-totals{font-weight:800}
+.fixture-controls select,.scoring-form select{width:100%;min-height:44px;padding:0 10px;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2);color:var(--ink);font:inherit}

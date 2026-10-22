@@ -1,0 +1,20 @@
+[Unit]
+Description=Ultimate Clock API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ultimate-clock-api
+Environment=UC_DB=/var/lib/ultimate-clock/ultimate-clock.sqlite
+Environment=UC_PORT=8590
+Environment=UC_PREFIJO=
+ExecStart=/usr/bin/node /opt/ultimate-clock-api/server/index.js
+Restart=on-failure
+User=ultimateclock
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ultimate-clock
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

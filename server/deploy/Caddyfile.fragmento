@@ -1,0 +1,4 @@
+# Dentro del bloque de iona.ar, ANTES del `handle /api/*` del contacto y del file_server:
+handle_path /ultimateclock/api/* {
+	reverse_proxy 127.0.0.1:8590
+}
