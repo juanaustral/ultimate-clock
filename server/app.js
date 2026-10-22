@@ -1,8 +1,10 @@
 'use strict';
 // API HTTP de Ultimate Clock. Sin framework: un manejador (req, res).
 const auth = require('./auth');
+const sync = require('./sync');
 
 const MAX_CUERPO = 64 * 1024;
+const MAX_CUERPO_SYNC = 4 * 1024 * 1024;
 
 function responder(res, estado, cuerpo) {
   const texto = JSON.stringify(cuerpo);
@@ -14,14 +16,14 @@ function responder(res, estado, cuerpo) {
   res.end(texto);
 }
 
-function leerJson(req) {
+function leerJson(req, max = MAX_CUERPO) {
   return new Promise((resolve, reject) => {
     let tam = 0;
     let excedido = false;
     const partes = [];
     req.on('data', (c) => {
       tam += c.length;
-      if (tam > MAX_CUERPO) { if (!excedido) { excedido = true; reject(Object.assign(new Error('grande'), { estado: 413 })); } return; }
+      if (tam > max) { if (!excedido) { excedido = true; reject(Object.assign(new Error('grande'), { estado: 413 })); } return; }
       partes.push(c);
     });
     req.on('end', () => {
@@ -66,6 +68,20 @@ function crearManejador(db, { prefijo = '/api' } = {}) {
       if (req.method === 'POST' && sub === '/logout') {
         auth.cerrarSesion(db, tokenDe(req));
         return responder(res, 200, { ok: true });
+      }
+
+      if (sub === '/sync/subir' || sub === '/sync/bajar') {
+        const cuenta = auth.cuentaDeToken(db, tokenDe(req));
+        if (!cuenta) return responder(res, 401, { error: 'sin sesión' });
+        if (req.method === 'POST' && sub === '/sync/subir') {
+          const { dispositivo, cambios } = await leerJson(req, MAX_CUERPO_SYNC);
+          return responder(res, 200, { resultados: sync.subir(db, cuenta.id, dispositivo, cambios) });
+        }
+        if (req.method === 'GET' && sub === '/sync/bajar') {
+          const desde = Number(new URL(req.url, 'http://x').searchParams.get('desde') || 0);
+          if (!Number.isInteger(desde) || desde < 0) return responder(res, 400, { error: 'pedido inválido' });
+          return responder(res, 200, sync.bajar(db, cuenta.id, desde));
+        }
       }
 
       return responder(res, 404, { error: 'no encontrado' });

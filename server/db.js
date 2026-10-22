@@ -20,6 +20,29 @@ CREATE TABLE IF NOT EXISTS intentos (
   usuario TEXT NOT NULL COLLATE NOCASE,
   momento INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS registros (
+  cuenta_id INTEGER NOT NULL REFERENCES cuentas(id),
+  tabla TEXT NOT NULL,
+  id TEXT NOT NULL,
+  data TEXT,
+  version INTEGER NOT NULL,
+  dispositivo TEXT NOT NULL,
+  actualizado INTEGER NOT NULL,
+  borrado INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (cuenta_id, tabla, id)
+);
+CREATE TABLE IF NOT EXISTS cambios (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  cuenta_id INTEGER NOT NULL,
+  tabla TEXT NOT NULL,
+  id TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS cambios_cuenta ON cambios(cuenta_id, seq);
+CREATE TABLE IF NOT EXISTS aplicados (
+  cuenta_id INTEGER NOT NULL,
+  cambio TEXT NOT NULL,
+  PRIMARY KEY (cuenta_id, cambio)
+);
 CREATE INDEX IF NOT EXISTS intentos_usuario ON intentos(usuario, momento);
 `;
 
