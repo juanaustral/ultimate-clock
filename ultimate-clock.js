@@ -1,4 +1,4 @@
-(() => {
+(async () => {
   "use strict";
 
   const STORAGE_KEY = "ultimate-clock-v2";
@@ -143,15 +143,33 @@
   let tutorialIndex = -1;
   let writerId=uid('tab');
   try {writerId=sessionStorage.getItem('ultimate-clock-tab')||writerId;sessionStorage.setItem('ultimate-clock-tab',writerId);}catch{}
+  /* Copia local por tablas (IndexedDB). Si falla, la app sigue con localStorage como hasta ahora. */
+  let localDb=null,localSaver=null,localFailed=false,lastSavedAt=0,lsFailed=false;
+  let idbSnapshot=null;
+  try {
+    localDb=await UCLocal.abrir();
+    idbSnapshot=await UCLocal.leerTodo(localDb);
+  } catch { localDb=null; }
   try {
     storageRaw = localStorage.getItem(STORAGE_KEY);
     const stored = JSON.parse(storageRaw || "null");
     state = stored ? mergeState(stored) : freshState();
+    lastSavedAt=stored?.savedAt||0;
   } catch {
     storageBlocked = true;
     storageInvalid = !!storageRaw;
     state = freshState();
   }
+  /* Si localStorage no tiene datos (o se llenó y quedó atrás) y IndexedDB tiene una copia más nueva, se recupera de ahí. */
+  let recovered=false;
+  if(idbSnapshot&&idbSnapshot.guardadoEn>lastSavedAt&&!storageInvalid){
+    try {
+      const rebuilt=UCLocal.reconstruir(idbSnapshot.registros);
+      if(rebuilt){state=mergeState(rebuilt);lastSavedAt=idbSnapshot.guardadoEn;storageBlocked=false;recovered=true;}
+    } catch {}
+  }
+  if(localDb){localSaver=UCLocal.crearGuardador(localDb,writerId);localSaver.precargar(idbSnapshot?idbSnapshot.registros:[]);localSaveMirror();}
+  if(recovered)saveState();
   lang=UCI18N.initial(state.settings.lang);
 
   function mergeState(stored) {
@@ -185,10 +203,22 @@
     return stored;
   }
 
+  /* Escribe en IndexedDB lo que cambió desde el último guardado. Un fallo avisa, pero no apaga el guardado. */
+  function localSaveMirror() {
+    if(!localSaver)return;
+    localSaver.guardar(state,lastSavedAt||Date.now()).then(()=>{localFailed=false;}).catch(()=>{if(!localFailed){localFailed=true;if(lsFailed)showStorageError();}});
+  }
   function saveState() {
     if(storageBlocked) return false;
-    try { state.writerId=writerId; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }
-    catch { storageBlocked=true; showStorageError(); return false; }
+    state.writerId=writerId;state.savedAt=Date.now();lastSavedAt=state.savedAt;
+    let lsOk=true;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); lsFailed=false; }
+    catch { lsOk=false; lsFailed=true; }
+    localSaveMirror();
+    if(lsOk) return true;
+    /* localStorage falló (cuota): si hay IndexedDB se sigue guardando ahí; se reintenta localStorage en el próximo guardado. */
+    if(localSaver&&!localFailed) return true;
+    storageBlocked=true; showStorageError(); return false;
   }
   function showStorageError() {
     let banner=document.getElementById('storageWarning');
