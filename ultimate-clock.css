@@ -471,7 +471,7 @@ html[data-theme="dark"] .clock-card{border-color:var(--line)}
 .sheet-colors .color-custom{color:#16171b;background:#fff}
 
 /* Modo partido / modo torneo */
-.mode-badge{flex:0 1 auto;min-width:0;padding:5px 8px;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2);color:var(--ink);font:800 10px/1 var(--font-body);letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mode-badge{flex:0 0 auto;padding:5px 8px;border:var(--rule);border-radius:var(--radius-sm);background:var(--bg-2);color:var(--ink);font:800 10px/1 var(--font-body);letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mode-badge.is-tournament{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mode-choices{display:grid;gap:var(--gap)}
 .entry-choice>p{margin:0 0 14px}
@@ -695,3 +695,16 @@ html.vivo,html.vivo body{height:auto;min-height:100%;overflow:auto}
 .vivo-cta{text-align:center}
 .vivo-foot{padding:12px 16px 24px;color:var(--muted);font-size:13px;text-align:center}
 .vivo-foot a{color:inherit}
+
+.is-pro-locked{opacity:.45;cursor:not-allowed}
+.gate-choices,.gate-login{display:grid;gap:var(--gap)}
+.gate-choices[hidden],.gate-login[hidden]{display:none}
+.pro-sub{font-weight:700}
+.pro-request-link{width:100%;margin-top:14px}
+.pro-modal .modal-actions{margin-top:10px}
+.pro-list{margin:8px 0 0;padding-left:20px;display:grid;gap:6px}
+.pro-request{display:grid;justify-items:center;padding:var(--gap)}
+.pro-form,.pro-done{margin:12px 0}
+.pro-form .field textarea{width:100%;padding:10px 12px;border:var(--rule);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:16px var(--font-body);resize:vertical}
+.pro-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+a.button{text-decoration:none}

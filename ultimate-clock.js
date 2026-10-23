@@ -181,21 +181,25 @@
   function loginGate(cancelable=false) {
     return new Promise(resolve=>{
       const box=document.createElement('dialog');box.className='login-gate';box.setAttribute('aria-label','Ultimate Clock');
-      box.innerHTML=`<form class="login-card" novalidate><h1>ULTIMATE CLOCK</h1><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
+      box.innerHTML=`<form class="login-card" novalidate><h1>ULTIMATE CLOCK</h1>
+        <div class="gate-choices"${cancelable?' hidden':''}><button class="button button-primary" type="button" data-gate="free">${esc(t('USAR GRATIS'))}</button><p class="sheet-hint">${esc(t('Solo MODO PARTIDO, guardado en este dispositivo. Sin servidor ni modo torneo.'))}</p><button class="button" type="button" data-gate="user">${esc(t('INGRESAR CON USUARIO'))}</button><p class="sheet-hint">${esc(t('Modo Pro: torneos, fixture, guardado en el servidor y varios dispositivos.'))}</p></div>
+        <div class="gate-login"${cancelable?'':' hidden'}><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
         <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
         <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
         <p class="login-error" role="alert" hidden></p>
         <button class="button button-primary" type="submit">${esc(t('ENTRAR'))}</button>
-        <button class="button" type="button" data-gate="local">${esc(t(cancelable?'Cancelar':'USAR SIN CUENTA'))}</button>
-        <p class="sheet-hint">${esc(t('Sin cuenta, todo queda solo en este dispositivo.'))}</p></form>`;
+        <button class="button" type="button" data-gate="back">${esc(t(cancelable?'Cancelar':'ATRÁS'))}</button></div></form>`;
       document.body.append(box);
       /* <dialog> modal: queda por encima de cualquier cuadro ya abierto (la capa superior del navegador). */
       box.addEventListener('cancel',e=>e.preventDefault());
       if(box.showModal)box.showModal();
       const form=box.querySelector('form'),err=box.querySelector('.login-error'),user=box.querySelector('#lg-user');
-      user.focus();
+      if(cancelable)user.focus();
       const done=ok=>{box.remove();resolve(ok);};
-      box.querySelector('[data-gate="local"]').addEventListener('click',()=>{if(!cancelable)UCSession.usarLocal();done(false);});
+      const choices=box.querySelector('.gate-choices'),loginBox=box.querySelector('.gate-login');
+      box.querySelector('[data-gate="free"]').addEventListener('click',()=>{UCSession.usarLocal();done(false);});
+      box.querySelector('[data-gate="user"]').addEventListener('click',()=>{choices.hidden=true;loginBox.hidden=false;user.focus();});
+      box.querySelector('[data-gate="back"]').addEventListener('click',()=>{if(cancelable){done(false);return;}loginBox.hidden=true;choices.hidden=false;err.hidden=true;});
       form.addEventListener('submit',async e=>{
         e.preventDefault();e.stopPropagation();const btn=form.querySelector('[type="submit"]');
         if(!user.value.trim()||!form.clave.value){err.textContent=t('Escribí tu usuario y tu contraseña.');err.hidden=false;return;}
@@ -605,12 +609,12 @@
     const tournament=isTournamentMode();
     /* En modo torneo el cartel es un botón que lleva al torneo; en modo partido solo informa. */
     const shared=!!(state.activeMatch?.shared&&state.activeMatch.status==='active'&&UCSession.token());
-    badge.textContent=(shared?'⇄ ':'')+t(tournament?'VER TORNEO':'PARTIDO');badge.title=shared?t('Partido compartido: otro dispositivo lo controla a la vez'):t(tournament?'Ver el torneo: fixture, equipos y tabla':'MODO PARTIDO');badge.classList.toggle('is-shared',shared);badge.setAttribute('aria-label',badge.title);badge.classList.toggle('is-tournament',tournament);
+    badge.textContent=(shared?'⇄ ':'')+t(tournament?'VER TORNEO':isFree()?'MODO PARTIDO':'PARTIDO');badge.title=shared?t('Partido compartido: otro dispositivo lo controla a la vez'):t(tournament?'Ver el torneo: fixture, equipos y tabla':'MODO PARTIDO');badge.classList.toggle('is-shared',shared);badge.setAttribute('aria-label',badge.title);badge.classList.toggle('is-tournament',tournament);
     if(tournament)badge.dataset.action='tournament';else delete badge.dataset.action;
     badge.setAttribute('aria-disabled',String(!tournament));
     const enter=document.getElementById('menuTournament'),exit=document.getElementById('menuExitTournament');
-    if(enter)enter.textContent=t(tournament?'VER TORNEO':'ENTRAR AL MODO TORNEO');
-    if(exit){exit.hidden=!tournament;exit.textContent=t('SALIR DEL MODO TORNEO');}
+    if(enter){enter.textContent=t(tournament?'VER TORNEO':'ENTRAR AL MODO TORNEO');lockPro(enter,isFree());}
+    if(exit){exit.hidden=!tournament||isFree();exit.textContent=t('SALIR DEL MODO TORNEO');}
   }
   function renderDashboard() {
     const match=activeMatch();updateModeBadge();updateTimerConfig(match);
@@ -719,6 +723,8 @@
   function profileChoices() {return [{id:'wfdf',name:'WFDF 2025–2028'},{id:'usau',name:'USA Ultimate 2026–2027'},...state.customRulesets.map(p=>({id:p.id,name:p.name}))];}
   function profileConfig(id) {const profile=state.customRulesets.find(p=>p.id===id);return clone(profile?profile.config:E.defaults[id]||E.defaults.wfdf);}
   const isTournamentMode=match=>(match||activeMatch()).mode==='tournament';
+  /* Gratis: sin cuenta (solo MODO PARTIDO, todo en el dispositivo). Pro: con cuenta. */
+  const isFree=()=>!UCSession.token();
   /* Selector de equipos del torneo (solo en modo torneo). Los equipos se eligen de la lista, no se escriben. */
   function tournamentSelect(name,selected,exclude='') {
     const teams=(state.tournament?.teams||[]).filter(x=>x.id!==exclude||x.id===selected);
@@ -735,6 +741,7 @@
   function openWelcome(step=welcomeStep) {
     if(hasStarted()||isLocked())return;
     welcomeStep=step==='mode'||WELCOME_STEPS.includes(step)?step:'mode';
+    if(isFree()&&welcomeStep==='mode'){activeMatch().mode='match';welcomeStep='teams';}
     const index=WELCOME_STEPS.indexOf(welcomeStep),m=activeMatch();
     const steps=`<p class="welcome-step" aria-hidden="true">${esc(t('PASO {n} DE {total}',{n:index+1,total:WELCOME_STEPS.length}))}</p>`;
     const back=`<button class="button welcome-back" type="button" data-action="welcome-back">← ${esc(t('ATRÁS'))}</button>`;
@@ -812,6 +819,7 @@
   }
   /* Entrar al modo torneo lleva al creador de equipos. Con un partido sin guardar pide guardarlo antes. */
   function enterTournamentMode() {
+    if(isFree()){openProModal();return;}
     if(hasStarted()&&!isLocked()){openModal(t('Pasar al modo torneo'),`<p>${esc(t('El partido actual todavía no está guardado. Guardalo para pasar al modo torneo.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="button" data-action="save-and-enter-tournament">${esc(t('Guardar y pasar'))}</button></div>`);return;}
     if(allTournaments().length&&(UCSession.token()||allTournaments().length>1)){openTournamentPicker();return;}
     closeModal();freshMatch('tournament');teamSheet=null;renderTournament();app.scrollTop=0;
@@ -1172,7 +1180,7 @@
   const shareUrl=(user,slug)=>new URL(`vivo.html?u=${encodeURIComponent(user)}&t=${encodeURIComponent(slug)}`,location.href).href;
   function shareSection(tour) {
     const user=UCSession.usuario(),head=`<div class="section-heading"><h2>${esc(t('Compartir en vivo'))}</h2></div>`;
-    if(!user)return `<section class="settings-section share-box">${head}<p>${esc(t('Con un link público, cualquiera sigue el fixture y los resultados en tiempo real, sin poder cambiar nada. Para compartir hace falta iniciar sesión: el fixture se publica desde el servidor.'))}</p><button class="button" type="button" data-action="account-login">${esc(t('INICIAR SESIÓN'))}</button></section>`;
+    if(!user)return `<section class="settings-section share-box">${head}<p>${esc(t('Con un link público, cualquiera sigue el fixture y los resultados en tiempo real, sin poder cambiar nada. Para compartir hace falta iniciar sesión: el fixture se publica desde el servidor.'))}</p><button class="button" type="button" data-action="account-login">${esc(t('INGRESAR AL MODO PRO'))}</button></section>`;
     if(!tour.share?.on)return `<section class="settings-section share-box">${head}<p>${esc(t('Generá un link público para que cualquiera siga el fixture, los resultados y la tabla en tiempo real. No muestra los jugadores y nadie puede cambiar nada.'))}</p><button class="button button-primary" type="button" data-action="t-share-on">${esc(t('COMPARTIR FIXTURE EN VIVO'))}</button></section>`;
     const url=shareUrl(user,tour.share.slug);
     return `<section class="settings-section share-box">${head}<p class="share-on"><i aria-hidden="true"></i>${esc(t('EN VIVO: el link se actualiza solo con cada resultado.'))}</p>
@@ -1520,7 +1528,7 @@
   const SYNC_ARROWS='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg>';
   function renderSyncBadge(st) {
     const badge=document.getElementById('syncBadge');if(!badge)return;
-    const on=!!UCSession.token();badge.hidden=!on;if(!on)return;
+    const on=!!UCSession.token();badge.hidden=!on;if(!on){renderSyncMenu(st);return;}
     engine?.ritmo(state.activeMatch?.shared&&state.activeMatch.status==='active'?3000:15000);
     const why={ok:'Sincronizado',pendientes:'Cambios pendientes de subir','sin-conexion':'Sin conexión: los cambios se suben al volver',conflicto:'Hay cambios para revisar','sesion-vencida':'La sesión venció: volvé a entrar','sin-sincronizar':'Sincronizando…','sin-sesion':'Sin sesión'}[st.razon]||'Sincronizando…';
     const label=t(why)+(st.pendientes?` · ${st.pendientes}`:'');
@@ -1531,13 +1539,23 @@
   const SYNC_MENU={ok:'✓ SINCRONIZADO',pendientes:'SINCRONIZANDO…','sin-sincronizar':'SINCRONIZANDO…','sin-conexion':'SIN CONEXIÓN · SINCRONIZAR AHORA',conflicto:'REVISAR CAMBIOS EN CONFLICTO','sesion-vencida':'SESIÓN VENCIDA · ENTRAR'};
   function renderSyncMenu(st) {
     const now=document.getElementById('menuSync'),user=UCSession.usuario();if(!now)return;
-    now.hidden=!user;if(!user)return;
+    now.hidden=false;lockPro(now,!user);
+    if(!user){now.textContent=t('SINCRONIZADO');now.classList.remove('menu-sync-ok');delete now.dataset.state;return;}
     now.textContent=t(SYNC_MENU[st.razon]||'SINCRONIZANDO…')+(st.razon==='pendientes'&&st.pendientes?` · ${st.pendientes}`:'');
     now.classList.toggle('menu-sync-ok',st.razon==='ok');now.dataset.state=st.razon;
   }
+  /* Función Pro bloqueada: se ve gris y al tocarla abre el aviso del Modo Pro (no es `disabled` para recibir el clic). */
+  function lockPro(el,locked) {
+    el.classList.toggle('is-pro-locked',locked);
+    if(locked){if(el.dataset.action!=='pro-locked')el.dataset.proAction=el.dataset.action||'';el.dataset.action='pro-locked';el.setAttribute('aria-disabled','true');}
+    else if(el.dataset.action==='pro-locked'){el.dataset.action=el.dataset.proAction;el.removeAttribute('aria-disabled');}
+  }
+  function openProModal() {
+    openModal(t('Esta función sólo está disponible en el Modo Pro'),`<div class="pro-modal"><p class="pro-sub">${esc(t('El Modo Pro incluye:'))}</p><ul class="pro-list"><li>${esc(t('MODO TORNEO: equipos, fixture, tabla y estadísticas'))}</li><li>${esc(t('Guardado en el servidor y sincronización entre dispositivos'))}</li><li>${esc(t('Varios dispositivos controlando el mismo torneo'))}</li><li>${esc(t('Compartir el fixture en vivo con un link'))}</li></ul><a class="button button-primary pro-request-link" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO ACÁ'))}</a><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('CERRAR'))}</button><button class="button" type="button" data-action="account-login">${esc(t('YA TENGO USUARIO'))}</button></div></div>`);
+  }
   function updateAccountUI() {
     const user=UCSession.usuario(),login=document.getElementById('menuLogin'),logout=document.getElementById('menuLogout');
-    if(login){login.hidden=!!user;login.textContent=t('INICIAR SESIÓN');}
+    if(login){login.hidden=!!user;login.textContent=t('INGRESAR AL MODO PRO');}
     if(logout){logout.hidden=!user;logout.textContent=`${t('SALIR DE ESTE USUARIO')} · ${user||''}`;}
     renderSyncBadge(engine?engine.estado():{verde:false,razon:'sin-sincronizar',pendientes:0});
   }
@@ -1563,12 +1581,12 @@
     openModal(t('Cambios en otro dispositivo'),`<p>${esc(t('Esto se modificó en otro dispositivo al mismo tiempo. Elegí cuál es el oficial; el otro se descarta.'))}</p><ul class="conflict-list">${list.map(c=>`<li><strong>${esc(conflictLabel(c))}</strong><div class="modal-actions"><button class="button button-primary" type="button" data-action="sync-resolve" data-key="${esc(c.k)}" data-choice="local">${esc(t('ESTE DISPOSITIVO ES EL OFICIAL'))}</button><button class="button" type="button" data-action="sync-resolve" data-key="${esc(c.k)}" data-choice="remoto">${esc(t('USAR EL OTRO DISPOSITIVO'))}</button></div></li>`).join('')}</ul>`);
   }
   async function accountAction(action,el) {
-    if(action==='account-login'){const ok=await loginGate(true);if(ok){showToast(t('Sesión iniciada.'));startSync();}}
+    if(action==='account-login'){closeModal();const ok=await loginGate(true);if(ok){showToast(t('Sesión iniciada.'));startSync();updateModeBadge();}}
     else if(action==='sync-now'){
       const st=engine?.estado();
       if(!engine)startSync();
       else if(engine.conflictos().length)openConflicts(engine.conflictos(),true);
-      else if(st?.razon==='sesion-vencida'){const ok=await loginGate(true);if(ok)startSync();}
+      else if(st?.razon==='sesion-vencida'){const ok=await loginGate(true);if(ok){startSync();updateModeBadge();}}
       else{showToast(t(st?.razon==='ok'?'Todo está guardado en el servidor. Se sincroniza solo.':'Sincronizando…'));engine.sincronizar();}
     }
     else if(action==='sync-badge'){if(engine?.conflictos().length)openConflicts(engine.conflictos(),true);else{engine?.sincronizar();showToast(el.title||'');}}
@@ -1745,6 +1763,7 @@
     if(action==='resume-match'){resumeMatch(element.dataset.id);return true;}
     if(action==='resume-later'){const m=liveElsewhere.get(element.dataset.id);if(m)resumeAsked.add(element.dataset.id+':'+(m.events?.length||0));closeModal();return true;}
     if(['account-login','account-logout','account-logout-confirm','sync-now','sync-badge','sync-resolve'].includes(action)){accountAction(action,element);return true;}
+    if(action==='pro-locked'){openProModal();return true;}
     if(action==='changelog')openChangelog();
     else if(action==='sheet'){renderLiveSheet();}
     else if(action==='tournament'){if(isTournamentMode()){closeModal();teamSheet=null;renderTournament();}else enterTournamentMode();}
@@ -2009,6 +2028,8 @@
     /* El partido de la sesión anterior ya está guardado en Planilla: la app arranca con uno nuevo y vacío. */
     const mode=state.activeMatch.mode;state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;saveState();renderDashboard();
   }
+  /* En gratis no hay torneo: un partido de torneo guardado en el navegador se retoma como partido suelto (los datos del torneo no se tocan). */
+  if(isFree()&&isTournamentMode()&&!hasStarted()){activeMatch().mode='match';saveState();}
   if(!hasStarted()&&!isLocked()){if(isTournamentMode()){if(state.tournament&&state.tournament.teams.length>=2)openTournamentMatchSetup();else{renderTournament();}}else{offerEntry();if(!entryShown)openWelcome('mode');}}
   startSync();
   document.getElementById('bootFallback')?.remove();
