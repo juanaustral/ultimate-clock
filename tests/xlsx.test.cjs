@@ -69,3 +69,31 @@ test('resultado corregido a mano manda sobre los eventos',()=>{
   assert.deepEqual(T.finalScore(m),[2,3]);
   assert.deepEqual(T.sanitize({name:'X',teams:[],share:{on:true,slug:'Copa Otoño!'},format:'elim'}).share,{on:true,slug:'copa-otono'});
 });
+test('plantilla: lista larga de colores con muestra, instrucciones por casillero y celda que se pinta sola',async()=>{
+  assert.ok(S.COLORS.length>=24);
+  assert.equal(new Set(S.COLORS.map(c=>c[2])).size,S.COLORS.length);
+  const sheets=S.template();
+  const names=sheets.map(s=>s.name);
+  assert.equal(names[names.length-1],'COLORES');
+  const colores=sheets[sheets.length-1];
+  assert.equal(colores.rows.filter(r=>r.cells&&r.cells[0]?.fill).length,S.COLORS.length);
+  const eq=sheets[2];
+  assert.ok(eq.rows[2].cells[2].v.startsWith('←'));assert.ok(eq.rows[3].cells[2].v.startsWith('←'));
+  assert.ok(eq.validations.some(v=>v.sqref==='B4'&&/COLORES/.test(v.ref)));
+  assert.equal(eq.conditional[0].rules.length,S.COLORS.length);
+  const files=await X.unzip(X.write(sheets));
+  const dec=new TextDecoder();
+  const hoja=dec.decode(files.get('xl/worksheets/sheet3.xml')),estilos=dec.decode(files.get('xl/styles.xml'));
+  assert.match(hoja,/<conditionalFormatting sqref="B4">/);
+  assert.match(hoja,/<formula1>'COLORES'!\$B\$5:\$B\$28<\/formula1>/);
+  assert.match(estilos,/<dxfs count="\d+">/);
+  assert.match(estilos,/<fgColor rgb="FF1B47E2"\/>/);
+  /* La hoja de colores no se importa como un equipo. */
+  const p=S.parse(await X.read(X.write(sheets)));
+  assert.equal(p.teams.length,0);
+});
+test('plantilla: «Verde claro» y «Azul oscuro» también se reconocen',()=>{
+  assert.equal(S.colorFromText('Azul marino'),'#1e3a8a');
+  assert.equal(S.colorFromText('azul oscuro'),'#1e3a8a');
+  assert.equal(S.colorFromText('Dark green'),'#14532d');
+});
