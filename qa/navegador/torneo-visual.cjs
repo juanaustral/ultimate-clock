@@ -34,6 +34,8 @@ const colores = ['Rojo', 'Verde', 'Azul', 'Naranja', 'Violeta', 'Amarillo', 'Cel
   const sync = await menuText('menuSync');
   ok(!/^SINCRONIZAR AHORA$/.test(sync) && /SINCRONIZ/.test(sync), 'el menú muestra el estado de la sincronización: ' + sync);
   await menu('menuTournament');
+  await page.waitForSelector('.tournament-screen,[data-action="pick-tournament"],.mode-choices', { timeout: 5000 }).catch(() => {});
+  if (await page.$('[data-action="pick-tournament"]')) await page.click('[data-action="pick-tournament"]');
   await page.waitForSelector('.tournament-screen');
   ok(!!(await page.$('[data-action="t-template"]')) && !!(await page.$('[data-action="t-import"]')), 'al entrar al modo torneo están DESCARGAR PLANTILLA e IMPORTAR EXCEL');
 

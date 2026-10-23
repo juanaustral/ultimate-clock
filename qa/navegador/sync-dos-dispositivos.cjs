@@ -46,6 +46,7 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   ok(/incorrectos|Wrong/.test(await A.page.textContent('.login-error')), 'clave errónea muestra mensaje genérico');
   ok(/USAR GRATIS|USE FREE/.test(await A.page.textContent('[data-gate=free]')), 'existe el botón USAR GRATIS');
   // 2) A empieza sin cuenta, arma un torneo de 3 equipos y después inicia sesión: los datos locales suben a la cuenta
+  await A.page.click('[data-gate=back]'); // vuelve a las dos opciones
   await A.page.click('[data-gate=free]');
   await A.page.waitForTimeout(500);
   await A.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click(); });
@@ -127,6 +128,8 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   await A.ctx.close(); // el teléfono A "se rompe"
   const C = await abrirDispositivo(browser);
   await login(C.page, 'Mendoza', 'clave-de-prueba-1');
+  await C.page.waitForSelector('[data-action="choose-mode"][data-mode="match"]', { timeout: 30000 }); // con un torneo en marcha primero pregunta cómo entrar
+  await C.page.click('[data-action="choose-mode"][data-mode="match"]');
   await C.page.waitForSelector('[data-action="resume-match"]', { timeout: 30000 });
   ok(true, 'un dispositivo nuevo ofrece retomar el partido en curso');
   await C.page.click('[data-action="resume-match"]');

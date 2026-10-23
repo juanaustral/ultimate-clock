@@ -1,10 +1,10 @@
-// Fixture en modo USAR SIN CUENTA contra server/dev.js (puerto 8766): generar, jugar un cruce, guardar y ver posiciones.
+// Fixture en Modo Pro (torneo sembrado en gratis y subido al iniciar sesión) contra server/dev.js (puerto 8766): generar, jugar un cruce, guardar y ver posiciones.
 const { chromium } = require(process.env.PW_CORE || '/home/hermes/ultimate-clock/node_modules/playwright-core');
 const URL = 'http://localhost:8766/index.html';
 const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) process.exitCode = 1; };
 (async () => {
   const browser = await chromium.launch({ executablePath: '/usr/bin/chromium-browser', args: ['--no-sandbox'] });
-  for (const [nombre, viewport] of [['teléfono 390x844', { width: 390, height: 844 }], ['tablet 820x1180', { width: 820, height: 1180 }]]) {
+  for (const [nombre, viewport, cuenta] of [['teléfono 390x844', { width: 390, height: 844 }, 'Mendoza'], ['tablet 820x1180', { width: 820, height: 1180 }, 'Santafe']]) { // una cuenta por vista: el servidor comparte el torneo de cada cuenta
     console.log('--- ' + nombre);
     const ctx = await browser.newContext({ viewport });
     const page = await ctx.newPage();
@@ -15,7 +15,10 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) p
     await page.waitForSelector('.login-gate');
     await page.click('[data-gate=free]');
     await page.waitForTimeout(500);
-    ok((await page.$('#syncBadge:not([hidden])')) === null, 'sin cuenta no hay indicador');
+    ok((await page.$('#syncBadge:not([hidden])')) === null, 'gratis: no hay indicador');
+    await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); });
+    ok(await page.$eval('#menuTournament', (e) => e.classList.contains('is-pro-locked')), 'gratis: MODO TORNEO en gris');
+    await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); });
     await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click(); });
     const s = await page.evaluate(() => JSON.parse(localStorage.getItem('ultimate-clock-v2')));
     const eq = (i) => ({ id: 'E' + i, name: 'Equipo ' + i, color: ['#1b47e2', '#d4282c', '#1a8f4c'][i - 1], players: [{ id: 'P' + i, name: 'Jugador ' + i, number: String(i) }] });
@@ -23,7 +26,14 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) p
     await page.evaluate((x) => localStorage.setItem('ultimate-clock-v2', JSON.stringify(x)), s);
     await page.reload();
     await page.waitForTimeout(600);
+    await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuLogin').click(); });
+    await page.waitForSelector('.login-gate');
+    await page.fill('#lg-user', cuenta); await page.fill('#lg-pass', 'clave-de-prueba-1');
+    await page.click('.login-card [type=submit]');
+    await page.waitForSelector('#syncBadge:not([hidden])');
+    await page.waitForTimeout(1500);
     await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuTournament').click(); });
+    if (await page.$('[data-action="pick-tournament"]')) await page.click('[data-action="pick-tournament"]');
     await page.waitForSelector('.tournament-screen');
     // equipos ordenables (pestaña EQUIPOS)
     await page.click('#tab-equipos');
@@ -49,7 +59,7 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) p
     const modal = await page.evaluate(() => !!document.querySelector('#modalRoot [data-form]'));
     if (modal) await page.evaluate(() => document.querySelector('#modalRoot [data-form] [type=submit]')?.click());
     await page.waitForTimeout(300);
-    const m = await page.evaluate(() => JSON.parse(localStorage.getItem('ultimate-clock-v2')).activeMatch);
+    const m = await page.evaluate(async () => { const db = await UCLocal.abrir(); return UCLocal.reconstruir((await UCLocal.leerTodo(db)).registros, localStorage.getItem('uc-dispositivo')).activeMatch; });
     ok(!!m.fixtureId && m.fixtureId.startsWith('rr-'), 'el partido en curso quedó ligado al cruce: ' + m.fixtureId);
     ok(m.teams[0].score === 1, 'gol anotado');
     // sin desbordes horizontales

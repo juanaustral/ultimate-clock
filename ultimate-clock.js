@@ -1581,12 +1581,12 @@
     openModal(t('Cambios en otro dispositivo'),`<p>${esc(t('Esto se modificó en otro dispositivo al mismo tiempo. Elegí cuál es el oficial; el otro se descarta.'))}</p><ul class="conflict-list">${list.map(c=>`<li><strong>${esc(conflictLabel(c))}</strong><div class="modal-actions"><button class="button button-primary" type="button" data-action="sync-resolve" data-key="${esc(c.k)}" data-choice="local">${esc(t('ESTE DISPOSITIVO ES EL OFICIAL'))}</button><button class="button" type="button" data-action="sync-resolve" data-key="${esc(c.k)}" data-choice="remoto">${esc(t('USAR EL OTRO DISPOSITIVO'))}</button></div></li>`).join('')}</ul>`);
   }
   async function accountAction(action,el) {
-    if(action==='account-login'){closeModal();const ok=await loginGate(true);if(ok){showToast(t('Sesión iniciada.'));startSync();}}
+    if(action==='account-login'){closeModal();const ok=await loginGate(true);if(ok){showToast(t('Sesión iniciada.'));startSync();updateModeBadge();}}
     else if(action==='sync-now'){
       const st=engine?.estado();
       if(!engine)startSync();
       else if(engine.conflictos().length)openConflicts(engine.conflictos(),true);
-      else if(st?.razon==='sesion-vencida'){const ok=await loginGate(true);if(ok)startSync();}
+      else if(st?.razon==='sesion-vencida'){const ok=await loginGate(true);if(ok){startSync();updateModeBadge();}}
       else{showToast(t(st?.razon==='ok'?'Todo está guardado en el servidor. Se sincroniza solo.':'Sincronizando…'));engine.sincronizar();}
     }
     else if(action==='sync-badge'){if(engine?.conflictos().length)openConflicts(engine.conflictos(),true);else{engine?.sincronizar();showToast(el.title||'');}}
