@@ -57,14 +57,16 @@ SECTIONS = [
 <li>{K('UTILIZAR MODO PRO')} → {K('INGRESAR CON MI USUARIO')} (Modo Pro): todo se guarda <strong>en el servidor</strong> al instante. Podés usar varios teléfonos a la vez, seguir un partido en otro dispositivo si el tuyo falla y <strong>compartir el fixture en vivo</strong>.</li>
 <li>{K('UTILIZAR MODO GRATIS')}: solo <strong>MODO PARTIDO</strong>, sin torneo ni sincronización; todo queda <strong>solo en ese teléfono</strong>. Para conservarlo o pasarlo a otro, exportalo.</li>
 </ul>
-<p>Las cuentas las da la organización (por ahora Ultimate Frisbee Mendoza). Si no tenés una, usá la app gratis: el modo partido funciona igual.</p>''',
+<p><strong>Modo gratis y Modo Pro.</strong> En gratis, {K("MODO TORNEO")} y {K("SINCRONIZADO")} aparecen en gris en el MENU; si los tocás, un aviso cuenta qué incluye el Modo Pro. Ahí mismo, o en {K("UTILIZAR MODO PRO")}, tocá {K("SOLICITÁ TU MODO PRO")}: completás un formulario (nombre, equipo, torneo, mensaje y e-mail) y te respondemos con tu usuario y contraseña. Si ya tenés usuario, {K("MENU")} → {K("INGRESAR AL MODO PRO")}.</p>
+<p>Si hay una versión nueva de la app, se recarga sola cuando no hay un partido en curso; con un partido en curso avisa y esperás a tocar {K("RECARGAR")}.</p>''',
             f'''<h3>With or without an account?</h3>
 <p>When the app opens you choose:</p>
 <ul>
 <li>{K('USE PRO MODE')} → {K('SIGN IN WITH MY USER')} with username and password: everything is saved <strong>on the server</strong> instantly. You can use several phones at once, continue a game on another device if yours fails and <strong>share the fixture live</strong>.</li>
 <li>{K('USE FREE MODE')}: everything stays <strong>only on that phone</strong>. Export it to keep it or move it to another device.</li>
 </ul>
-<p>Accounts are given by the organizers (currently Ultimate Frisbee Mendoza). If you do not have one, use the app without an account: it works the same.</p>''')),
+<p><strong>Free mode and Pro Mode.</strong> In free mode, {K("TOURNAMENT MODE")} and {K("SYNCED")} appear greyed out in the MENU; if you tap them, a notice explains what Pro Mode includes. There, or under {K("USE PRO MODE")}, tap {K("REQUEST YOUR PRO MODE")}: you fill in a form (name, team, tournament, message and e-mail) and we reply with your username and password. If you already have a user, {K("MENU")} → {K("ENTER PRO MODE")}.</p>
+<p>When there is a new version of the app, it reloads by itself if no game is in progress; during a game it tells you and you tap {K("RELOAD")} when ready.</p>''')),
         text((f'<div class="tip"><strong>Consejo:</strong> antes del partido subí el volumen y tocá {K("MENU")} → {K("PROBAR SONIDO")}.</div>',
               f'<div class="tip"><strong>Tip:</strong> before the game turn the volume up and tap {K("MENU")} → {K("TEST SOUND")}.</div>')),
     ]),
