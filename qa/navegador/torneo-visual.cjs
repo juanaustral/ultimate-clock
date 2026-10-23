@@ -24,7 +24,7 @@ const colores = ['Rojo', 'Verde', 'Azul', 'Naranja', 'Violeta', 'Amarillo', 'Cel
 
   await page.goto(BASE + 'index.html');
   await page.waitForSelector('.login-gate');
-  await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', 'Mendoza');
+  await page.click('[data-gate=pro]',{timeout:1500}).catch(()=>{}); await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', 'Mendoza');
   await page.fill('#lg-pass', process.env.UC_CLAVE_PRUEBA || 'clave-de-prueba-1');
   await page.click('.login-card [type=submit]');
   await page.waitForTimeout(1500);

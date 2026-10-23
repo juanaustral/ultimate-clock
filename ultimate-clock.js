@@ -181,25 +181,42 @@
   function loginGate(cancelable=false) {
     return new Promise(resolve=>{
       const box=document.createElement('dialog');box.className='login-gate';box.setAttribute('aria-label','Ultimate Clock');
+      /* Vistas: welcome (gratis o Pro) → pro (beneficios, ingresar o solicitar) → login; news = novedades. Desde el menú se abre directo el login. */
       box.innerHTML=`<form class="login-card" novalidate><h1>ULTIMATE CLOCK</h1>
-        <div class="gate-choices"${cancelable?' hidden':''}><button class="button button-primary" type="button" data-gate="free">${esc(t('USAR GRATIS'))}</button><p class="sheet-hint">${esc(t('Solo MODO PARTIDO, guardado en este dispositivo. Sin servidor ni modo torneo.'))}</p><button class="button" type="button" data-gate="user">${esc(t('INGRESAR CON USUARIO'))}</button><p class="sheet-hint">${esc(t('Modo Pro: torneos, fixture, guardado en el servidor y varios dispositivos.'))}</p></div>
-        <div class="gate-login"${cancelable?'':' hidden'}><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
-        <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
-        <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
-        <p class="login-error" role="alert" hidden></p>
-        <button class="button button-primary" type="submit">${esc(t('ENTRAR'))}</button>
-        <button class="button" type="button" data-gate="back">${esc(t(cancelable?'Cancelar':'ATRÁS'))}</button></div></form>`;
+        <section data-view="welcome" class="gate-view"><p class="gate-lead">${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p>
+          <button class="button button-primary" type="button" data-gate="free">${esc(t('UTILIZAR MODO GRATIS'))}</button><p class="sheet-hint">${esc(t('Solo MODO PARTIDO, guardado en este dispositivo. Sin servidor ni modo torneo.'))}</p>
+          <button class="button" type="button" data-gate="pro">${esc(t('UTILIZAR MODO PRO'))}</button><p class="sheet-hint">${esc(t('Modo Pro: torneos, fixture, guardado en el servidor y varios dispositivos.'))}</p></section>
+        <section data-view="pro" class="gate-view" hidden><h2 class="gate-title">${esc(t('MODO PRO'))}</h2>${proBenefits()}
+          <button class="button button-primary" type="button" data-gate="user">${esc(t('INGRESAR CON MI USUARIO'))}</button>
+          <a class="button" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO'))}</a>
+          <button class="button gate-back" type="button" data-gate="back">${esc(t('ATRÁS'))}</button></section>
+        <section data-view="login" class="gate-view" hidden><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
+          <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
+          <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
+          <p class="login-error" role="alert" hidden></p>
+          <button class="button button-primary" type="submit">${esc(t('ENTRAR'))}</button>
+          <button class="button gate-back" type="button" data-gate="back">${esc(t(cancelable?'Cancelar':'ATRÁS'))}</button></section>
+        <section data-view="news" class="gate-view" hidden><h2 class="gate-title">${esc(t('Novedades'))}</h2>${changelogMarkup()}<button class="button gate-back" type="button" data-gate="back">${esc(t('ATRÁS'))}</button></section>
+        <button class="gate-version" type="button" data-gate="news" aria-label="${esc(t('Novedades de la versión'))}">v${UCChangelog.VERSION}</button></form>`;
       document.body.append(box);
       /* <dialog> modal: queda por encima de cualquier cuadro ya abierto (la capa superior del navegador). */
       box.addEventListener('cancel',e=>e.preventDefault());
       if(box.showModal)box.showModal();
       const form=box.querySelector('form'),err=box.querySelector('.login-error'),user=box.querySelector('#lg-user');
-      if(cancelable)user.focus();
       const done=ok=>{box.remove();resolve(ok);};
-      const choices=box.querySelector('.gate-choices'),loginBox=box.querySelector('.gate-login');
-      box.querySelector('[data-gate="free"]').addEventListener('click',()=>{UCSession.usarLocal();done(false);});
-      box.querySelector('[data-gate="user"]').addEventListener('click',()=>{choices.hidden=true;loginBox.hidden=false;user.focus();});
-      box.querySelector('[data-gate="back"]').addEventListener('click',()=>{if(cancelable){done(false);return;}loginBox.hidden=true;choices.hidden=false;err.hidden=true;});
+      let view='welcome',previous='welcome';
+      const show=name=>{previous=view;view=name;box.querySelectorAll('.gate-view').forEach(v=>{v.hidden=v.dataset.view!==name;});box.querySelector('.gate-version').hidden=name==='news';err.hidden=true;if(name==='login')user.focus();box.scrollTop=0;};
+      if(cancelable)show('login');
+      const on=(name,fn)=>box.querySelector(`[data-gate="${name}"]`).addEventListener('click',fn);
+      on('free',()=>{UCSession.usarLocal();done(false);});
+      on('pro',()=>show('pro'));
+      on('user',()=>show('login'));
+      on('news',()=>show('news'));
+      box.querySelectorAll('[data-gate="back"]').forEach(b=>b.addEventListener('click',()=>{
+        if(view==='news'){show(previous==='news'?'welcome':previous);return;}
+        if(view==='login'){if(cancelable){done(false);return;}show('pro');return;}
+        show('welcome');
+      }));
       form.addEventListener('submit',async e=>{
         e.preventDefault();e.stopPropagation();const btn=form.querySelector('[type="submit"]');
         if(!user.value.trim()||!form.clave.value){err.textContent=t('Escribí tu usuario y tu contraseña.');err.hidden=false;return;}
@@ -1013,10 +1030,11 @@
     openModal(t('Equipo {n}',{n:teamIndex + 1}), `<form data-form="team" data-team="${teamIndex}"><div class="field"><label for="team-name">${esc(t('Nombre del equipo'))}</label><input id="team-name" name="name" value="${esc(team.name)}" maxlength="30" autocomplete="off"></div><div class="team-color-options">${['#1b47e2','#f59e0b','#16a34a','#c62525','#16171b','#ffffff'].map(c=>`<button type="button" class="color-preset" style="background:${c};color:${E.ink(c)}" data-action="team-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}">●</button>`).join('')}</div><button class="button more-colors" type="button" data-action="more-colors">${esc(t('MÁS COLORES'))}</button><div class="field extended-colors" id="extendedColors" hidden><label for="team-color">${esc(t('Elegí cualquier color'))}</label><input id="team-color" name="color" type="color" value="${esc(team.color)}"></div><div class="color-preview" id="colorPreview" style="background:${esc(team.color)};color:${ink}">${esc(t('Vista previa del equipo'))}</div><div class="field"><label for="team-players">${esc(t('Jugadores (opcional)'))}</label><textarea id="team-players" name="players" rows="5" maxlength="2400" autocomplete="off" placeholder="${esc('7 Ana\nBeto\n9 Cris')}">${esc(TN.rosterToText(team.roster))}</textarea></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar equipo'))}</button></div></form>`);
   }
 
-  function openChangelog() {
+  function changelogMarkup() {
     const {VERSION,ENTRIES}=UCChangelog,date=new Intl.DateTimeFormat(lang==='en'?'en-US':'es-AR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
-    openModal(t('Novedades'),`<p class="changelog-current">${esc(t('Estás usando la versión {v}.',{v:VERSION}))}</p><ol class="changelog">${ENTRIES.map(e=>`<li><div class="changelog-head">${e.version?`<strong>v${e.version}</strong>`:''}<time datetime="${e.date}">${esc(date.format(new Date(e.date)))}</time></div><ul>${(e[lang]||e.es).map(item=>`<li>${esc(item)}</li>`).join('')}</ul></li>`).join('')}</ol>`);
+    return `<p class="changelog-current">${esc(t('Estás usando la versión {v}.',{v:VERSION}))}</p><ol class="changelog">${ENTRIES.map(e=>`<li><div class="changelog-head">${e.version?`<strong>v${e.version}</strong>`:''}<time datetime="${e.date}">${esc(date.format(new Date(e.date)))}</time></div><ul>${(e[lang]||e.es).map(item=>`<li>${esc(item)}</li>`).join('')}</ul></li>`).join('')}</ol>`;
   }
+  function openChangelog() {openModal(t('Novedades'),changelogMarkup());}
   function openReset() {
     openModal(t("Reiniciar contadores"), `<p>${esc(t('¿Reiniciar todos los contadores? Se reinician tiempos, puntajes y eventos sin guardar del partido actual. El historial guardado y los perfiles no se borrarán.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="confirm-reset">${esc(t('Reiniciar contadores'))}</button></div>`);
   }
@@ -1550,8 +1568,12 @@
     if(locked){if(el.dataset.action!=='pro-locked')el.dataset.proAction=el.dataset.action||'';el.dataset.action='pro-locked';el.setAttribute('aria-disabled','true');}
     else if(el.dataset.action==='pro-locked'){el.dataset.action=el.dataset.proAction;el.removeAttribute('aria-disabled');}
   }
+  /* Lista de beneficios del Modo Pro: la usan la bienvenida y el aviso de las funciones bloqueadas. */
+  function proBenefits() {
+    return `<p class="pro-sub">${esc(t('El Modo Pro incluye:'))}</p><ul class="pro-list"><li>${esc(t('MODO TORNEO: equipos, fixture, tabla y estadísticas'))}</li><li>${esc(t('Guardado en el servidor y sincronización entre dispositivos'))}</li><li>${esc(t('Varios dispositivos controlando el mismo torneo'))}</li><li>${esc(t('Logo de cada equipo en el tablero, el fixture y el link en vivo'))}</li><li>${esc(t('Link en vivo para compartir: marcadores, feed, estadísticas y goleadores'))}</li></ul>`;
+  }
   function openProModal() {
-    openModal(t('Esta función sólo está disponible en el Modo Pro'),`<div class="pro-modal"><p class="pro-sub">${esc(t('El Modo Pro incluye:'))}</p><ul class="pro-list"><li>${esc(t('MODO TORNEO: equipos, fixture, tabla y estadísticas'))}</li><li>${esc(t('Guardado en el servidor y sincronización entre dispositivos'))}</li><li>${esc(t('Varios dispositivos controlando el mismo torneo'))}</li><li>${esc(t('Compartir el fixture en vivo con un link'))}</li></ul><a class="button button-primary pro-request-link" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO ACÁ'))}</a><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('CERRAR'))}</button><button class="button" type="button" data-action="account-login">${esc(t('YA TENGO USUARIO'))}</button></div></div>`);
+    openModal(t('Esta función sólo está disponible en el Modo Pro'),`<div class="pro-modal">${proBenefits()}<a class="button button-primary pro-request-link" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO ACÁ'))}</a><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('CERRAR'))}</button><button class="button" type="button" data-action="account-login">${esc(t('YA TENGO USUARIO'))}</button></div></div>`);
   }
   function updateAccountUI() {
     const user=UCSession.usuario(),login=document.getElementById('menuLogin'),logout=document.getElementById('menuLogout');

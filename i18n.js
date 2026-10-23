@@ -515,7 +515,10 @@
     /* Modo partido / modo torneo */
     '¿Cómo vas a usar la app?':'How will you use the app?',
     'MODO PARTIDO':'MATCH MODE',
-    'USAR GRATIS':'USE FREE','INGRESAR CON USUARIO':'SIGN IN WITH USER','INGRESAR AL MODO PRO':'ENTER PRO MODE','SINCRONIZADO':'SYNCED','YA TENGO USUARIO':'I HAVE A USER','SOLICITÁ TU MODO PRO ACÁ':'REQUEST YOUR PRO MODE HERE','Hay una versión nueva de la app.':'There is a new version of the app.','RECARGAR':'RELOAD',
+    'USAR GRATIS':'USE FREE','INGRESAR CON USUARIO':'SIGN IN WITH USER','INGRESAR AL MODO PRO':'ENTER PRO MODE','SINCRONIZADO':'SYNCED','YA TENGO USUARIO':'I HAVE A USER','SOLICITÁ TU MODO PRO ACÁ':'REQUEST YOUR PRO MODE HERE','Hay una versión nueva de la app.':'There is a new version of the app.',
+    'UTILIZAR MODO GRATIS':'USE FREE MODE','UTILIZAR MODO PRO':'USE PRO MODE','INGRESAR CON MI USUARIO':'SIGN IN WITH MY USER','SOLICITÁ TU MODO PRO':'REQUEST YOUR PRO MODE','MODO PRO':'PRO MODE',
+    'Logo de cada equipo en el tablero, el fixture y el link en vivo':'Each team\'s logo on the board, the fixture and the live link',
+    'Link en vivo para compartir: marcadores, feed, estadísticas y goleadores':'Live link to share: scores, feed, stats and scorers','RECARGAR':'RELOAD',
     'Solo MODO PARTIDO, guardado en este dispositivo. Sin servidor ni modo torneo.':'MATCH MODE only, saved on this device. No server and no tournament mode.',
     'Modo Pro: torneos, fixture, guardado en el servidor y varios dispositivos.':'Pro Mode: tournaments, fixtures, server storage and multiple devices.',
     'Esta función sólo está disponible en el Modo Pro':'This feature is only available in Pro Mode','El Modo Pro incluye:':'Pro Mode includes:',

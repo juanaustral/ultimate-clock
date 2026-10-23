@@ -66,6 +66,7 @@ async function recorrer(browser, lang, guardar) {
   await page.goto(BASE + 'index.html');
   await page.waitForSelector('.login-gate');
   await shot('01-entrada');
+  await page.click('[data-gate=pro]');
   await page.click('[data-gate=user]');
   await page.fill('#lg-user', 'Mendoza');
   await page.fill('#lg-pass', 'clave-de-prueba-1');
@@ -210,7 +211,7 @@ async function recorrer(browser, lang, guardar) {
   const otro = await (await browser.newContext({ viewport: { width: 390, height: 844 }, locale, deviceScaleFactor: 2 })).newPage();
   await otro.goto(BASE + 'index.html');
   await otro.waitForSelector('.login-gate');
-  await otro.click('[data-gate=user]'); await otro.fill('#lg-user', 'Mendoza'); await otro.fill('#lg-pass', 'clave-de-prueba-1');
+  await otro.click('[data-gate=pro]'); await otro.click('[data-gate=user]'); await otro.fill('#lg-user', 'Mendoza'); await otro.fill('#lg-pass', 'clave-de-prueba-1');
   await otro.click('.login-card [type=submit]');
   // Con un torneo en marcha, al entrar pregunta cómo seguir; en MODO PARTIDO ofrece retomar el partido en curso
   await otro.waitForSelector('.entry-choice', { timeout: 15000 });
@@ -246,7 +247,7 @@ async function recorrer(browser, lang, guardar) {
   const tercero = await (await browser.newContext({ viewport: { width: 390, height: 844 }, locale, deviceScaleFactor: 2 })).newPage();
   await tercero.goto(BASE + 'index.html');
   await tercero.waitForSelector('.login-gate');
-  await tercero.click('[data-gate=user]'); await tercero.fill('#lg-user', 'Mendoza'); await tercero.fill('#lg-pass', 'clave-de-prueba-1');
+  await tercero.click('[data-gate=pro]'); await tercero.click('[data-gate=user]'); await tercero.fill('#lg-user', 'Mendoza'); await tercero.fill('#lg-pass', 'clave-de-prueba-1');
   await tercero.click('.login-card [type=submit]');
   await tercero.waitForSelector('.entry-choice', { timeout: 15000 });
   await tercero.click('.entry-choice [data-action="choose-mode"][data-mode="tournament"]');

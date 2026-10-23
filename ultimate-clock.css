@@ -708,3 +708,11 @@ html.vivo,html.vivo body{height:auto;min-height:100%;overflow:auto}
 .pro-form .field textarea{width:100%;padding:10px 12px;border:var(--rule);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:16px var(--font-body);resize:vertical}
 .pro-trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 a.button{text-decoration:none}
+
+.gate-view{display:grid;gap:12px}
+.gate-view[hidden]{display:none}
+.gate-lead{font-size:15px;line-height:1.4}
+.gate-title{margin:0;font:800 18px/1.1 var(--font-display);letter-spacing:.06em}
+.gate-version{justify-self:center;min-height:32px;padding:0 8px;background:none;border:0;color:var(--muted);font:700 12px/1 var(--font-body);letter-spacing:.06em;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.gate-version[hidden]{display:none}
+.login-card .changelog{max-height:50vh;overflow:auto}
