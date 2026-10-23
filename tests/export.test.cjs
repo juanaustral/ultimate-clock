@@ -21,5 +21,5 @@ test('version matches the service worker cache and the newest changelog entry',(
 test('el service worker no guarda en caché la API ni deja fuera los módulos de cuenta',()=>{
   const sw=require('node:fs').readFileSync(require('node:path').join(__dirname,'..','sw.js'),'utf8');
   assert.ok(sw.includes("/api/"));
-  for(const f of ['fixture.js','local-store.js','session.js','sync.js'])assert.ok(sw.includes(`'./${f}'`),f);
+  for(const f of ['fixture.js','local-store.js','session.js','sync.js','live-merge.js'])assert.ok(sw.includes(`'./${f}'`),f);
 });

@@ -248,6 +248,7 @@
   function saveState() {
     if(storageBlocked) return false;
     state.writerId=writerId;state.savedAt=Date.now();lastSavedAt=state.savedAt;
+    if(state.activeMatch?.status==='active')UCLive.stamp(state.activeMatch);
     /* Con sesión iniciada no se guarda el estado completo en localStorage: la copia es la del servidor, y en el dispositivo
        queda solo el respaldo por tablas (IndexedDB) que permite seguir sin internet. */
     if(UCSession.token()&&localSaver){localSaveMirror();return !localFailed;}
@@ -265,7 +266,7 @@
     if(!banner){banner=document.createElement('div');banner.id='storageWarning';banner.className='storage-warning';banner.setAttribute('role','alert');document.body.prepend(banner);}
     banner.innerHTML=`${esc(t('El almacenamiento local no está disponible o contiene un formato no compatible. Tus datos anteriores se conservan.'))} <button data-action="export-backup">${esc(t('Descargar respaldo'))}</button> <button data-action="retry-storage">${esc(t('Reintentar guardado'))}</button>`;
   }
-  function logEvent(type, detail={}) { const m=activeMatch(); m.events.push({type,at:nowIso(),elapsed:m.clock.elapsed,...detail}); }
+  function logEvent(type, detail={}) { const m=activeMatch(); m.events.push({id:uid('ev'),type,at:nowIso(),elapsed:m.clock.elapsed,...detail}); }
   function isLocked() {const m=activeMatch();return m.status==='saved';}
   function hasStarted() {const m=activeMatch();return m.clock.elapsed>0||m.clock.running||m.events.length>0;}
   function download(content,type,name) {const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -603,7 +604,8 @@
     const badge=document.getElementById('modeBadge');if(!badge)return;
     const tournament=isTournamentMode();
     /* En modo torneo el cartel es un botón que lleva al torneo; en modo partido solo informa. */
-    badge.textContent=t(tournament?'VER TORNEO':'PARTIDO');badge.title=t(tournament?'Ver el torneo: fixture, equipos y tabla':'MODO PARTIDO');badge.setAttribute('aria-label',badge.title);badge.classList.toggle('is-tournament',tournament);
+    const shared=!!(state.activeMatch?.shared&&state.activeMatch.status==='active'&&UCSession.token());
+    badge.textContent=(shared?'⇄ ':'')+t(tournament?'VER TORNEO':'PARTIDO');badge.title=shared?t('Partido compartido: otro dispositivo lo controla a la vez'):t(tournament?'Ver el torneo: fixture, equipos y tabla':'MODO PARTIDO');badge.classList.toggle('is-shared',shared);badge.setAttribute('aria-label',badge.title);badge.classList.toggle('is-tournament',tournament);
     if(tournament)badge.dataset.action='tournament';else delete badge.dataset.action;
     badge.setAttribute('aria-disabled',String(!tournament));
     const enter=document.getElementById('menuTournament'),exit=document.getElementById('menuExitTournament');
@@ -653,7 +655,7 @@
   function eventDescription(event,match) {
     const team=event.team===undefined?'':` · ${esc(match.teams[event.team].name)}`;
     const names=event.type==='goal'?`${event.scorer?` · ${esc(event.scorer)}`:''}${event.assist?` · ${esc(t('pase'))} ${esc(event.assist)}`:''}`:'';
-    const kind={goal:'Gol',timeout:'Time-out',call:'Llamado',adjustment:'Ajuste manual',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Descanso / mitad',incident:'Incidencia',saved:'Guardado'}[event.type];
+    const kind={goal:'Gol',timeout:'Time-out',call:'Llamado',adjustment:'Ajuste manual',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Descanso / mitad',incident:'Incidencia',saved:'Guardado',resumed:'Partido retomado',joined:'Se sumó otro dispositivo'}[event.type];
     return `${kind?esc(t(kind)):esc(event.type)}${team}${event.label?` · ${esc(t(event.label))}`:''}${names}${event.mode?` · ${esc(t(event.mode))}`:''}${event.note?` · ${esc(event.note)}`:''}`;
   }
   /* planilla-equipo-1-vs-equipo-2-2026-10-02 */
@@ -775,9 +777,43 @@
       else{teamSheet=null;renderTournament();showToast(t('Agregá al menos dos equipos al torneo para empezar.'));}
     }else{freshMatch('match');openTeamsSetup();}
   }
+  /* ---- Entrada con varios dispositivos: elegir el torneo y ver sus partidos ---- */
+  const liveIdsFor=tour=>{
+    const ids=new Set(),add=m=>{if(m&&m.status!=='saved'&&m.fixtureId&&(!m.tournamentId||m.tournamentId===tour.id))ids.add(m.fixtureId);};
+    add(state.activeMatch);liveElsewhere.forEach(add);return ids;
+  };
+  function tournamentProgress(tour) {
+    const rows=tour.fixture?UCFixture.view(tour.fixture,state.savedMatches,liveIdsFor(tour)).filter(r=>r.state!=='libre'):[];
+    return {total:rows.length,done:rows.filter(r=>r.state==='terminado').length,live:rows.filter(r=>r.state==='jugando').length};
+  }
+  const tournamentRunning=tour=>{const p=tournamentProgress(tour);return p.total>0&&p.done<p.total;};
+  function openTournamentPicker() {
+    const list=allTournaments();
+    openModal(t('Elegí el torneo'),`<p>${esc(t('Elegí el torneo en el que vas a trabajar. Después ves sus partidos y elegís cuál controlar.'))}</p><div class="mode-choices">${list.map(x=>{
+      const p=tournamentProgress(x);
+      const info=x.fixture?t('{n} equipos · {live} en juego · {done} de {total} partidos jugados',{n:x.teams.length,live:p.live,done:p.done,total:p.total}):t('{n} equipos · todavía sin fixture',{n:x.teams.length});
+      return `<button class="mode-choice mode-choice-tournament" type="button" data-action="pick-tournament" data-id="${esc(x.id)}"><strong>${esc(x.name)}</strong><span>${esc(info)}</span></button>`;}).join('')}</div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button></div>`);
+  }
+  function pickTournament(id) {
+    const next=allTournaments().find(x=>x.id===id);if(!next)return;
+    if(next!==state.tournament){state.otherTournaments=state.otherTournaments.filter(x=>x!==next);if(state.tournament)state.otherTournaments.unshift(state.tournament);state.tournament=next;}
+    closeModal();freshMatch('tournament');teamSheet=null;creatingTournament=false;tournamentTab=next.teams.length>=2?'fixture':'';renderTournament();app.scrollTop=0;
+  }
+  /* Con cuenta y un torneo en marcha, al entrar se pregunta cómo seguir: partido suelto o torneo. */
+  let entryShown=false;
+  function offerEntry() {
+    if(entryShown||!UCSession.token()||document.querySelector('.login-gate'))return;
+    if(hasStarted()&&!isLocked()||isTournamentMode()||app.querySelector('.tournament-screen,.sheet-screen,.settings-screen')){entryShown=true;return;}
+    const running=allTournaments().filter(tournamentRunning);if(!running.length)return;
+    if(modalRoot.querySelector('dialog[open]')&&!modalRoot.querySelector('.mode-choices'))return;
+    entryShown=true;
+    const intro=running.length===1?t('Hay un torneo en marcha: {name}.',{name:running[0].name}):t('Hay {n} torneos en marcha.',{n:running.length});
+    openModal(t('¿Cómo querés entrar?'),`<div class="welcome-flow entry-choice"><p>${esc(intro)} ${esc(t('Podés controlar un partido suelto o entrar al torneo para elegir uno de sus partidos.'))}</p>${modeChoices()}</div>`);
+  }
   /* Entrar al modo torneo lleva al creador de equipos. Con un partido sin guardar pide guardarlo antes. */
   function enterTournamentMode() {
     if(hasStarted()&&!isLocked()){openModal(t('Pasar al modo torneo'),`<p>${esc(t('El partido actual todavía no está guardado. Guardalo para pasar al modo torneo.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="button" data-action="save-and-enter-tournament">${esc(t('Guardar y pasar'))}</button></div>`);return;}
+    if(allTournaments().length&&(UCSession.token()||allTournaments().length>1)){openTournamentPicker();return;}
     closeModal();freshMatch('tournament');teamSheet=null;renderTournament();app.scrollTop=0;
   }
   /* Salir del modo torneo vuelve al modo partido, con nombres en blanco. Los equipos del torneo quedan guardados. */
@@ -798,7 +834,8 @@
     if(hasStarted()&&!isLocked()){closeModal();return;}
     closeModal();
     if(mode==='tournament'){enterTournamentMode();return;}
-    activeMatch().mode='match';saveState();openWelcome('teams');
+    activeMatch().mode='match';saveState();
+    if(!offerResume())openWelcome('teams');
   }
   /* Borra un perfil guardado. El partido en curso conserva sus tiempos; si no empezó y lo usaba, vuelve a WFDF. */
   function deleteProfile(id) {
@@ -901,7 +938,7 @@
   function undoGoal(teamIndex,goalId,origin) {
     const m=activeMatch(),team=m.teams[teamIndex],at=team?.goals.findIndex(g=>g.id===goalId);
     if(!team||at<0){showToast(t('Ese gol ya no se puede deshacer.'));return;}
-    team.goals.splice(at,1);team.score=Math.max(0,team.score-1);m.events=m.events.filter(e=>e.goal!==goalId);
+    team.goals.splice(at,1);team.score=Math.max(0,team.score-1);m.events=m.events.filter(e=>e.goal!==goalId);UCLive.removeGoal(m,goalId);
     saveState();rerender(origin);showToast(t('Gol de {team} deshecho.',{team:team.name}));
   }
   function rerender(origin) { if(origin==='sheet')renderLiveSheet();else renderDashboard(); }
@@ -987,6 +1024,7 @@
     updateClock();for(const t of [...Object.values(m.timers),m.breakTimer]){updateRunningValue(t);t.running=false;t.startedAt=null;}
     m.clock.running=false;m.clock.startedAt=null;m.clock.status='Finalizado';logEvent('saved');m.status='saved';m.savedAt=nowIso();m.themeName=themeName(state.settings.theme);m.themeSnapshot=currentThemeVars();
     state.savedMatches.unshift(clone(m));
+    for(const [k,x] of [...liveElsewhere])if(x.id===m.id){liveElsewhere.delete(k);engine?.descartar('partidoActivo',k);}
     const persisted=saveState();showToast(t(persisted?'Planilla guardada. Partido cerrado.':'Planilla en memoria. Descargá un respaldo para conservarla.'));renderLiveSheet();
     return true;
   }
@@ -1099,9 +1137,10 @@
   const wideBracket=()=>!!window.matchMedia?.('(min-width: 900px)').matches;
   /* Partidos del fixture que se están jugando ahora: el de este dispositivo y los que llegan de otros. */
   function liveMatches() {
-    const out=new Map(),m=activeMatch();
-    if(m&&m.status!=='saved'&&m.fixtureId)out.set(m.fixtureId,m);
-    for(const x of liveElsewhere.values())if(x?.fixtureId&&x.status!=='saved'&&!out.has(x.fixtureId))out.set(x.fixtureId,x);
+    const out=new Map(),m=activeMatch(),mine=state.tournament?.id;
+    const ofThis=x=>!x.tournamentId||x.tournamentId===mine;
+    if(m&&m.status!=='saved'&&m.fixtureId&&ofThis(m))out.set(m.fixtureId,m);
+    for(const x of liveElsewhere.values())if(x?.fixtureId&&x.status!=='saved'&&ofThis(x)&&!out.has(x.fixtureId))out.set(x.fixtureId,x);
     return out;
   }
   function fixtureRows(tour) {return UCFixture.view(tour.fixture,state.savedMatches,new Set(liveMatches().keys()));}
@@ -1200,7 +1239,11 @@
     const form=(label,note)=>`<form data-form="t-score" data-id="${esc(id)}"><p class="sheet-hint">${esc(note)}</p><div class="score-edit">${field('home',home,cur[0])}<span class="score-sep">–</span>${field('away',away,cur[1])}</div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(label)}</button></div></form>`;
     let body=`<p class="screen-eyebrow">${esc(round)}</p>`;
     if(row.state==='jugando'){
-      body+=`<p><b>${cur[0]} – ${cur[1]}</b> · ${esc(t(here?'Este partido se está jugando en este dispositivo.':'Este partido se está jugando en otro dispositivo. El resultado se puede corregir cuando termine.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cerrar'))}</button>${here?`<button class="button button-primary" type="button" data-action="t-fx-board">${esc(t('IR AL TABLERO'))}</button>`:''}</div>`;
+      const elsewhere=[...liveElsewhere.entries()].filter(([, x]) => x.fixtureId === id && (!x.tournamentId || x.tournamentId === tour.id) && x.status !== 'saved' && x.id !== activeMatch().id).sort((a, b) => String(b[1].events?.at(-1)?.at || '').localeCompare(String(a[1].events?.at(-1)?.at || '')))[0];
+      body+=`<p><b>${cur[0]} – ${cur[1]}</b> · ${esc(t(here?'Este partido se está jugando en este dispositivo.':'Este partido se está controlando desde otro dispositivo.'))}</p>`;
+      if(here)body+=`<div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cerrar'))}</button><button class="button button-primary" type="button" data-action="t-fx-board">${esc(t('IR AL TABLERO'))}</button></div>`;
+      else if(elsewhere)body+=`<div class="join-choices"><button class="mode-choice" type="button" data-action="t-fx-join" data-key="${esc(elsewhere[0])}" data-how="junto"><strong>${esc(t('CONTROLAR TAMBIÉN DESDE ACÁ'))}</strong><span>${esc(t('Los dos dispositivos operan el mismo partido: los goles, llamados y time outs de ambos se juntan. Sirve para repartirse el trabajo.'))}</span></button><button class="mode-choice" type="button" data-action="t-fx-join" data-key="${esc(elsewhere[0])}" data-how="tomar"><strong>${esc(t('TOMAR EL CONTROL EN ESTE DISPOSITIVO'))}</strong><span>${esc(t('El otro dispositivo deja de controlar el partido. Usalo si se quedó sin batería o se apagó.'))}</span></button></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cerrar'))}</button></div>`;
+      else body+=`<p class="sheet-hint">${esc(t('El resultado se puede corregir cuando termine.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cerrar'))}</button></div>`;
     } else if(saved){
       body+=`${draw?`<p class="fx-help"><b aria-hidden="true">!</b><span>${esc(t('Terminó empatado y en eliminación hace falta un ganador: jugá el desempate o corregí el resultado.'))}</span></p><div class="fx-actions"><button class="button button-primary" type="button" data-action="t-fixture-play" data-id="${esc(id)}">▶ ${esc(t('JUGAR DESEMPATE'))}</button></div>`:''}
         ${form(t('GUARDAR CORRECCIÓN'),t('¿El resultado quedó mal o no se sincronizó bien? Corregilo acá. Queda registrado en la planilla del partido.'))}
@@ -1332,7 +1375,7 @@
     if(hasStarted()&&!isLocked())return;
     state.pendingAlerts=[];ClockAlerts.clear();
     state.activeMatch=makeMatch(state.settings.ruleset);
-    const m=state.activeMatch;m.mode='tournament';m.fixtureId=fixtureId;
+    const m=state.activeMatch;m.mode='tournament';m.fixtureId=fixtureId;m.tournamentId=state.tournament?.id||'';
     [a,b].forEach((team,i)=>Object.assign(m.teams[i],{name:team.name,color:team.color,tid:team.id}));
     startWithProfile(ensureTimingProfile(state.tournament));
   }
@@ -1363,19 +1406,27 @@
   /* Partidos en curso de otros dispositivos de la cuenta (id del dispositivo -> partido). */
   const liveElsewhere=new Map();
   let resumeAsked=new Set();
+  /* Partidos que este dispositivo dejó porque otro tomó el control: no se vuelven a ofrecer para retomar. */
+  const leftMatches=new Set();
   async function applyRemote(regs) {
-    const cambios=[];
+    const cambios=[];let shared=false,adopted=false;
     for(const r of regs){
       if(r.tabla==='partidoActivo'){
         /* Partido en curso de otro dispositivo: no se guarda aquí, solo se ofrece retomarlo. */
         if(r.id===deviceId)continue;
         if(r.op==='put'&&r.data?.id)liveElsewhere.set(r.id,r.data);else liveElsewhere.delete(r.id);
+        shared=true;
         continue;
       }
       if(r.tabla==='partidos'){
         state.savedMatches=state.savedMatches.filter(x=>x.id!==r.id);
         const match=r.op==='put'&&r.data?.match;
-        if(match&&match.id===r.id){state.savedMatches.push(match);cambios.push({tabla:'partidos',id:r.id,op:'put',data:{match}});}
+        if(match&&match.id===r.id){
+          state.savedMatches.push(match);cambios.push({tabla:'partidos',id:r.id,op:'put',data:{match}});
+          /* Otro dispositivo guardó el partido que este también controlaba: el guardado es el oficial. */
+          for(const [k,x] of liveElsewhere)if(x.id===match.id)liveElsewhere.delete(k);
+          if(match.status==='saved'&&state.activeMatch?.id===match.id&&state.activeMatch.status!=='saved'){state.activeMatch=clone(match);adopted=true;}
+        }
         else cambios.push({tabla:'partidos',id:r.id,op:'delete'});
       } else if(r.tabla==='torneos'){
         const activeId=state.tournament?.id;
@@ -1392,41 +1443,85 @@
     if(localDb)await UCLocal.aplicarRemotos(localDb,cambios);
     if(!UCSession.token())try{state.savedAt=Date.now();lastSavedAt=state.savedAt;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{}
     localSaveMirror();
+    if(adopted){saveState();refreshView();showToast(t('El partido se guardó desde otro dispositivo.'));}
+    else if(shared)mergeShared();
     if(app.querySelector('.tournament-screen')&&!teamSheet)renderTournament();
+    offerEntry();
     offerResume();
+  }
+  /* Vuelve a dibujar la pantalla que está abierta (tablero, planilla, torneo o ajustes). */
+  function refreshView() {
+    const view=app.firstElementChild?.className||'';
+    if(view.includes('settings-screen'))return;
+    if(view.includes('tournament-screen')){if(!teamSheet)renderTournament();}else if(view.includes('sheet-screen'))renderLiveSheet();else renderDashboard();
+  }
+  /* Partido compartido: junta lo que anotó el otro dispositivo con este partido (ver live-merge.js). */
+  function mergeShared() {
+    const mine=state.activeMatch;if(!mine||mine.status==='saved')return;
+    let changed=false;
+    for(const remote of [...liveElsewhere.values()]){
+      if(remote.id!==state.activeMatch.id)continue;
+      const r=UCLive.merge(state.activeMatch,remote,deviceId);
+      if(r.lostControl){leaveSharedMatch();return;}
+      if(r.changed){state.activeMatch=r.match;changed=true;}
+    }
+    if(!changed)return;
+    saveState();refreshView();updateModeBadge();
+  }
+  /* Otro dispositivo tomó el control: este queda libre, con un partido vacío en el mismo modo. */
+  function leaveSharedMatch() {
+    const mode=state.activeMatch.mode;leftMatches.add(state.activeMatch.id);
+    state.pendingAlerts=[];ClockAlerts.clear();closeModal();
+    state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;
+    saveState();refreshView();updateModeBadge();
+    showToast(t('Otro dispositivo tomó el control de este partido. Este dispositivo ya no lo controla.'));
+  }
+  /* Entrar a un partido que se controla en otro dispositivo. 'junto': los dos lo operan a la vez. 'tomar': el control pasa a este. */
+  function joinLive(key,how) {
+    if(hasStarted()&&!isLocked()){showToast(t('Hay un partido en curso. Guardalo o prepará uno nuevo desde MENU antes de empezar otro.'));return;}
+    const remote=liveElsewhere.get(key);
+    if(!remote||remote.status==='saved'){closeModal();showToast(t('Ese partido ya no está disponible.'));return;}
+    const m=clone(remote),last=m.events[m.events.length-1],lastAt=last?Date.parse(last.at):0;
+    const stale=m.clock.running&&Date.now()-lastAt>15*60*1000;
+    if(how==='tomar'||stale){
+      /* Sin saber hasta cuándo siguió el otro dispositivo, el reloj queda en el último evento guardado. */
+      m.clock.running=false;m.clock.startedAt=null;if(last)m.clock.elapsed=Math.max(0,Number(last.elapsed)||m.clock.elapsed);
+      for(const timer of [...Object.values(m.timers),m.breakTimer]){timer.running=false;timer.startedAt=null;}
+    }
+    m.events.push({id:uid('ev'),type:how==='tomar'?'resumed':'joined',at:nowIso(),elapsed:m.clock.elapsed});
+    if(how==='tomar')m.control={device:deviceId,at:Date.now()};
+    m.shared=how!=='tomar';
+    state.pendingAlerts=[];ClockAlerts.clear();
+    state.activeMatch=m;
+    saveState();closeModal();renderDashboard();updateModeBadge();
+    showToast(t(how==='tomar'?'Tomaste el control del partido. Revisá el reloj antes de seguir.':'Controlás este partido junto con otro dispositivo.'));
+    engine?.ritmo(3000);
   }
   /* Retomar un partido que quedó en curso en otro dispositivo (por ejemplo, si el teléfono falló). */
   function resumable() {
     const limit=Date.now()-48*3600*1000;
     return [...liveElsewhere.entries()].map(([id,m])=>({id,m})).filter(({id,m})=>{
-      if(resumeAsked.has(id+':'+(m.events?.length||0)))return false;
+      if(resumeAsked.has(id+':'+(m.events?.length||0))||m.id===state.activeMatch?.id||leftMatches.has(m.id))return false;
       const last=m.events?.[m.events.length-1];
       return m.status!=='saved'&&m.events?.length&&last&&Date.parse(last.at)>limit&&Array.isArray(m.teams)&&m.teams.length===2;
     }).sort((a,b)=>Date.parse(b.m.events[b.m.events.length-1].at)-Date.parse(a.m.events[a.m.events.length-1].at));
   }
   function offerResume() {
-    if(!UCSession.token()||document.querySelector('.login-gate'))return;
-    if(hasStarted()&&!isLocked())return;
-    const list=resumable();if(!list.length)return;
-    if(modalRoot.querySelector('[data-action="resume-match"]'))return;
+    if(!UCSession.token()||document.querySelector('.login-gate'))return false;
+    if(hasStarted()&&!isLocked())return false;
+    const list=resumable();if(!list.length)return false;
+    /* Mientras se pregunta cómo entrar (partido o torneo), la oferta de retomar espera: sale al elegir MODO PARTIDO. */
+    if(modalRoot.querySelector('[data-action="resume-match"],.entry-choice'))return false;
     const item=list[0],m=item.m,last=m.events[m.events.length-1];
     openModal(t('Partido en curso en otro dispositivo'),`<p>${esc(t('Hay un partido sin terminar guardado en el servidor. ¿Querés retomarlo en este dispositivo?'))}</p><p class="history-totals">${esc(m.teams[0].name)} ${m.teams[0].score} – ${m.teams[1].score} ${esc(m.teams[1].name)}</p><p class="sheet-hint">${esc(t('Último evento: {when}. El reloj queda pausado en ese momento.',{when:new Intl.DateTimeFormat(lang==='en'?'en-US':'es-AR',{dateStyle:'short',timeStyle:'short'}).format(new Date(last.at))}))}</p><div class="modal-actions"><button class="button" type="button" data-action="resume-later" data-id="${esc(item.id)}">${esc(t('AHORA NO'))}</button><button class="button button-primary" type="button" data-action="resume-match" data-id="${esc(item.id)}">${esc(t('RETOMAR AQUÍ'))}</button></div>`);
+      return true;
   }
-  function resumeMatch(id) {
-    const remote=liveElsewhere.get(id);if(!remote)return;
-    const m=clone(remote),last=m.events[m.events.length-1];
-    /* El reloj se detiene en el último evento guardado: el tiempo transcurrido sin conexión no se cuenta. */
-    m.clock.running=false;m.clock.startedAt=null;m.clock.elapsed=Math.max(0,Number(last.elapsed)||m.clock.elapsed);
-    for(const timer of [...Object.values(m.timers),m.breakTimer]){timer.running=false;timer.startedAt=null;}
-    m.events.push({type:'resumed',at:nowIso(),elapsed:m.clock.elapsed});
-    state.activeMatch=m;liveElsewhere.delete(id);
-    saveState();closeModal();renderDashboard();showToast(t('Partido retomado. Revisá el reloj antes de seguir.'));
-    engine?.descartar('partidoActivo',id);
-  }
+  function resumeMatch(id) {joinLive(id,'tomar');}
   const SYNC_ARROWS='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg>';
   function renderSyncBadge(st) {
     const badge=document.getElementById('syncBadge');if(!badge)return;
     const on=!!UCSession.token();badge.hidden=!on;if(!on)return;
+    engine?.ritmo(state.activeMatch?.shared&&state.activeMatch.status==='active'?3000:15000);
     const why={ok:'Sincronizado',pendientes:'Cambios pendientes de subir','sin-conexion':'Sin conexión: los cambios se suben al volver',conflicto:'Hay cambios para revisar','sesion-vencida':'La sesión venció: volvé a entrar','sin-sincronizar':'Sincronizando…','sin-sesion':'Sin sesión'}[st.razon]||'Sincronizando…';
     const label=t(why)+(st.pendientes?` · ${st.pendientes}`:'');
     badge.className='sync-badge '+(st.verde?'is-ok':'is-bad');badge.innerHTML=SYNC_ARROWS;badge.title=label;badge.setAttribute('aria-label',label);
@@ -1443,7 +1538,7 @@
   function updateAccountUI() {
     const user=UCSession.usuario(),login=document.getElementById('menuLogin'),logout=document.getElementById('menuLogout');
     if(login){login.hidden=!!user;login.textContent=t('INICIAR SESIÓN');}
-    if(logout){logout.hidden=!user;logout.textContent=`${t('CERRAR SESIÓN')} · ${user||''}`;}
+    if(logout){logout.hidden=!user;logout.textContent=`${t('SALIR DE ESTE USUARIO')} · ${user||''}`;}
     renderSyncBadge(engine?engine.estado():{verde:false,razon:'sin-sincronizar',pendientes:0});
   }
   function startSync() {
@@ -1481,13 +1576,13 @@
     else if(action==='account-logout'){
       if(engine)await engine.sincronizar();
       const pend=engine?await engine.pendientes():0;
-      openModal(t('Cerrar sesión'),`<p>${esc(t(pend?'Hay {n} cambios que todavía no se subieron. Si cerrás sesión, se pierden de este dispositivo.':'Se borrarán de este dispositivo los partidos y torneos de esta cuenta. Siguen guardados en el servidor.',{n:pend}))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="account-logout-confirm">${esc(t('CERRAR SESIÓN'))}</button></div>`);
+      openModal(t('Salir de este usuario'),`<p>${esc(t(pend?'Hay {n} cambios que todavía no se subieron. Si salís, se pierden de este dispositivo.':'Se borrarán de este dispositivo los partidos y torneos de esta cuenta. Siguen guardados en el servidor.',{n:pend}))}</p><p>${esc(t('Vas a volver al modo sin usuario: lo que hagas queda solo en este dispositivo. Para volver, entrá desde MENU → INICIAR SESIÓN.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="account-logout-confirm">${esc(t('SALIR DE ESTE USUARIO'))}</button></div>`);
     }
     else if(action==='account-logout-confirm'){
       engine?.detener();engine=null;
-      await UCSession.salir();
+      await UCSession.salir();UCSession.usarLocal();
       state.savedMatches=[];state.tournament=null;state.otherTournaments=[];
-      if(isTournamentMode())state.activeMatch=makeMatch(state.settings.ruleset);
+      state.activeMatch=makeMatch(state.settings.ruleset);
       saveState();
       try{await localSaver?.esperar();await UCLocal.limpiarSincronizacion(localDb);}catch{}
       location.reload();
@@ -1521,6 +1616,7 @@
     else if(action==='t-fx-mode'&&tour)setFixtureMode(tour,el.dataset.type);
     else if(action==='t-fx-open'&&tour)openFixtureMatch(el.dataset.id);
     else if(action==='t-fx-board'){closeModal();renderDashboard();}
+    else if(action==='t-fx-join')joinLive(el.dataset.key,el.dataset.how);
     else if(action==='t-fx-sheet'){const sheet=state.savedMatches.find(x=>x.id===el.dataset.match);if(sheet)openSheet(sheet);}
     else if(action==='t-share-on'&&tour)shareOn(tour);
     else if(action==='t-share-off'&&tour){if(tour.share)tour.share.on=false;saveState();renderTournament();showToast(t('El link dejó de funcionar. Podés volver a compartir cuando quieras: es el mismo link.'));}
@@ -1766,6 +1862,7 @@
     if (action === "back-dashboard") { teamSheet=null; renderDashboard(); }
     if(action==='new-match'){if(!isLocked()&&hasStarted()){openModal(t('Preparar un nuevo partido'),`<p>${esc(t('El partido actual aún no está en el historial. Guardalo antes de continuar.'))}</p><div class="modal-actions"><button class="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" data-action="save-and-new">${esc(t('Guardar y crear nuevo'))}</button></div>`);}else {startNextMatch();}}
     if(action==='choose-mode'){chooseMode(actionElement.dataset.mode);return;}
+    if(action==='pick-tournament'){pickTournament(actionElement.dataset.id);return;}
     if (action === "close-modal") closeModal();
     if (action === "confirm-reset") resetMatch();
     if (action === "confirm-minus") {
@@ -1816,6 +1913,7 @@
       if (same) { showToast(t('El pase y el gol no pueden ser de la misma persona.')); return; }
       Object.assign(goal, { assist: assist.name, assistId: assist.id, scorer: scorer.name, scorerId: scorer.id });
       }
+      goal.editedAt = Date.now();
       const event = m.events.find(e => e.goal === goal.id); if (event) Object.assign(event, { assist: goal.assist, assistId: goal.assistId, scorer: goal.scorer, scorerId: goal.scorerId });
       closeModal(); saveState(); rerender(form.dataset.origin); showToast(t("Detalle del gol guardado."));
     }
@@ -1911,7 +2009,7 @@
     /* El partido de la sesión anterior ya está guardado en Planilla: la app arranca con uno nuevo y vacío. */
     const mode=state.activeMatch.mode;state.activeMatch=makeMatch(state.settings.ruleset);state.activeMatch.mode=mode;saveState();renderDashboard();
   }
-  if(!hasStarted()&&!isLocked()){if(isTournamentMode()){if(state.tournament&&state.tournament.teams.length>=2)openTournamentMatchSetup();else{renderTournament();}}else openWelcome('mode');}
+  if(!hasStarted()&&!isLocked()){if(isTournamentMode()){if(state.tournament&&state.tournament.teams.length>=2)openTournamentMatchSetup();else{renderTournament();}}else{offerEntry();if(!entryShown)openWelcome('mode');}}
   startSync();
   document.getElementById('bootFallback')?.remove();
   if(storageBlocked)showStorageError();

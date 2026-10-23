@@ -11,7 +11,7 @@
   function crear(o) {
     const { db, local, sesion, dispositivo } = o;
     const conflictos = new Map();
-    let ocupado = false, repetir = false, timer = null, intervalo = null;
+    let ocupado = false, repetir = false, timer = null, intervalo = null, periodo = 15000;
     let estado = { verde: false, razon: 'sin-sincronizar', pendientes: 0 };
 
     function publicar(parcial) {
@@ -135,7 +135,7 @@
     }
 
     function iniciar() {
-      intervalo = setInterval(sincronizar, 15000);
+      intervalo = setInterval(sincronizar, periodo);
       if (root.addEventListener) {
         root.addEventListener('online', () => programar(200));
         root.addEventListener('offline', () => publicar({ verde: false, razon: 'sin-conexion' }));
@@ -143,9 +143,15 @@
       if (root.document) root.document.addEventListener('visibilitychange', () => { if (!root.document.hidden) programar(200); });
       programar(200);
     }
+    /* Cada cuántos ms se consulta al servidor: más seguido mientras se comparte un partido en vivo. */
+    function ritmo(ms) {
+      if (ms === periodo) return;
+      periodo = ms;
+      if (intervalo) { clearInterval(intervalo); intervalo = setInterval(sincronizar, periodo); }
+    }
     function detener() { clearInterval(intervalo); clearTimeout(timer); }
 
-    return { sincronizar, programar, resolver, descartar, iniciar, detener, pendientes: async () => (await sincronizables()).length,
+    return { sincronizar, programar, resolver, descartar, iniciar, detener, ritmo, pendientes: async () => (await sincronizables()).length,
       estado: () => estado, conflictos: () => [...conflictos.values()] };
   }
 

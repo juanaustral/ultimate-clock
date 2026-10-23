@@ -75,6 +75,8 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   // 4) Sin conexión en A: genera fixture, el indicador pasa a rojo, al volver sube y B lo recibe
   await A.page.evaluate(() => document.querySelector('[data-action="toggle-menu"]').click());
   await A.page.evaluate(() => document.getElementById('menuTournament').click());
+  await A.page.waitForSelector('[data-action="pick-tournament"]'); // con cuenta primero se elige el torneo
+  await A.page.click('[data-action="pick-tournament"]');
   await A.page.waitForSelector('.tournament-screen');
   await A.ctx.setOffline(true);
   await A.page.evaluate(() => window.dispatchEvent(new Event('offline')));
@@ -91,6 +93,8 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   // 5) Mismo torneo cambiado en los dos dispositivos: aparece el cartel y se elige el oficial
   await B.ctx.setOffline(true); await A.ctx.setOffline(true);
   await B.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuTournament').click(); });
+  await B.page.waitForSelector('[data-action="pick-tournament"]');
+  await B.page.click('[data-action="pick-tournament"]');
   await B.page.waitForSelector('.tournament-screen');
   await A.page.click('#tab-ajustes'); await B.page.click('#tab-ajustes');
   await A.page.fill('#sc-win', '2'); await A.page.click('.scoring-form [type=submit]');
@@ -134,17 +138,17 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   C.page.errores.length && console.log(C.page.errores);
   C.ctx.close();
 
-  // 6) Cerrar sesión con todo subido borra los datos locales de la cuenta
-  await B.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuLogout').click(); });
+  // 6) SALIR DE ESTE USUARIO con todo subido borra los datos de la cuenta y vuelve directo al modo sin usuario
+  await B.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); });
+  ok(/SALIR DE ESTE USUARIO|LOG OUT OF THIS USER/.test(await B.page.textContent('#menuLogout')), 'el menú ofrece SALIR DE ESTE USUARIO');
+  await B.page.evaluate(() => document.getElementById('menuLogout').click());
   await B.page.waitForSelector('[data-action="account-logout-confirm"]');
   await B.page.click('[data-action="account-logout-confirm"]');
-  await B.page.waitForSelector('.login-gate');
-  ok(!(await estadoLS(B.page))?.tournament, 'tras cerrar sesión no queda el torneo en el dispositivo');
-
-  // 7) USAR SIN CUENTA
-  await B.page.click('[data-gate=local]');
-  await B.page.waitForTimeout(800);
-  ok((await B.page.$('#syncBadge:not([hidden])')) === null, 'sin cuenta no hay indicador y la app abre');
+  await B.page.waitForLoadState('load');
+  await B.page.waitForTimeout(1200);
+  ok((await B.page.$('.login-gate')) === null, 'al salir no vuelve a pedir usuario: queda en modo sin usuario');
+  ok(!(await estadoLS(B.page))?.tournament, 'tras salir no queda el torneo en el dispositivo');
+  ok((await B.page.$('#syncBadge:not([hidden])')) === null, 'sin usuario no hay indicador y la app abre');
 
   for (const [n, d] of [['A', A], ['B', B]]) ok(d.page.errores.length === 0, 'sin errores de consola en ' + n + (d.page.errores.length ? ' ' + d.page.errores.join(' | ') : ''));
   await browser.close();

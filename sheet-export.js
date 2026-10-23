@@ -1,7 +1,7 @@
 /* Pure scoresheet exporters (CSV and PDF): no dependencies, shared by the app and Node tests. */
 (function (root) {
   'use strict';
-  const EVENT_LABELS={goal:'Gol',timeout:'Time-out',call:'Llamado',adjustment:'Ajuste manual −1',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Mitad',incident:'Incidencia',saved:'Partido finalizado',correction:'Resultado corregido','manual-result':'Resultado cargado a mano'};
+  const EVENT_LABELS={goal:'Gol',timeout:'Time-out',call:'Llamado',adjustment:'Ajuste manual −1',pause:'Pausa',resume:'Inicio / reanudación',limit:'Límite superado',start:'Inicio',half:'Mitad',incident:'Incidencia',resumed:'Partido retomado',joined:'Se sumó otro dispositivo',saved:'Partido finalizado',correction:'Resultado corregido','manual-result':'Resultado cargado a mano'};
   const TIMER_LABELS={clock:'Reloj de partido',pull:'Pull',call:'Llamado',timeout:'Time-out',break:'Descanso'};
 
   /* Traducción opcional: tr(textoEnEspañol, variables). Sin tr, todo queda en español. */
