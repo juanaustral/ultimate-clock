@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Manual de usuario · Ultimate Clock</title>
+    <meta name="description" content="Manual de usuario de Ultimate Clock: modo partido y modo torneo, tablero, planilla, fixture, plantilla de Excel, resultados y fixture en vivo. User manual in English.">
+    <link rel="canonical" href="https://iona.ar/ultimateclock/manual/">
+    <meta property="og:title" content="Manual de usuario · Ultimate Clock">
+    <meta property="og:description" content="Cómo llevar partidos y torneos de Ultimate Frisbee con Ultimate Clock, paso a paso y con imágenes.">
+    <meta property="og:image" content="https://iona.ar/ultimateclock/og-image.png">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../tokens.css">
+    <style>
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 var(--font-body)}
+a{color:var(--accent)}
+.bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--panel);border-bottom:var(--rule)}
+.bar .back{display:inline-flex;align-items:center;min-height:var(--touch);padding:0 16px;border-radius:var(--radius-sm);background:var(--accent);color:var(--accent-ink);font-weight:800;letter-spacing:.04em;text-decoration:none}
+.bar strong{flex:1;font-size:15px;letter-spacing:.06em;text-transform:uppercase}
+.lang{display:flex;gap:4px}
+.lang button{min-height:40px;min-width:48px;border:2px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:var(--ink);font:800 14px var(--font-body);cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+main{max-width:920px;margin:0 auto;padding:16px}
+article[hidden]{display:none}
+h1{font-size:32px;line-height:1.15;margin:8px 0 4px}
+h2{font-size:23px;line-height:1.2;margin:0 0 10px;text-transform:uppercase;letter-spacing:.03em}
+h2 .n{display:inline-grid;place-items:center;width:34px;height:34px;margin-right:8px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:17px;vertical-align:middle}
+h3{font-size:18px;margin:16px 0 4px}
+.shot>div>h3:first-child{margin-top:0}
+.lead{color:var(--muted);margin:0 0 16px}
+section{background:var(--panel);border-radius:var(--radius);padding:18px 16px;margin:0 0 14px;box-shadow:var(--shadow);scroll-margin-top:72px}
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;padding:0;margin:0;list-style:none;counter-reset:toc}
+.toc a{display:flex;align-items:center;gap:10px;min-height:var(--touch);padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg-2);color:var(--ink);font-weight:700;text-decoration:none}
+.toc a::before{counter-increment:toc;content:counter(toc);display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:14px}
+.shot{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;margin:14px 0}
+.shot+.shot{padding-top:14px;border-top:var(--rule)}
+@media (min-width:680px){.shot{grid-template-columns:250px minmax(0,1fr)}}
+figure{margin:0}
+figure img{display:block;width:100%;max-width:270px;height:auto;margin:0 auto;border-radius:18px;border:1px solid var(--line);background:var(--bg-2)}
+figure.wide{margin:14px 0}
+figure.wide img{max-width:100%;border-radius:12px}
+figcaption{font-size:13px;color:var(--muted);text-align:center;margin-top:6px}
+ol,ul{padding-left:22px;margin:6px 0}
+li{margin:4px 0}
+.tip,.warn{border-radius:var(--radius-sm);padding:10px 12px;margin:12px 0;font-size:16px}
+.tip{background:color-mix(in srgb,var(--signal) 12%,var(--panel));border-left:4px solid var(--signal)}
+.warn{background:color-mix(in srgb,var(--warning) 14%,var(--panel));border-left:4px solid var(--warning)}
+.k{display:inline-block;padding:0 6px;border-radius:6px;background:var(--bg-2);border:1px solid var(--line);font-weight:800;font-size:.84em;letter-spacing:.03em}
+.cell{display:inline-block;padding:0 6px;border-radius:4px;background:#fff7d6;color:#0f1115;border:1px solid #c4c9d2;font-size:.9em}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font:800 12px/1.6 var(--font-body);letter-spacing:.05em}
+.tag.done{background:var(--ink);color:var(--panel)}.tag.live{background:var(--danger);color:#fff}
+.tag.w{background:color-mix(in srgb,var(--signal) 22%,var(--panel))}.tag.l{background:color-mix(in srgb,var(--danger) 16%,var(--panel))}.tag.d{background:color-mix(in srgb,var(--muted) 22%,var(--panel))}
+table.cmp,table.xl{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}
+.cmp th,.cmp td,.xl th,.xl td{padding:8px;border:var(--rule);text-align:left;vertical-align:top}
+.cmp thead th,.xl thead th{background:var(--ink);color:var(--panel)}
+.cmp tbody th{background:var(--bg-2)}
+@media (max-width:480px){table.cmp,table.xl{font-size:13.5px}.cmp th,.cmp td,.xl th,.xl td{padding:6px 5px;overflow-wrap:break-word}.xl td:first-child{width:28%;font-size:12px}}
+code{font:600 .9em var(--font-mono);background:var(--bg-2);padding:1px 4px;border-radius:4px;word-break:break-all}
+dl{margin:0}dt{font-weight:800;margin-top:10px}dd{margin:2px 0 0}
+.top{display:inline-block;margin-top:10px;font-size:14px}
+footer{max-width:920px;margin:0 auto;padding:8px 16px 32px;color:var(--muted);font-size:14px;text-align:center}
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <a class="back" href="../" id="backLink">← APP</a>
+      <strong id="barTitle">Manual de usuario</strong>
+      <div class="lang" role="group" aria-label="Idioma / Language">
+        <button type="button" data-lang="es" aria-pressed="true">ES</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <main>
+<!-- Generado por scripts/generar-manual.py: no editar a mano. -->
+<article lang="es" data-lang="es">
+  <h1 id="es-top">Manual de Ultimate Clock</h1>
+  <p class="lead">Cómo llevar un partido o un torneo de Ultimate desde el celular: los dos modos, el tablero, la planilla, el fixture, la carga desde Excel, los resultados y el link en vivo. Seguí los pasos; no hace falta saber de tecnología.</p>
+  <section aria-labelledby="es-indice">
+    <h2 id="es-indice">Índice</h2>
+    <ol class="toc">
+      <li><a href="#es-inicio">Antes de empezar</a></li>
+      <li><a href="#es-modos">Los dos modos</a></li>
+      <li><a href="#es-partido">Modo partido: empezar</a></li>
+      <li><a href="#es-tablero">El tablero</a></li>
+      <li><a href="#es-durante">Durante el partido</a></li>
+      <li><a href="#es-planilla">Planilla y exportar</a></li>
+      <li><a href="#es-menu">El menú</a></li>
+      <li><a href="#es-cuenta">Cuenta y sincronización</a></li>
+      <li><a href="#es-torneo">Modo torneo: crear el torneo</a></li>
+      <li><a href="#es-excel">Cargar equipos desde Excel</a></li>
+      <li><a href="#es-pantalla">La pantalla del torneo</a></li>
+      <li><a href="#es-fixture">El fixture</a></li>
+      <li><a href="#es-resultados">Jugar y cargar resultados</a></li>
+      <li><a href="#es-tabla">Tabla y estadísticas</a></li>
+      <li><a href="#es-vivo">Compartir el fixture en vivo</a></li>
+      <li><a href="#es-ajustes">Ajustes, archivo y varias canchas</a></li>
+      <li><a href="#es-problemas">Si algo no funciona</a></li>
+      <li><a href="#es-glosario">Palabras clave</a></li>
+    </ol>
+  </section>
+  <section id="es-inicio">
+    <h2><span class="n">1</span>Antes de empezar</h2>
+    <p><strong>Ultimate Clock</strong> es una app gratis para llevar partidos y torneos de Ultimate Frisbee desde el celular o la tablet: reloj del partido, goles, llamados, pull, time outs, planilla, fixture y tabla de posiciones.</p>
+<ul>
+<li><strong>Abrila</strong> en <a href="https://iona.ar/ultimateclock/">iona.ar/ultimateclock</a>.</li>
+<li><strong>Instalala como app.</strong> iPhone: botón Compartir → <span class="k">Agregar a inicio</span>. Android: menú ⋮ → <span class="k">Instalar app</span>.</li>
+<li><strong>Funciona sin internet.</strong> Abrila una vez con señal; después anda en la cancha aunque no haya.</li>
+</ul>
+    <div class="shot">
+      <figure><img src="img/es-01-entrada.webp" alt="Pantalla de entrada con usuario, contraseña y USAR SIN CUENTA" width="390" height="844" loading="lazy"><figcaption>Entrar o usar sin cuenta</figcaption></figure>
+      <div>
+<h3>¿Con cuenta o sin cuenta?</h3>
+<p>Al abrir la app elegís:</p>
+<ul>
+<li><span class="k">ENTRAR</span> con usuario y contraseña: todo se guarda <strong>en el servidor</strong> al instante. Podés usar varios teléfonos a la vez, seguir un partido en otro dispositivo si el tuyo falla y <strong>compartir el fixture en vivo</strong>.</li>
+<li><span class="k">USAR SIN CUENTA</span>: todo queda <strong>solo en ese teléfono</strong>. Para conservarlo o pasarlo a otro, exportalo.</li>
+</ul>
+<p>Las cuentas las da la organización (por ahora Ultimate Frisbee Mendoza). Si no tenés una, usá la app sin cuenta: funciona igual.</p>
+      </div>
+    </div>
+    <div class="tip"><strong>Consejo:</strong> antes del partido subí el volumen y tocá <span class="k">MENU</span> → <span class="k">PROBAR SONIDO</span>.</div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-modos">
+    <h2><span class="n">2</span>Los dos modos</h2>
+    <div class="shot">
+      <figure><img src="img/es-02-bienvenida.webp" alt="Bienvenida con MODO PARTIDO y MODO TORNEO" width="390" height="844" loading="lazy"><figcaption>Elegir el modo</figcaption></figure>
+      <div>
+<p>La app tiene dos modos. Elegís uno en la bienvenida y lo cambiás cuando quieras desde <span class="k">MENU</span>.</p>
+<table class="cmp"><thead><tr><th></th><th>Modo partido</th><th>Modo torneo</th></tr></thead><tbody>
+<tr><th>Para qué</th><td>Un partido suelto, un amistoso, un entrenamiento.</td><td>Un torneo o una liga con varios equipos.</td></tr>
+<tr><th>Equipos</th><td>Escribís los nombres en cada partido.</td><td>Los cargás una vez (a mano o desde Excel) y los elegís de una lista.</td></tr>
+<tr><th>Jugadores</th><td>Opcional, por partido.</td><td>Una lista por equipo, con número de camiseta.</td></tr>
+<tr><th>Qué arma solo</th><td>La planilla del partido.</td><td>Fixture, tabla de posiciones, goleadores y pases, historial de cada equipo.</td></tr>
+<tr><th>Compartir</th><td>Planilla en PDF, CSV o WhatsApp.</td><td>Además, el fixture en vivo con un link.</td></tr>
+</tbody></table>
+<p>Si no sabés cuál, empezá con <strong>modo partido</strong>.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-partido">
+    <h2><span class="n">3</span>Modo partido: empezar</h2>
+    <div class="shot">
+      <figure><img src="img/es-03-equipos.webp" alt="Paso 1: nombre y color de cada equipo" width="390" height="844" loading="lazy"><figcaption>Paso 1: equipos</figcaption></figure>
+      <div>
+<h3>Paso 1 · Equipos</h3><p>Escribí el nombre de cada equipo y tocá un color (el <span class="k">+</span> abre más). Tocá <span class="k">SIGUIENTE →</span>.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-04-jugadores.webp" alt="Paso 2: jugadores de cada equipo, uno por renglón" width="390" height="844" loading="lazy"><figcaption>Paso 2: jugadores (opcional)</figcaption></figure>
+      <div>
+<h3>Paso 2 · Jugadores (opcional)</h3><p>Si querés saber quién hizo cada gol, escribí un jugador por renglón. El número va adelante y es opcional: <span class="k">7 Ana</span> <span class="k">Beto</span>. Si no te interesa, dejalo vacío.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-05-tiempos.webp" alt="Paso 3: elegir WFDF, USA Ultimate o tiempos personalizados" width="390" height="844" loading="lazy"><figcaption>Paso 3: tiempos</figcaption></figure>
+      <div>
+<h3>Paso 3 · Tiempos</h3><p>Elegí el reglamento: <strong>WFDF</strong> o <strong>USA Ultimate</strong>. Si tu torneo usa otros tiempos, tocá <span class="k">TIEMPOS PERSONALIZADOS</span>. Después <span class="k">EMPEZAR</span>.</p><div class="tip">Para el próximo partido: <span class="k">MENU</span> → <span class="k">＋ NUEVO PARTIDO</span>.</div>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-tablero">
+    <h2><span class="n">4</span>El tablero</h2>
+    <div class="shot">
+      <figure><img src="img/es-06-tablero.webp" alt="Tablero con reloj, equipos, llamados, pull y time out" width="390" height="844" loading="lazy"><figcaption>El tablero</figcaption></figure>
+      <div>
+<p>Todo entra en una pantalla, de arriba hacia abajo:</p>
+<ol>
+<li><strong>Reloj del partido.</strong> <span class="k">▶ INICIAR</span> / <span class="k">Ⅱ PAUSAR</span>. Debajo: cuánto <strong>RESTA</strong> y cuánto falta <strong>AL DESCANSO</strong>.</li>
+<li><strong>Equipos</strong> con el tanteador. <span class="k">+ GOL</span> suma, <span class="k">−</span> corrige (pide confirmar). Tocando el nombre cambiás nombre y color.</li>
+<li><strong>Llamado</strong> de cada equipo: el tiempo para reanudar.</li>
+<li><strong>Pull</strong>: 90 segundos con silbatos de aviso.</li>
+<li><strong>Time out</strong>: un botón por equipo con los que le quedan (por ejemplo <strong>2/2</strong>).</li>
+</ol>
+<p>Arriba: el cartel del modo (en torneo dice <span class="k">VER TORNEO</span> y te lleva al torneo), el indicador de sincronización (flechas verdes o rojas) y <span class="k">MENU</span>.</p>
+      </div>
+    </div>
+    <div class="tip">El único reloj que se pausa es el del partido. Pull, llamado, time out y medio tiempo corren hasta terminar.</div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-durante">
+    <h2><span class="n">5</span>Durante el partido</h2>
+    <div class="shot">
+      <figure><img src="img/es-07-gol.webp" alt="Detalle del gol: pase y gol" width="390" height="844" loading="lazy"><figcaption>Detalle del gol</figcaption></figure>
+      <div>
+<h3>Anotar un gol</h3><ol>
+<li>Tocá <span class="k">+ GOL</span> del equipo que anotó. El gol se suma al instante.</li>
+<li>Se abre el detalle: elegí (o escribí) quién dio el <strong>pase</strong> y quién hizo el <strong>gol</strong>.</li>
+<li><span class="k">GUARDAR DETALLE</span> lo registra; <span class="k">OMITIR</span> deja el gol sin nombres; <span class="k">DESHACER GOL</span> lo borra si fue un error.</li></ol>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-08-llamado.webp" alt="Elegir la categoría del llamado" width="390" height="844" loading="lazy"><figcaption>Tipo de llamado</figcaption></figure>
+      <div>
+<h3>Registrar un llamado</h3><ol>
+<li>Tocá <span class="k">INICIAR</span> en el llamado del equipo que lo hizo: empieza a correr el tiempo.</li>
+<li>Elegí qué fue (Falta, Violación, Pick, Travel, Conteo, Gol discutido, Lesión, Tiempo de Espíritu). Cada uno tiene una explicación corta.</li>
+<li><span class="k">REGISTRAR</span>. Si fue un error, <span class="k">CANCELAR LLAMADO</span>.</li></ol>
+<p>La app solo anota: <strong>no decide sanciones</strong>.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-09-contadores.webp" alt="Tablero con pull, llamado y time out corriendo" width="390" height="844" loading="lazy"><figcaption>Contadores en marcha</figcaption></figure>
+      <div>
+<h3>Pull</h3><p><span class="k">INICIAR</span> en Pull cuando los equipos se preparan. Silbatos a los 45 s (1), 60 s (2), 75 s (3) y 90 s (4, tiempo cumplido).</p>
+<h3>Time out</h3><p>Tocá el botón del equipo que lo pide y confirmá. Se descuenta de su cupo; en el segundo tiempo el cupo se renueva.</p>
+<h3>Medio tiempo</h3><p>Al cumplirse el primer tiempo el reloj se detiene y aparece un aviso: <span class="k">INICIAR MEDIO TIEMPO</span> y después <span class="k">INICIAR SEGUNDO TIEMPO</span>.</p>
+      </div>
+    </div>
+    <div class="warn"><strong>Importante:</strong> si bloqueás el teléfono o cambiás de app, los avisos suenan recién al volver. Dejá la app abierta durante el partido; mientras un reloj corre, la pantalla no se apaga sola.</div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-planilla">
+    <h2><span class="n">6</span>Planilla y exportar</h2>
+    <div class="shot">
+      <figure><img src="img/es-11-planilla.webp" alt="Planilla con tanteador, registro rápido y eventos" width="390" height="844" loading="lazy"><figcaption>Planilla</figcaption></figure>
+      <div>
+<p><span class="k">MENU</span> → <span class="k">PLANILLA</span> muestra el tanteador, los time outs que quedan y cada <strong>evento</strong> con su minuto. Desde <strong>Registro rápido</strong> también anotás goles, llamados, time outs e <strong>incidencias</strong>.</p>
+<h3>Exportar</h3><ul>
+<li><span class="k">PDF</span> para imprimir o mandar a la organización · <span class="k">CSV</span> para Excel · <span class="k">JSON</span> copia completa · <span class="k">ENVIAR POR WHATSAPP</span> resumen del partido.</li></ul>
+<h3>Guardar el partido</h3><p>Al terminar, <span class="k">MENU</span> → <span class="k">GUARDAR</span>. El partido se cierra y aparece en <strong>Planillas guardadas</strong>, donde lo abrís, exportás o borrás. En modo torneo, recién al guardar suma en la tabla.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-menu">
+    <h2><span class="n">7</span>El menú</h2>
+    <div class="shot">
+      <figure><img src="img/es-10-menu.webp" alt="Menú abierto" width="390" height="844" loading="lazy"><figcaption>MENU</figcaption></figure>
+      <div>
+<dl>
+<dt>MODO CLARO / OSCURO · ESPAÑOL / ENGLISH</dt><dd>Claro para el sol, oscuro para la noche. Idioma de la app.</dd>
+<dt>＋ NUEVO PARTIDO · PLANILLA · GUARDAR</dt><dd>Empezar otro partido, ver la planilla y cerrar el partido.</dd>
+<dt>ENTRAR AL MODO TORNEO / VER TORNEO · SALIR DEL MODO TORNEO</dt><dd>Pasar de un modo al otro; en torneo, <span class="k">VER TORNEO</span> abre el fixture.</dd>
+<dt>Cuenta</dt><dd><span class="k">INICIAR SESIÓN</span> o el estado de la sincronización: <span class="k">✓ SINCRONIZADO</span>, <span class="k">SINCRONIZANDO…</span> o, si no hay internet, <span class="k">SIN CONEXIÓN · SINCRONIZAR AHORA</span>. <span class="k">CERRAR SESIÓN</span>.</dd>
+<dt>Sonido y pantalla</dt><dd>Activar y probar el sonido, pantalla completa y <span class="k">⚙ EDITAR TIEMPOS</span>.</dd>
+<dt>Ayuda</dt><dd><span class="k">CÓMO USAR LA APP</span> (recorrido guiado), <span class="k">MANUAL DE USUARIO</span> (este manual) e <span class="k">INFO</span>.</dd>
+<dt>REINICIAR CONTADORES</dt><dd>Pone el partido actual en cero (pide confirmar). No borra planillas guardadas.</dd>
+</dl>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-cuenta">
+    <h2><span class="n">8</span>Cuenta y sincronización</h2>
+    <p>Con sesión iniciada, <strong>cada gol, llamado o cambio se guarda en el servidor al instante</strong>. No hay que hacer nada: la app sincroniza sola todo el tiempo.</p>
+<ul>
+<li><strong>Indicador</strong> arriba (dos flechas): <strong>verde</strong> = todo guardado; <strong>rojo</strong> = hay cambios por subir o no hay conexión.</li>
+<li><strong>Sin internet en la cancha</strong> la app sigue funcionando y sube todo cuando vuelve la señal. Si querés forzarlo, <span class="k">MENU</span> → <span class="k">SIN CONEXIÓN · SINCRONIZAR AHORA</span>.</li>
+<li>Si dos teléfonos cambiaron lo mismo, aparece un cartel para elegir <strong>cuál es el oficial</strong>.</li>
+</ul>
+    <div class="shot">
+      <figure><img src="img/es-28-retomar.webp" alt="Aviso para retomar un partido en curso de otro dispositivo" width="390" height="844" loading="lazy"><figcaption>Retomar en otro dispositivo</figcaption></figure>
+      <div>
+<h3>Si el teléfono falla</h3><p>Entrá con la misma cuenta en otro teléfono o tablet. La app avisa que hay un <strong>partido en curso en otro dispositivo</strong> y muestra el marcador. Tocá <span class="k">RETOMAR AQUÍ</span>: seguís desde el último evento, con el reloj pausado en ese momento. Revisalo antes de seguir.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-torneo">
+    <h2><span class="n">9</span>Modo torneo: crear el torneo</h2>
+    <div class="shot">
+      <figure><img src="img/es-12-torneo-crear.webp" alt="Pantalla para crear un torneo" width="390" height="844" loading="lazy"><figcaption>Crear el torneo</figcaption></figure>
+      <div>
+<ol>
+<li>En la bienvenida elegí <span class="k">MODO TORNEO</span>, o <span class="k">MENU</span> → <span class="k">ENTRAR AL MODO TORNEO</span>.</li>
+<li>Escribí el nombre (por ejemplo "Copa Mendoza 2026") y tocá <span class="k">CREAR TORNEO</span>. Después cargás los equipos uno por uno…</li>
+<li>…o, más rápido, <strong>cargá todos los equipos desde un Excel</strong> (ver la sección siguiente).</li>
+</ol>
+<p>Una vez en modo torneo, el cartel de arriba dice <span class="k">VER TORNEO</span>: tocándolo volvés al torneo desde cualquier pantalla.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-excel">
+    <h2><span class="n">10</span>Cargar equipos desde Excel</h2>
+    <div class="shot">
+      <figure><img src="img/es-13-excel.webp" alt="Bloque Cargar equipos desde Excel con DESCARGAR PLANTILLA e IMPORTAR EXCEL" width="390" height="844" loading="lazy"><figcaption>Plantilla de Excel</figcaption></figure>
+      <div>
+<ol>
+<li>Tocá <span class="k">DESCARGAR PLANTILLA</span>. Se baja un archivo <strong>.xlsx</strong>.</li>
+<li>Abrilo en Excel, Google Sheets, Numbers o LibreOffice y completalo (ver abajo).</li>
+<li>Guardalo como <strong>.xlsx</strong>. En Google Sheets: Archivo → Descargar → Microsoft Excel.</li>
+<li>En la app tocá <span class="k">IMPORTAR EXCEL</span> y elegí el archivo.</li>
+</ol>
+<p>El bloque está al crear el torneo y en la pestaña <span class="k">EQUIPOS</span>. Si ya cargaste equipos, la plantilla viene con ellos, para completarlos o corregirlos.</p>
+      </div>
+    </div>
+    <h3>Cómo es la plantilla</h3>
+<table class="xl"><thead><tr><th>Hoja</th><th>Qué se completa</th></tr></thead><tbody>
+<tr><td><b>INSTRUCCIONES</b></td><td>Nada: explica los pasos, los tipos de fixture y los colores.</td></tr>
+<tr><td><b>TORNEO</b></td><td><span class="cell">Nombre del torneo</span> y <span class="cell">Tipo de fixture</span> (lista: Todos contra todos / Eliminación simple).</td></tr>
+<tr><td><b>EQUIPO 1 … EQUIPO 8</b></td><td>Una hoja por equipo: <span class="cell">Equipo</span> (nombre), <span class="cell">Color</span> (lista o un código como #1B47E2) y debajo los jugadores, uno por fila: <span class="cell">N.º camiseta</span> (opcional) y <span class="cell">Nombre y apellido</span>.</td></tr>
+</tbody></table>
+<ul>
+<li>Completá solo las <strong>celdas amarillas</strong>; no cambies los títulos grises.</li>
+<li><strong>¿Más de 8 equipos?</strong> Copiá una hoja de equipo: clic derecho en la pestaña → Mover o copiar → Crear una copia. Las hojas de equipo vacías se ignoran.</li>
+<li>También sirve <strong>una sola hoja</strong> con columnas <span class="cell">Equipo</span> · <span class="cell">Número</span> · <span class="cell">Jugador</span> (por ejemplo, la que exporta un formulario).</li>
+<li>Hasta 64 equipos y 60 jugadores por equipo.</li>
+</ul>
+    <div class="shot">
+      <figure><img src="img/es-14-importar-excel.webp" alt="Vista previa de la importación con la lista de equipos" width="390" height="844" loading="lazy"><figcaption>Antes de importar</figcaption></figure>
+      <div>
+<h3>Revisar e importar</h3><p>Antes de cargar nada, la app muestra lo que encontró: equipos, cantidad de jugadores, el nombre y el tipo de fixture, y <strong>avisos</strong> si algo no cierra (un número sin nombre, un color desconocido, un equipo repetido).</p>
+<ul><li><span class="k">CREAR TORNEO</span> / <span class="k">CREAR TORNEO NUEVO</span>: arma un torneo con esos equipos.</li>
+<li><span class="k">AGREGAR A …</span>: suma los equipos al torneo abierto. Los que tienen el mismo nombre se actualizan; los jugadores con goles registrados no se quitan.</li></ul>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-pantalla">
+    <h2><span class="n">11</span>La pantalla del torneo</h2>
+    <div class="shot">
+      <figure><img src="img/es-16-equipos.webp" alt="Pestaña EQUIPOS con las fichas de los equipos" width="390" height="844" loading="lazy"><figcaption>Pestaña EQUIPOS</figcaption></figure>
+      <div>
+<p>El torneo tiene cuatro pestañas:</p>
+<dl>
+<dt><span class="k">FIXTURE</span></dt><dd>El cuadro o las fechas, para jugar y cargar resultados.</dd>
+<dt><span class="k">EQUIPOS</span></dt><dd>Los equipos y sus jugadores, <span class="k">＋ AGREGAR EQUIPO</span>, <span class="k">▶ EMPEZAR PARTIDO DEL TORNEO</span>, la carga desde Excel y el <strong>orden y siembra</strong>.</dd>
+<dt><span class="k">TABLA</span></dt><dd>Posiciones, resultados, goleadores y pases.</dd>
+<dt><span class="k">AJUSTES</span></dt><dd>Tiempos, puntos y desempates, archivo del torneo, cambiar nombre, eliminar y torneo nuevo.</dd>
+</dl>
+<p>Si tenés más de un torneo, arriba aparece <strong>Mis torneos</strong> para pasar de uno a otro.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-17-ficha-equipo.webp" alt="Ficha de equipo con nombre, color y jugadores" width="390" height="844" loading="lazy"><figcaption>Ficha del equipo</figcaption></figure>
+      <div>
+<h3>Cargar o corregir un equipo a mano</h3><ol>
+<li><span class="k">＋ AGREGAR EQUIPO</span>, o tocá un equipo para editarlo.</li>
+<li>Nombre y color.</li>
+<li>Jugadores: número (opcional) y nombre en cada fila. ¿Tenés la lista en un mensaje? Pegala en <strong>Pegar una lista de jugadores</strong>.</li>
+<li><span class="k">GUARDAR EQUIPO</span>.</li></ol>
+<h3>Orden y siembra</h3><p>En <span class="k">EQUIPOS</span>, con ▲ ▼ ordenás los equipos. En eliminación, el orden define los cruces: el 1 juega con el último, y el 1 y el 2 solo se pueden cruzar en la final. Después de cambiarlo, en <span class="k">FIXTURE</span> tocá <span class="k">REARMAR CRUCES PENDIENTES</span>. <span class="k">HISTORIAL</span> muestra los partidos y goleadores de cada equipo.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-fixture">
+    <h2><span class="n">12</span>El fixture</h2>
+    <div class="shot">
+      <figure><img src="img/es-15-fixture-tipos.webp" alt="Elegir el tipo de fixture y GENERAR FIXTURE" width="390" height="844" loading="lazy"><figcaption>Elegir el tipo</figcaption></figure>
+      <div>
+<p>En la pestaña <span class="k">FIXTURE</span> elegís el tipo tocando una de las dos tarjetas:</p>
+<ul>
+<li><strong>Todos contra todos</strong> (liga): cada equipo juega una vez con cada uno. Gana el que suma más puntos.</li>
+<li><strong>Eliminación</strong> (llaves): el que pierde queda afuera, hasta la final. Si los equipos no son 4, 8, 16…, algunos <strong>pasan directo</strong> a la ronda siguiente.</li>
+</ul>
+<p>Tocá <span class="k">GENERAR FIXTURE</span>. <strong>Mientras no haya partidos jugados podés cambiar el tipo cuando quieras</strong>, desde las mismas tarjetas: el fixture se rearma al instante. Con partidos jugados el tipo queda fijo y la app te explica por qué.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-18-llaves.webp" alt="Cuadro de llaves en el teléfono" width="390" height="844" loading="lazy"><figcaption>Eliminación en el teléfono</figcaption></figure>
+      <div>
+<h3>Eliminación: el cuadro de llaves</h3>
+<p>Cada columna es una fase (cuartos, semifinal, final) y las líneas muestran por dónde avanza cada ganador. Arriba de la final está el <strong>campeón</strong>. En el teléfono el cuadro se desliza de costado con el dedo.</p>
+<ul>
+<li><strong>Verde</strong>: el equipo que ganó ese cruce; el que perdió queda gris.</li>
+<li><span class="tag done">FINALIZADO</span> partido terminado · <span class="tag live">● EN JUEGO</span> se está jugando, con el marcador al momento · borde punteado: todavía no se sabe quién juega.</li>
+<li>La barra de arriba dice cuántos partidos se jugaron y cuántos están en juego.</li>
+</ul>
+      </div>
+    </div>
+    <figure class="wide"><img src="img/es-27-llaves-ancho.webp" alt="Cuadro de llaves espejado en una pantalla ancha" width="1280" height="800" loading="lazy"><figcaption>En tablet o computadora el cuadro se abre a los dos lados, con la final en el centro.</figcaption></figure>
+    <div class="shot">
+      <figure><img src="img/es-29-liga.webp" alt="Fechas del todos contra todos" width="390" height="844" loading="lazy"><figcaption>Todos contra todos: fechas</figcaption></figure>
+      <div>
+<h3>Todos contra todos: fechas y tabla cruzada</h3>
+<p>Cada columna es una <strong>fecha</strong>, con sus partidos y cuántos se jugaron (por ejemplo 3/3). Si los equipos son impares, en cada fecha uno queda <strong>libre</strong>. Las fechas se deslizan de costado.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-30-tabla-cruzada.webp" alt="Tabla cruzada con ganados, empates y perdidos" width="390" height="844" loading="lazy"><figcaption>Tabla cruzada</figcaption></figure>
+      <div>
+<p>La <strong>tabla cruzada</strong> muestra cada resultado desde el equipo de la fila: <span class="tag w">verde</span> ganó, <span class="tag l">rojo</span> perdió, <span class="tag d">gris</span> empató, · por jugar. Tocá una celda para abrir ese partido.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-resultados">
+    <h2><span class="n">13</span>Jugar y cargar resultados</h2>
+    <div class="shot">
+      <figure><img src="img/es-19-partido-fixture.webp" alt="Partido del fixture con JUGAR ESTE PARTIDO y cargar el resultado" width="390" height="844" loading="lazy"><figcaption>Tocar un partido</figcaption></figure>
+      <div>
+<p><strong>Tocá cualquier partido del fixture.</strong> Según cómo esté, podés:</p>
+<ul>
+<li><span class="k">▶ JUGAR ESTE PARTIDO</span>: abre el tablero con los dos equipos ya elegidos y el partido queda ligado a ese cruce.</li>
+<li><strong>¿Ya se jugó?</strong> Si se jugó sin la app (o en un papel), escribí el resultado y <span class="k">GUARDAR RESULTADO</span>. Cuenta en el fixture y en la tabla.</li>
+</ul>
+<p>También podés empezar un partido desde <span class="k">EQUIPOS</span> → <span class="k">▶ EMPEZAR PARTIDO DEL TORNEO</span> eligiendo los dos equipos.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-21-gol-torneo.webp" alt="Detalle del gol con la lista de jugadores del equipo" width="390" height="844" loading="lazy"><figcaption>Gol en un partido del torneo</figcaption></figure>
+      <div>
+<h3>Durante el partido del torneo</h3><p>El tablero funciona igual. En cada gol elegís de la lista quién dio el <strong>pase</strong> y quién hizo el <strong>gol</strong>: así se arman los goleadores. Al terminar, <span class="k">MENU</span> → <span class="k">GUARDAR</span>.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-23-en-juego.webp" alt="Fixture con un partido EN JUEGO y su marcador" width="390" height="844" loading="lazy"><figcaption>Partido en juego en el fixture</figcaption></figure>
+      <div>
+<p>Tocá <span class="k">VER TORNEO</span> (arriba) en cualquier momento: el partido que se está jugando aparece <span class="tag live">● EN JUEGO</span> con el marcador al instante, también si se juega en otro teléfono de la misma cuenta.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-20-corregir.webp" alt="Corregir el resultado de un partido terminado" width="390" height="844" loading="lazy"><figcaption>Corregir un resultado</figcaption></figure>
+      <div>
+<h3>Corregir un resultado</h3><p>¿Quedó mal un resultado o no se sincronizó bien? Tocá el partido, cambiá los números y <span class="k">GUARDAR CORRECCIÓN</span>. El fixture, el ganador que avanza y la tabla se actualizan solos, y la corrección queda anotada en la planilla del partido (<span class="k">VER PLANILLA</span>).</p>
+<div class="warn">En eliminación no puede haber empate. Si un partido terminó empatado, aparece <span class="k">JUGAR DESEMPATE</span>, o corregí el resultado.</div>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-tabla">
+    <h2><span class="n">14</span>Tabla y estadísticas</h2>
+    <div class="shot">
+      <figure><img src="img/es-31-posiciones.webp" alt="Tabla de posiciones y resultados" width="390" height="844" loading="lazy"><figcaption>Pestaña TABLA</figcaption></figure>
+      <div>
+<ul>
+<li><strong>Posiciones</strong>: <strong>PJ</strong> partidos jugados, <strong>DG</strong> diferencia de goles, <strong>PTS</strong> puntos. Debajo de cada equipo: <strong>G</strong> ganados, <strong>E</strong> empatados, <strong>P</strong> perdidos y goles a favor y en contra.</li>
+<li><strong>Resultados</strong>: los últimos partidos guardados.</li>
+<li><strong>Goleadores y pases</strong>: cuenta los goles donde se eligió al jugador de la lista.</li>
+</ul>
+<p>Los puntos (por defecto victoria 3, empate 1, derrota 0) y el orden de los desempates (diferencia de gol, goles a favor, cabeza a cabeza) se cambian en <span class="k">AJUSTES</span>.</p>
+      </div>
+    </div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-vivo">
+    <h2><span class="n">15</span>Compartir el fixture en vivo</h2>
+    <div class="shot">
+      <figure><img src="img/es-24-compartir.webp" alt="Sección Compartir en vivo con el link" width="390" height="844" loading="lazy"><figcaption>Compartir en vivo</figcaption></figure>
+      <div>
+<p>Para que familias, equipos o cualquiera en otro lugar siga el torneo <strong>en tiempo real</strong>:</p>
+<ol>
+<li>Iniciá sesión (hace falta cuenta).</li>
+<li>En <span class="k">FIXTURE</span>, abajo, tocá <span class="k">COMPARTIR FIXTURE EN VIVO</span>.</li>
+<li>Aparece el link: <span class="k">COPIAR</span>, <span class="k">ENVIAR POR WHATSAPP</span> o <span class="k">ABRIR</span>.</li>
+</ol>
+<p>El link tiene este formato: <code>iona.ar/ultimateclock/vivo.html?u=<b>usuario</b>&amp;t=<b>torneo</b></code>.</p>
+<ul>
+<li>Muestra el fixture, los resultados, los partidos en juego con su marcador y la tabla. <strong>No muestra jugadores</strong> y <strong>nadie puede cambiar nada</strong>.</li>
+<li>Se actualiza solo cada pocos segundos; no hace falta recargar.</li>
+<li><span class="k">DEJAR DE COMPARTIR</span> apaga el link. Si lo volvés a compartir, es el mismo link.</li>
+</ul>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-25-vivo.webp" alt="Página pública en vivo en el teléfono" width="390" height="844" loading="lazy"><figcaption>Lo que ve quien abre el link</figcaption></figure>
+      <div>
+<p>Quien abre el link ve el nombre del torneo, la etiqueta <span class="tag live">● EN VIVO</span>, el fixture y, en ligas, la tabla de posiciones. Abajo dice hace cuánto se actualizó.</p>
+      </div>
+    </div>
+    <figure class="wide"><img src="img/es-26-vivo-ancho.webp" alt="Página en vivo en una pantalla grande" width="1280" height="800" loading="lazy"><figcaption>En una computadora o un televisor se ve el cuadro completo: ideal para proyectarlo en la sede.</figcaption></figure>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-ajustes">
+    <h2><span class="n">16</span>Ajustes, archivo y varias canchas</h2>
+    <div class="shot">
+      <figure><img src="img/es-32-ajustes.webp" alt="Pestaña AJUSTES con tiempos y puntos" width="390" height="844" loading="lazy"><figcaption>Pestaña AJUSTES</figcaption></figure>
+      <div>
+<dl>
+<dt>Tiempos del torneo</dt><dd>Todos los partidos del torneo usan este perfil (WFDF, USA Ultimate o uno propio con <span class="k">＋ NUEVO PERFIL DE TIEMPOS</span>).</dd>
+<dt>Puntos y desempates</dt><dd>Cuántos puntos da ganar, empatar y perder, y en qué orden se desempata. <span class="k">GUARDAR REGLAS</span>.</dd>
+</dl>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/es-33-archivo.webp" alt="Archivo del torneo: exportar, CSV, Excel e importar" width="390" height="844" loading="lazy"><figcaption>Archivo del torneo</figcaption></figure>
+      <div>
+<h3>Archivo del torneo</h3><ul>
+<li><span class="k">EXPORTAR TORNEO</span>: un archivo <strong>.json</strong> con equipos, jugadores, fixture y partidos guardados. Sirve de copia o para pasarlo a otro teléfono.</li>
+<li><span class="k">CSV</span>: cada jugador con su equipo, goles y pases, para Excel.</li>
+<li><span class="k">EXCEL</span>: la plantilla con los equipos actuales.</li>
+<li><span class="k">IMPORTAR</span>: carga un .json de torneo o un Excel.</li>
+<li><span class="k">CAMBIAR NOMBRE</span>, <span class="k">ELIMINAR TORNEO</span> y <span class="k">＋ NUEVO TORNEO</span>.</li></ul>
+      </div>
+    </div>
+    <h3>Varias canchas al mismo tiempo</h3>
+<p><strong>Con cuenta</strong> (lo más simple): cada mesa entra con la misma cuenta. Cada partido que se juega se ve en todos los teléfonos y en el link en vivo, sin pasar archivos.</p>
+<p><strong>Sin cuenta</strong>: la organización arma el torneo, lo exporta y manda el archivo a cada mesa. Cada mesa lo importa, juega y guarda sus partidos. Al final, cada mesa exporta y manda su archivo, y la organización los importa uno por uno: los partidos se juntan sin repetirse.</p>
+<div class="warn">Al importar un torneo que ya tenías, los equipos y jugadores pasan a ser los del archivo. Los partidos guardados nunca se pierden.</div>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-problemas">
+    <h2><span class="n">17</span>Si algo no funciona</h2>
+    <dl>
+<dt>No suena.</dt><dd>Subí el volumen, sacá el modo silencio y tocá <span class="k">MENU</span> → <span class="k">ACTIVAR SONIDO</span> y <span class="k">PROBAR SONIDO</span>. En iPhone, el botón lateral de silencio también apaga la app.</dd>
+<dt>Las flechas de arriba están en rojo.</dt><dd>Hay cambios por subir o no hay internet. La app sigue funcionando; sube todo al volver la señal. Si dice que hay un conflicto, elegí qué dispositivo es el oficial.</dd>
+<dt>No puedo cambiar el tipo de fixture.</dt><dd>Ya hay partidos jugados o en juego. Si necesitás otro formato, creá un torneo nuevo con los mismos equipos (podés usar la plantilla de Excel).</dd>
+<dt>"No pude leer ese Excel".</dt><dd>Guardalo como <strong>.xlsx</strong> (no .xls, .csv ni .numbers) y usá la plantilla.</dd>
+<dt>El Excel dice que no encontró equipos.</dt><dd>Completá en cada hoja de equipo la celda <span class="cell">Equipo</span> y los jugadores debajo de <span class="cell">Nombre y apellido</span>, sin cambiar los títulos.</dd>
+<dt>El link en vivo dice que no existe.</dt><dd>Se dejó de compartir o el torneo se borró. Volvé a tocar <span class="k">COMPARTIR FIXTURE EN VIVO</span>.</dd>
+<dt>No aparecen mis partidos o torneos.</dt><dd>Sin cuenta, los datos son de cada teléfono y navegador: importá el archivo exportado. Con cuenta, revisá que entraste con el mismo usuario.</dd>
+<dt>Dice "Partido abierto en otra pestaña".</dt><dd>La app está abierta dos veces. Cerrá una y recargá.</dd>
+</dl>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+  <section id="es-glosario">
+    <h2><span class="n">18</span>Palabras clave</h2>
+    <dl>
+<dt>Pull</dt><dd>El lanzamiento que inicia cada punto.</dd>
+<dt>Llamado</dt><dd>Cuando un jugador para el juego por una falta, violación u otra situación.</dd>
+<dt>Time out</dt><dd>Pausa que pide un equipo; hay un cupo por tiempo.</dd>
+<dt>Time cap</dt><dd>Tiempo máximo del partido.</dd>
+<dt>Perfil de tiempos</dt><dd>Las duraciones: partido, primer tiempo, descanso, time out y llamados.</dd>
+<dt>Planilla</dt><dd>El registro de todo lo que pasó en el partido.</dd>
+<dt>Fixture</dt><dd>El calendario de cruces del torneo.</dd>
+<dt>Siembra</dt><dd>El orden de los equipos que define los cruces en eliminación.</dd>
+<dt>Libre / pasa directo</dt><dd>Cuando a un equipo no le toca rival en esa ronda.</dd>
+<dt>Sincronizar</dt><dd>Subir y bajar los cambios del servidor para que todos los dispositivos vean lo mismo.</dd>
+</dl>
+    <a class="top" href="#es-top">↑ Volver al índice</a>
+  </section>
+</article>
+
+<article lang="en" data-lang="en">
+  <h1 id="en-top">Ultimate Clock manual</h1>
+  <p class="lead">How to run an Ultimate game or tournament from your phone: both modes, the board, the scoresheet, the fixture, loading from Excel, results and the live link. Follow the steps; no tech skills needed.</p>
+  <section aria-labelledby="en-indice">
+    <h2 id="en-indice">Contents</h2>
+    <ol class="toc">
+      <li><a href="#en-inicio">Before you start</a></li>
+      <li><a href="#en-modos">The two modes</a></li>
+      <li><a href="#en-partido">Match mode: getting started</a></li>
+      <li><a href="#en-tablero">The board</a></li>
+      <li><a href="#en-durante">During the game</a></li>
+      <li><a href="#en-planilla">Scoresheet and export</a></li>
+      <li><a href="#en-menu">The menu</a></li>
+      <li><a href="#en-cuenta">Account and sync</a></li>
+      <li><a href="#en-torneo">Tournament mode: create the tournament</a></li>
+      <li><a href="#en-excel">Load teams from Excel</a></li>
+      <li><a href="#en-pantalla">The tournament screen</a></li>
+      <li><a href="#en-fixture">The fixture</a></li>
+      <li><a href="#en-resultados">Playing and entering results</a></li>
+      <li><a href="#en-tabla">Standings and stats</a></li>
+      <li><a href="#en-vivo">Share the fixture live</a></li>
+      <li><a href="#en-ajustes">Settings, file and several fields</a></li>
+      <li><a href="#en-problemas">Troubleshooting</a></li>
+      <li><a href="#en-glosario">Key words</a></li>
+    </ol>
+  </section>
+  <section id="en-inicio">
+    <h2><span class="n">1</span>Before you start</h2>
+    <p><strong>Ultimate Clock</strong> is a free app to run Ultimate Frisbee games and tournaments from a phone or tablet: game clock, goals, calls, pull, time outs, scoresheet, fixture and standings.</p>
+<ul>
+<li><strong>Open it</strong> at <a href="https://iona.ar/ultimateclock/">iona.ar/ultimateclock</a>.</li>
+<li><strong>Install it as an app.</strong> iPhone: Share button → <span class="k">Add to Home Screen</span>. Android: ⋮ menu → <span class="k">Install app</span>.</li>
+<li><strong>Works offline.</strong> Open it once with signal; after that it works at the field without internet.</li>
+</ul>
+    <div class="shot">
+      <figure><img src="img/en-01-entrada.webp" alt="Sign-in screen with username, password and USE WITHOUT AN ACCOUNT" width="390" height="844" loading="lazy"><figcaption>Sign in or use without an account</figcaption></figure>
+      <div>
+<h3>With or without an account?</h3>
+<p>When the app opens you choose:</p>
+<ul>
+<li><span class="k">SIGN IN</span> with username and password: everything is saved <strong>on the server</strong> instantly. You can use several phones at once, continue a game on another device if yours fails and <strong>share the fixture live</strong>.</li>
+<li><span class="k">USE WITHOUT AN ACCOUNT</span>: everything stays <strong>only on that phone</strong>. Export it to keep it or move it to another device.</li>
+</ul>
+<p>Accounts are given by the organizers (currently Ultimate Frisbee Mendoza). If you do not have one, use the app without an account: it works the same.</p>
+      </div>
+    </div>
+    <div class="tip"><strong>Tip:</strong> before the game turn the volume up and tap <span class="k">MENU</span> → <span class="k">TEST SOUND</span>.</div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-modos">
+    <h2><span class="n">2</span>The two modes</h2>
+    <div class="shot">
+      <figure><img src="img/en-02-bienvenida.webp" alt="Welcome with MATCH MODE and TOURNAMENT MODE" width="390" height="844" loading="lazy"><figcaption>Choosing the mode</figcaption></figure>
+      <div>
+<p>The app has two modes. You pick one on the welcome screen and change it whenever you want from <span class="k">MENU</span>.</p>
+<table class="cmp"><thead><tr><th></th><th>Match mode</th><th>Tournament mode</th></tr></thead><tbody>
+<tr><th>Use it for</th><td>A single game, a friendly, a practice.</td><td>A tournament or league with several teams.</td></tr>
+<tr><th>Teams</th><td>You type the names for each game.</td><td>You load them once (by hand or from Excel) and pick them from a list.</td></tr>
+<tr><th>Players</th><td>Optional, per game.</td><td>One list per team, with jersey number.</td></tr>
+<tr><th>Built for you</th><td>The game scoresheet.</td><td>Fixture, standings, scorers and assists, each team's history.</td></tr>
+<tr><th>Sharing</th><td>Scoresheet as PDF, CSV or WhatsApp.</td><td>Plus the live fixture with a link.</td></tr>
+</tbody></table>
+<p>If you are not sure, start with <strong>match mode</strong>.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-partido">
+    <h2><span class="n">3</span>Match mode: getting started</h2>
+    <div class="shot">
+      <figure><img src="img/en-03-equipos.webp" alt="Step 1: name and color of each team" width="390" height="844" loading="lazy"><figcaption>Step 1: teams</figcaption></figure>
+      <div>
+<h3>Step 1 · Teams</h3><p>Type each team name and tap a color (<span class="k">+</span> opens more). Tap <span class="k">NEXT →</span>.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-04-jugadores.webp" alt="Step 2: players of each team, one per line" width="390" height="844" loading="lazy"><figcaption>Step 2: players (optional)</figcaption></figure>
+      <div>
+<h3>Step 2 · Players (optional)</h3><p>If you want to know who scored each goal, type one player per line. The number goes first and is optional: <span class="k">7 Ana</span> <span class="k">Beto</span>. Otherwise leave it empty.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-05-tiempos.webp" alt="Step 3: choose WFDF, USA Ultimate or custom times" width="390" height="844" loading="lazy"><figcaption>Step 3: times</figcaption></figure>
+      <div>
+<h3>Step 3 · Times</h3><p>Choose the rules: <strong>WFDF</strong> or <strong>USA Ultimate</strong>. If your event uses other times, tap <span class="k">CUSTOM TIMES</span>. Then <span class="k">START</span>.</p><div class="tip">For the next game: <span class="k">MENU</span> → <span class="k">＋ NEW GAME</span>.</div>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-tablero">
+    <h2><span class="n">4</span>The board</h2>
+    <div class="shot">
+      <figure><img src="img/en-06-tablero.webp" alt="Board with clock, teams, calls, pull and time out" width="390" height="844" loading="lazy"><figcaption>The board</figcaption></figure>
+      <div>
+<p>Everything fits on one screen, top to bottom:</p>
+<ol>
+<li><strong>Game clock.</strong> <span class="k">▶ START</span> / <span class="k">Ⅱ PAUSE</span>. Below: time <strong>LEFT</strong> and time <strong>TO HALF</strong>.</li>
+<li><strong>Teams</strong> with the score. <span class="k">+ GOAL</span> adds, <span class="k">−</span> corrects (asks to confirm). Tap the name to change name and color.</li>
+<li><strong>Call</strong> timer for each team: time to restart play.</li>
+<li><strong>Pull</strong>: 90 seconds with whistle warnings.</li>
+<li><strong>Time out</strong>: one button per team with the ones left (for example <strong>2/2</strong>).</li>
+</ol>
+<p>At the top: the mode badge (in tournament mode it says <span class="k">VIEW TOURNAMENT</span> and takes you there), the sync indicator (green or red arrows) and <span class="k">MENU</span>.</p>
+      </div>
+    </div>
+    <div class="tip">Only the game clock can be paused. Pull, call, time out and halftime run until they finish.</div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-durante">
+    <h2><span class="n">5</span>During the game</h2>
+    <div class="shot">
+      <figure><img src="img/en-07-gol.webp" alt="Goal detail: assist and goal" width="390" height="844" loading="lazy"><figcaption>Goal detail</figcaption></figure>
+      <div>
+<h3>Scoring a goal</h3><ol>
+<li>Tap <span class="k">+ GOAL</span> for the team that scored. The goal counts right away.</li>
+<li>The detail opens: pick (or type) who made the <strong>assist</strong> and who scored the <strong>goal</strong>.</li>
+<li><span class="k">SAVE DETAILS</span> logs it; <span class="k">SKIP</span> leaves the goal without names; <span class="k">UNDO GOAL</span> removes it if it was a mistake.</li></ol>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-08-llamado.webp" alt="Choosing the call category" width="390" height="844" loading="lazy"><figcaption>Call type</figcaption></figure>
+      <div>
+<h3>Logging a call</h3><ol>
+<li>Tap <span class="k">START</span> on the call timer of the team that made it: the time starts.</li>
+<li>Pick what it was (Foul, Violation, Pick, Travel, Count, Disputed goal, Injury, Spirit timeout). Each has a short explanation.</li>
+<li><span class="k">RECORD</span>. If it was a mistake, <span class="k">CANCEL CALL</span>.</li></ol>
+<p>The app only records: <strong>it does not decide penalties</strong>.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-09-contadores.webp" alt="Board with pull, call and time out running" width="390" height="844" loading="lazy"><figcaption>Timers running</figcaption></figure>
+      <div>
+<h3>Pull</h3><p><span class="k">START</span> on Pull when teams get ready. Whistles at 45 s (1), 60 s (2), 75 s (3) and 90 s (4, time is up).</p>
+<h3>Time out</h3><p>Tap the button of the team asking for it and confirm. It comes off their allowance; it resets in the second half.</p>
+<h3>Halftime</h3><p>When the first half ends the clock stops and a notice appears: <span class="k">START HALFTIME</span> and then <span class="k">START SECOND HALF</span>.</p>
+      </div>
+    </div>
+    <div class="warn"><strong>Important:</strong> if you lock the phone or switch apps, alerts only sound when you come back. Keep the app open during the game; while a timer runs the screen stays on.</div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-planilla">
+    <h2><span class="n">6</span>Scoresheet and export</h2>
+    <div class="shot">
+      <figure><img src="img/en-11-planilla.webp" alt="Scoresheet with score, quick log and events" width="390" height="844" loading="lazy"><figcaption>Scoresheet</figcaption></figure>
+      <div>
+<p><span class="k">MENU</span> → <span class="k">SCORESHEET</span> shows the score, time outs left and every <strong>event</strong> with its minute. From <strong>Quick log</strong> you can also log goals, calls, time outs and <strong>incidents</strong>.</p>
+<h3>Export</h3><ul>
+<li><span class="k">PDF</span> to print or send to the organizers · <span class="k">CSV</span> for Excel · <span class="k">JSON</span> full copy · <span class="k">SEND BY WHATSAPP</span> game summary.</li></ul>
+<h3>Saving the game</h3><p>When it ends, <span class="k">MENU</span> → <span class="k">SAVE</span>. The game closes and shows up in <strong>Saved scoresheets</strong>, where you open, export or delete it. In tournament mode it only counts in the standings once saved.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-menu">
+    <h2><span class="n">7</span>The menu</h2>
+    <div class="shot">
+      <figure><img src="img/en-10-menu.webp" alt="Open menu" width="390" height="844" loading="lazy"><figcaption>MENU</figcaption></figure>
+      <div>
+<dl>
+<dt>LIGHT / DARK MODE · ESPAÑOL / ENGLISH</dt><dd>Light for sunshine, dark for night. App language.</dd>
+<dt>＋ NEW GAME · SCORESHEET · SAVE</dt><dd>Start another game, see the scoresheet and close the game.</dd>
+<dt>ENTER TOURNAMENT MODE / VIEW TOURNAMENT · EXIT TOURNAMENT MODE</dt><dd>Switch modes; in tournament mode, <span class="k">VIEW TOURNAMENT</span> opens the fixture.</dd>
+<dt>Account</dt><dd><span class="k">SIGN IN</span> or the sync status: <span class="k">✓ SYNCED</span>, <span class="k">SYNCING…</span> or, with no internet, <span class="k">OFFLINE · SYNC NOW</span>. <span class="k">SIGN OUT</span>.</dd>
+<dt>Sound and screen</dt><dd>Turn on and test sound, full screen and <span class="k">⚙ EDIT TIMES</span>.</dd>
+<dt>Help</dt><dd><span class="k">HOW TO USE THE APP</span> (guided tour), <span class="k">USER MANUAL</span> (this manual) and <span class="k">INFO</span>.</dd>
+<dt>RESET COUNTERS</dt><dd>Sets the current game to zero (asks to confirm). Saved scoresheets are kept.</dd>
+</dl>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-cuenta">
+    <h2><span class="n">8</span>Account and sync</h2>
+    <p>When signed in, <strong>every goal, call or change is saved on the server instantly</strong>. You do not need to do anything: the app syncs by itself all the time.</p>
+<ul>
+<li><strong>Indicator</strong> at the top (two arrows): <strong>green</strong> = everything saved; <strong>red</strong> = changes waiting or no connection.</li>
+<li><strong>No internet at the field?</strong> The app keeps working and uploads everything when signal returns. To force it, <span class="k">MENU</span> → <span class="k">OFFLINE · SYNC NOW</span>.</li>
+<li>If two phones changed the same thing, a notice lets you choose <strong>which one is official</strong>.</li>
+</ul>
+    <div class="shot">
+      <figure><img src="img/en-28-retomar.webp" alt="Notice to resume a game in progress from another device" width="390" height="844" loading="lazy"><figcaption>Resume on another device</figcaption></figure>
+      <div>
+<h3>If the phone fails</h3><p>Sign in with the same account on another phone or tablet. The app says there is a <strong>game in progress on another device</strong> and shows the score. Tap <span class="k">RESUME HERE</span>: you continue from the last event, with the clock paused at that moment. Check it before going on.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-torneo">
+    <h2><span class="n">9</span>Tournament mode: create the tournament</h2>
+    <div class="shot">
+      <figure><img src="img/en-12-torneo-crear.webp" alt="Screen to create a tournament" width="390" height="844" loading="lazy"><figcaption>Create the tournament</figcaption></figure>
+      <div>
+<ol>
+<li>On the welcome screen choose <span class="k">TOURNAMENT MODE</span>, or <span class="k">MENU</span> → <span class="k">ENTER TOURNAMENT MODE</span>.</li>
+<li>Type the name (for example "Mendoza Cup 2026") and tap <span class="k">CREATE TOURNAMENT</span>. Then add the teams one by one…</li>
+<li>…or, faster, <strong>load every team from an Excel file</strong> (see the next section).</li>
+</ol>
+<p>Once in tournament mode, the top badge says <span class="k">VIEW TOURNAMENT</span>: tap it to go back to the tournament from any screen.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-excel">
+    <h2><span class="n">10</span>Load teams from Excel</h2>
+    <div class="shot">
+      <figure><img src="img/en-13-excel.webp" alt="Load teams from Excel block with DOWNLOAD TEMPLATE and IMPORT EXCEL" width="390" height="844" loading="lazy"><figcaption>Excel template</figcaption></figure>
+      <div>
+<ol>
+<li>Tap <span class="k">DOWNLOAD TEMPLATE</span>. An <strong>.xlsx</strong> file is downloaded.</li>
+<li>Open it in Excel, Google Sheets, Numbers or LibreOffice and fill it in (see below).</li>
+<li>Save it as <strong>.xlsx</strong>. In Google Sheets: File → Download → Microsoft Excel.</li>
+<li>In the app tap <span class="k">IMPORT EXCEL</span> and pick the file.</li>
+</ol>
+<p>The block is on the create-tournament screen and on the <span class="k">TEAMS</span> tab. If you already loaded teams, the template includes them so you can complete or fix them.</p>
+      </div>
+    </div>
+    <h3>What the template looks like</h3>
+<table class="xl"><thead><tr><th>Sheet</th><th>What you fill in</th></tr></thead><tbody>
+<tr><td><b>INSTRUCTIONS</b></td><td>Nothing: it explains the steps, fixture types and colors.</td></tr>
+<tr><td><b>TOURNAMENT</b></td><td><span class="cell">Tournament name</span> and <span class="cell">Fixture type</span> (list: Round robin / Knockout).</td></tr>
+<tr><td><b>TEAM 1 … TEAM 8</b></td><td>One sheet per team: <span class="cell">Team</span> (name), <span class="cell">Color</span> (list or a code like #1B47E2) and below, the players, one per row: <span class="cell">Jersey number</span> (optional) and <span class="cell">Player full name</span>.</td></tr>
+</tbody></table>
+<ul>
+<li>Fill in only the <strong>yellow cells</strong>; do not change the grey titles.</li>
+<li><strong>More than 8 teams?</strong> Copy a team sheet: right-click the tab → Move or Copy → Create a copy. Empty team sheets are ignored.</li>
+<li><strong>A single sheet</strong> with columns <span class="cell">Team</span> · <span class="cell">Number</span> · <span class="cell">Player</span> also works (for example, a form export).</li>
+<li>Up to 64 teams and 60 players per team.</li>
+</ul>
+    <div class="shot">
+      <figure><img src="img/en-14-importar-excel.webp" alt="Import preview with the list of teams" width="390" height="844" loading="lazy"><figcaption>Before importing</figcaption></figure>
+      <div>
+<h3>Review and import</h3><p>Before loading anything, the app shows what it found: teams, number of players, tournament name and fixture type, and <strong>warnings</strong> if something is off (a number without a name, an unknown color, a repeated team).</p>
+<ul><li><span class="k">CREATE TOURNAMENT</span> / <span class="k">CREATE NEW TOURNAMENT</span>: builds a tournament with those teams.</li>
+<li><span class="k">ADD TO …</span>: adds the teams to the open tournament. Teams with the same name are updated; players with recorded goals are not removed.</li></ul>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-pantalla">
+    <h2><span class="n">11</span>The tournament screen</h2>
+    <div class="shot">
+      <figure><img src="img/en-16-equipos.webp" alt="TEAMS tab with the team cards" width="390" height="844" loading="lazy"><figcaption>TEAMS tab</figcaption></figure>
+      <div>
+<p>The tournament has four tabs:</p>
+<dl>
+<dt><span class="k">FIXTURE</span></dt><dd>The bracket or the rounds, to play and enter results.</dd>
+<dt><span class="k">TEAMS</span></dt><dd>Teams and their players, <span class="k">＋ ADD TEAM</span>, <span class="k">▶ START TOURNAMENT MATCH</span>, loading from Excel and the <strong>order and seeding</strong>.</dd>
+<dt><span class="k">STANDINGS</span></dt><dd>Standings, results, scorers and assists.</dd>
+<dt><span class="k">SETTINGS</span></dt><dd>Times, points and tiebreakers, tournament file, rename, delete and new tournament.</dd>
+</dl>
+<p>If you have more than one tournament, <strong>My tournaments</strong> appears at the top to switch between them.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-17-ficha-equipo.webp" alt="Team card with name, color and players" width="390" height="844" loading="lazy"><figcaption>Team card</figcaption></figure>
+      <div>
+<h3>Adding or fixing a team by hand</h3><ol>
+<li><span class="k">＋ ADD TEAM</span>, or tap a team to edit it.</li>
+<li>Name and color.</li>
+<li>Players: number (optional) and name on each row. Have the list in a message? Paste it in <strong>Paste a list of players</strong>.</li>
+<li><span class="k">SAVE TEAM</span>.</li></ol>
+<h3>Order and seeding</h3><p>In <span class="k">TEAMS</span>, use ▲ ▼ to order teams. In knockout the order sets the matchups: #1 plays the last one, and #1 and #2 can only meet in the final. After changing it, tap <span class="k">REBUILD PENDING MATCHES</span> in <span class="k">FIXTURE</span>. <span class="k">HISTORY</span> shows each team's games and scorers.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-fixture">
+    <h2><span class="n">12</span>The fixture</h2>
+    <div class="shot">
+      <figure><img src="img/en-15-fixture-tipos.webp" alt="Choosing the fixture type and CREATE FIXTURE" width="390" height="844" loading="lazy"><figcaption>Choosing the type</figcaption></figure>
+      <div>
+<p>On the <span class="k">FIXTURE</span> tab you choose the type by tapping one of the two cards:</p>
+<ul>
+<li><strong>Round robin</strong> (league): every team plays each other once. Most points wins.</li>
+<li><strong>Knockout</strong> (bracket): the loser is out, all the way to the final. If there are not 4, 8, 16… teams, some get a <strong>bye</strong> to the next round.</li>
+</ul>
+<p>Tap <span class="k">CREATE FIXTURE</span>. <strong>Until a match is played you can change the type whenever you want</strong> from the same cards: the fixture is rebuilt instantly. Once matches are played the type is locked and the app tells you why.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-18-llaves.webp" alt="Bracket on the phone" width="390" height="844" loading="lazy"><figcaption>Knockout on the phone</figcaption></figure>
+      <div>
+<h3>Knockout: the bracket</h3>
+<p>Each column is a stage (quarterfinals, semifinal, final) and the lines show where each winner moves on. The <strong>champion</strong> sits above the final. On the phone, swipe the bracket sideways.</p>
+<ul>
+<li><strong>Green</strong>: the team that won that match; the loser turns grey.</li>
+<li><span class="tag done">FINISHED</span> match over · <span class="tag live">● IN PLAY</span> being played, with the live score · dashed border: teams not known yet.</li>
+<li>The bar at the top shows how many matches were played and how many are in play.</li>
+</ul>
+      </div>
+    </div>
+    <figure class="wide"><img src="img/en-27-llaves-ancho.webp" alt="Mirrored bracket on a wide screen" width="1280" height="800" loading="lazy"><figcaption>On a tablet or computer the bracket opens to both sides, with the final in the middle.</figcaption></figure>
+    <div class="shot">
+      <figure><img src="img/en-29-liga.webp" alt="Round robin rounds" width="390" height="844" loading="lazy"><figcaption>Round robin: rounds</figcaption></figure>
+      <div>
+<h3>Round robin: rounds and results grid</h3>
+<p>Each column is a <strong>round</strong>, with its matches and how many were played (for example 3/3). With an odd number of teams, one has a <strong>bye</strong> each round. Swipe the rounds sideways.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-30-tabla-cruzada.webp" alt="Results grid with wins, draws and losses" width="390" height="844" loading="lazy"><figcaption>Results grid</figcaption></figure>
+      <div>
+<p>The <strong>results grid</strong> shows each result from the row team's point of view: <span class="tag w">green</span> won, <span class="tag l">red</span> lost, <span class="tag d">grey</span> draw, · to play. Tap a cell to open that match.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-resultados">
+    <h2><span class="n">13</span>Playing and entering results</h2>
+    <div class="shot">
+      <figure><img src="img/en-19-partido-fixture.webp" alt="Fixture match with PLAY THIS MATCH and enter the result" width="390" height="844" loading="lazy"><figcaption>Tapping a match</figcaption></figure>
+      <div>
+<p><strong>Tap any match in the fixture.</strong> Depending on its state you can:</p>
+<ul>
+<li><span class="k">▶ PLAY THIS MATCH</span>: opens the board with both teams already picked, and the game is linked to that matchup.</li>
+<li><strong>Already played?</strong> If it was played without the app (or on paper), type the result and <span class="k">SAVE RESULT</span>. It counts in the fixture and standings.</li>
+</ul>
+<p>You can also start a game from <span class="k">TEAMS</span> → <span class="k">▶ START TOURNAMENT MATCH</span> by picking both teams.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-21-gol-torneo.webp" alt="Goal detail with the team player list" width="390" height="844" loading="lazy"><figcaption>Goal in a tournament game</figcaption></figure>
+      <div>
+<h3>During a tournament game</h3><p>The board works the same. For each goal pick from the list who made the <strong>assist</strong> and who scored the <strong>goal</strong>: that builds the scorers table. When it ends, <span class="k">MENU</span> → <span class="k">SAVE</span>.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-23-en-juego.webp" alt="Fixture with a match IN PLAY and its score" width="390" height="844" loading="lazy"><figcaption>Match in play on the fixture</figcaption></figure>
+      <div>
+<p>Tap <span class="k">VIEW TOURNAMENT</span> (top) at any time: the match being played shows <span class="tag live">● IN PLAY</span> with the live score, even if it is played on another phone with the same account.</p>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-20-corregir.webp" alt="Correcting the result of a finished match" width="390" height="844" loading="lazy"><figcaption>Correcting a result</figcaption></figure>
+      <div>
+<h3>Correcting a result</h3><p>Is a result wrong or did it not sync properly? Tap the match, change the numbers and <span class="k">SAVE CORRECTION</span>. The fixture, the winner moving on and the standings update by themselves, and the correction is logged in the game scoresheet (<span class="k">VIEW SCORESHEET</span>).</p>
+<div class="warn">Knockout matches cannot end in a draw. If one did, <span class="k">PLAY TIEBREAK</span> appears, or correct the result.</div>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-tabla">
+    <h2><span class="n">14</span>Standings and stats</h2>
+    <div class="shot">
+      <figure><img src="img/en-31-posiciones.webp" alt="Standings and results" width="390" height="844" loading="lazy"><figcaption>STANDINGS tab</figcaption></figure>
+      <div>
+<ul>
+<li><strong>Standings</strong>: <strong>P</strong> played, <strong>GD</strong> goal difference, <strong>PTS</strong> points. Under each team: <strong>W</strong> won, <strong>D</strong> drawn, <strong>L</strong> lost and goals for and against.</li>
+<li><strong>Results</strong>: the latest saved games.</li>
+<li><strong>Scorers and assists</strong>: counts goals where the player was picked from the list.</li>
+</ul>
+<p>Points (by default win 3, draw 1, loss 0) and the tiebreaker order (goal difference, goals for, head to head) are changed in <span class="k">SETTINGS</span>.</p>
+      </div>
+    </div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-vivo">
+    <h2><span class="n">15</span>Share the fixture live</h2>
+    <div class="shot">
+      <figure><img src="img/en-24-compartir.webp" alt="Share live section with the link" width="390" height="844" loading="lazy"><figcaption>Share live</figcaption></figure>
+      <div>
+<p>So families, teams or anyone elsewhere can follow the tournament <strong>in real time</strong>:</p>
+<ol>
+<li>Sign in (an account is required).</li>
+<li>In <span class="k">FIXTURE</span>, at the bottom, tap <span class="k">SHARE LIVE FIXTURE</span>.</li>
+<li>The link appears: <span class="k">COPY</span>, <span class="k">SEND BY WHATSAPP</span> or <span class="k">OPEN</span>.</li>
+</ol>
+<p>The link looks like this: <code>iona.ar/ultimateclock/vivo.html?u=<b>username</b>&amp;t=<b>tournament</b></code>.</p>
+<ul>
+<li>It shows the fixture, results, matches in play with their score and the standings. <strong>It does not show players</strong> and <strong>nobody can change anything</strong>.</li>
+<li>It updates by itself every few seconds; no need to reload.</li>
+<li><span class="k">STOP SHARING</span> turns the link off. If you share again, it is the same link.</li>
+</ul>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-25-vivo.webp" alt="Public live page on the phone" width="390" height="844" loading="lazy"><figcaption>What people see when they open the link</figcaption></figure>
+      <div>
+<p>Whoever opens the link sees the tournament name, the <span class="tag live">● LIVE</span> label, the fixture and, in leagues, the standings. At the bottom it says how long ago it was updated.</p>
+      </div>
+    </div>
+    <figure class="wide"><img src="img/en-26-vivo-ancho.webp" alt="Live page on a large screen" width="1280" height="800" loading="lazy"><figcaption>On a computer or a TV the whole bracket fits: great to project at the venue.</figcaption></figure>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-ajustes">
+    <h2><span class="n">16</span>Settings, file and several fields</h2>
+    <div class="shot">
+      <figure><img src="img/en-32-ajustes.webp" alt="SETTINGS tab with times and points" width="390" height="844" loading="lazy"><figcaption>SETTINGS tab</figcaption></figure>
+      <div>
+<dl>
+<dt>Tournament times</dt><dd>Every game in the tournament uses this profile (WFDF, USA Ultimate or your own with <span class="k">＋ NEW TIME PROFILE</span>).</dd>
+<dt>Points and tiebreakers</dt><dd>How many points a win, draw and loss give, and the tiebreaker order. <span class="k">SAVE RULES</span>.</dd>
+</dl>
+      </div>
+    </div>
+    <div class="shot">
+      <figure><img src="img/en-33-archivo.webp" alt="Tournament file: export, CSV, Excel and import" width="390" height="844" loading="lazy"><figcaption>Tournament file</figcaption></figure>
+      <div>
+<h3>Tournament file</h3><ul>
+<li><span class="k">EXPORT TOURNAMENT</span>: a <strong>.json</strong> file with teams, players, fixture and saved games. Use it as a backup or to move it to another phone.</li>
+<li><span class="k">CSV</span>: each player with team, goals and assists, for Excel.</li>
+<li><span class="k">EXCEL</span>: the template with the current teams.</li>
+<li><span class="k">IMPORT</span>: loads a tournament .json or an Excel file.</li>
+<li><span class="k">RENAME</span>, <span class="k">DELETE TOURNAMENT</span> and <span class="k">＋ NEW TOURNAMENT</span>.</li></ul>
+      </div>
+    </div>
+    <h3>Several fields at the same time</h3>
+<p><strong>With an account</strong> (simplest): every table signs in with the same account. Every game played shows on every phone and on the live link, with no files to pass around.</p>
+<p><strong>Without an account</strong>: the organizers build the tournament, export it and send the file to each table. Each table imports it, plays and saves its games. At the end, each table exports and sends its file, and the organizers import them one by one: games are merged without duplicates.</p>
+<div class="warn">When importing a tournament you already had, teams and players become the ones in the file. Saved games are never lost.</div>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-problemas">
+    <h2><span class="n">17</span>Troubleshooting</h2>
+    <dl>
+<dt>No sound.</dt><dd>Turn the volume up, disable silent mode and tap <span class="k">MENU</span> → <span class="k">TURN SOUND ON</span> and <span class="k">TEST SOUND</span>. On iPhone, the side silent switch also mutes the app.</dd>
+<dt>The arrows at the top are red.</dt><dd>Changes are waiting or there is no internet. The app keeps working and uploads everything when signal returns. If it reports a conflict, choose which device is official.</dd>
+<dt>I cannot change the fixture type.</dt><dd>Matches were already played or are in play. For another format, create a new tournament with the same teams (you can use the Excel template).</dd>
+<dt>"Could not read that Excel file".</dt><dd>Save it as <strong>.xlsx</strong> (not .xls, .csv or .numbers) and use the template.</dd>
+<dt>The Excel import found no teams.</dt><dd>On each team sheet fill in the <span class="cell">Team</span> cell and the players below <span class="cell">Player full name</span>, without changing the titles.</dd>
+<dt>The live link says it does not exist.</dt><dd>Sharing was turned off or the tournament was deleted. Tap <span class="k">SHARE LIVE FIXTURE</span> again.</dd>
+<dt>My games or tournaments are missing.</dt><dd>Without an account, data belongs to each phone and browser: import the exported file. With an account, check you signed in with the same username.</dd>
+<dt>It says "Game open in another tab".</dt><dd>The app is open twice. Close one and reload.</dd>
+</dl>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+  <section id="en-glosario">
+    <h2><span class="n">18</span>Key words</h2>
+    <dl>
+<dt>Pull</dt><dd>The throw that starts each point.</dd>
+<dt>Call</dt><dd>When a player stops play for a foul, violation or other situation.</dd>
+<dt>Time out</dt><dd>A break asked for by a team; there is an allowance per half.</dd>
+<dt>Time cap</dt><dd>Maximum game time.</dd>
+<dt>Time profile</dt><dd>The durations: game, first half, halftime, time out and calls.</dd>
+<dt>Scoresheet</dt><dd>The record of everything that happened in the game.</dd>
+<dt>Fixture</dt><dd>The tournament schedule of matchups.</dd>
+<dt>Seeding</dt><dd>The team order that sets the knockout matchups.</dd>
+<dt>Bye</dt><dd>When a team has no opponent in that round.</dd>
+<dt>Sync</dt><dd>Uploading and downloading changes so every device sees the same thing.</dd>
+</dl>
+    <a class="top" href="#en-top">↑ Back to contents</a>
+  </section>
+</article>
+    </main>
+    <footer>Ultimate Clock · <a href="https://iona.ar/">IONA.AR</a> · Ultimate Frisbee Mendoza</footer>
+    <script src="manual.js"></script>
+  </body>
+</html>
