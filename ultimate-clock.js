@@ -567,9 +567,12 @@
     return `--team-color:${esc(team.color)};--team-ink:${contrastColor(team.color)};`;
   }
 
+  /* Logo del equipo (el del torneo si el equipo del partido viene de uno). */
+  const teamLogo=team=>team?.logo||(team?.tid?tournamentTeam(team.tid)?.logo:'')||'';
+  const logoImg=(team,cls='team-logo')=>{const src=teamLogo(team);return src?`<img class="${cls}" src="${esc(src)}" alt="" width="28" height="28">`:'';};
   function teamMarkup(team,index) {
     return `<article class="instrument team-card team-${index+1}" data-team-card="${index}" style="${teamStyle(team)}">
-      <button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="${esc(t('Editar nombre y color de {team}',{team:team.name}))}"><strong class="team-name">${esc(team.name)}</strong><span class="team-edit" aria-hidden="true">✎</span></button>
+      <button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="${esc(t('Editar nombre y color de {team}',{team:team.name}))}">${logoImg(team)}<strong class="team-name">${esc(team.name)}</strong><span class="team-edit" aria-hidden="true">✎</span></button>
       <div class="score-display" role="img" aria-label="${esc(t('{n} goles de {team}',{n:team.score,team:team.name}))}">${team.score}</div>
       <div class="score-actions"><button class="score-button minus" type="button" data-action="minus" data-team="${index}" aria-label="${esc(t('Restar un punto a {team}',{team:team.name}))}">−</button><button class="score-button plus" type="button" data-action="goal" data-team="${index}" aria-label="${esc(t('Sumar un gol a {team}',{team:team.name}))}">${esc(t('+ GOL'))}</button></div>
     </article>`;
@@ -1123,7 +1126,7 @@
   function newSheetRow(player) {return {pid:player?.id||'',name:player?.name||'',number:player?.number||''};}
   function openTeamSheet(teamId) {
     const team=teamId?tournamentTeam(teamId):null;
-    teamSheet=team?{id:team.id,name:team.name,color:team.color,rows:team.players.map(newSheetRow)}:{id:'',name:'',color:TEAM_PRESETS[(state.tournament?.teams.length||0)%TEAM_PRESETS.length],rows:[]};
+    teamSheet=team?{id:team.id,name:team.name,color:team.color,logo:team.logo||'',rows:team.players.map(newSheetRow)}:{id:'',name:'',logo:'',color:TEAM_PRESETS[(state.tournament?.teams.length||0)%TEAM_PRESETS.length],rows:[]};
     while(teamSheet.rows.length<SHEET_MIN_ROWS)teamSheet.rows.push(newSheetRow());
     renderTournament();app.scrollTop=0;
     if(!team)app.querySelector('.ts-team-name')?.focus({preventScroll:true});
@@ -1144,7 +1147,8 @@
     app.innerHTML=`<section class="tournament-screen team-sheet"><div class="screen-head"><button class="back-button" type="button" data-action="t-cancel-sheet">← ${esc(t('Torneo'))}</button><div><span class="screen-eyebrow">${esc(state.tournament.name)}</span><h1>${esc(t(editing?'Ficha del equipo':'Nuevo equipo'))}</h1></div></div>
       <form data-form="t-team" data-team="${esc(s.id)}" class="sheet-form" novalidate>
         <section class="settings-section sheet-top" style="${teamStyle(s)}"><div class="field"><label for="ts-team-name">${esc(t('Nombre del equipo'))}</label><input id="ts-team-name" class="ts-team-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" value="${esc(s.name)}" placeholder="${esc(t('Ej.: Ñandúes'))}" ${editing?'':'autofocus'}></div>
-          <div class="field"><label>${esc(t('Color'))}</label><div class="sheet-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c.toLowerCase()===s.color.toLowerCase()?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="t-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c.toLowerCase()===s.color.toLowerCase()}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color" value="${esc(s.color)}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div></section>
+          <div class="field"><label>${esc(t('Color'))}</label><div class="sheet-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c.toLowerCase()===s.color.toLowerCase()?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="t-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c.toLowerCase()===s.color.toLowerCase()}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color" value="${esc(s.color)}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div>
+          <div class="field logo-field"><label for="ts-logo">${esc(t('Logo del equipo'))}</label><div class="logo-row">${s.logo?`<img class="team-logo is-sheet" src="${esc(s.logo)}" alt="" width="56" height="56">`:`<span class="team-logo is-sheet is-empty" aria-hidden="true"></span>`}<label class="button" for="ts-logo">${esc(t(s.logo?'CAMBIAR LOGO':'SUBIR LOGO'))}</label><input id="ts-logo" class="logo-input" type="file" accept="image/*">${s.logo?`<button class="button" type="button" data-action="t-logo-clear">${esc(t('QUITAR LOGO'))}</button>`:''}</div><p class="sheet-hint">${esc(t('Se muestra en el tablero, el fixture y el link en vivo. Se achica solo a 128 px.'))}</p></div></section>
         <section class="settings-section"><div class="section-heading"><h2>${esc(t('Jugadores'))}</h2></div><p class="sheet-hint">${esc(t('El nombre es obligatorio; el número de camiseta es opcional.'))}</p>
           <div class="sheet-rows">${s.rows.map(sheetRowMarkup).join('')}</div>
           <button class="button sheet-add-row" type="button" data-action="t-add-row">＋ ${esc(t('AGREGAR JUGADOR'))}</button>
@@ -1206,7 +1210,7 @@
       <div class="export-actions"><button class="button export-whatsapp" type="button" data-action="t-share-wa">${WHATSAPP_SVG}${esc(t('ENVIAR POR WHATSAPP'))}</button><a class="button" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('ABRIR'))}</a><button class="button button-danger" type="button" data-action="t-share-off">${esc(t('DEJAR DE COMPARTIR'))}</button></div></section>`;
   }
   function teamsTab(tour) {
-    const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))} · ${esc(t('EDITAR'))}</span></button>`).join('');
+    const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}">${logoImg(team,'team-logo is-list')}<strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))} · ${esc(t('EDITAR'))}</span></button>`).join('');
     const order=tour.teams.map((team,i)=>`<li class="order-row" style="${teamStyle(team)}"><strong>${i+1}. ${esc(team.name)}</strong><span class="order-actions"><button class="icon-button" type="button" data-action="t-move" data-team="${esc(team.id)}" data-delta="-1" aria-label="${esc(t('Subir'))}"${i?'':' disabled'}>▲</button><button class="icon-button" type="button" data-action="t-move" data-team="${esc(team.id)}" data-delta="1" aria-label="${esc(t('Bajar'))}"${i<tour.teams.length-1?'':' disabled'}>▼</button><button class="icon-button" type="button" data-action="t-history" data-team="${esc(team.id)}">${esc(t('HISTORIAL'))}</button></span></li>`).join('');
     return `<section class="settings-section"><div class="section-heading"><h2>${esc(t('Equipos'))}</h2><span>${tour.teams.length}</span></div>
         ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Tocá el botón para completar la ficha del primero.'))}</p>`}
@@ -1341,6 +1345,12 @@
     let parsed=null;
     try{if(file.size<=5e6)parsed=UCTournamentSheet.parse(await UCXlsx.read(new Uint8Array(await file.arrayBuffer())));}catch{}
     if(!parsed){showToast(t('No pude leer ese Excel. Usá la plantilla y guardala como .xlsx.'));return;}
+    /* Los logos del Excel llegan como imagen cruda: se achican a 128 px como los que se suben desde la ficha. */
+    for(const team of parsed.teams){
+      if(!team.image)continue;
+      try{const logo=await logoFromFile(new Blob([team.image.data],{type:'image/'+team.image.ext}));if(logo)team.logo=logo;}catch{}
+      delete team.image;
+    }
     const warnings=parsed.warnings.length?`<ul class="import-warnings">${parsed.warnings.slice(0,30).map(w=>`<li>${w.sheet?`<b>${esc(w.sheet)}:</b> `:''}${esc(t(w.key,w.vars))}</li>`).join('')}</ul>`:'';
     if(!parsed.teams.length){openModal(t('Importar Excel'),`<p>${esc(t('No encontré equipos en el archivo. Completá al menos una hoja de equipo con el nombre y los jugadores.'))}</p>${warnings}<div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cerrar'))}</button><button class="button button-primary" type="button" data-action="t-template">${esc(t('DESCARGAR PLANTILLA'))}</button></div>`);return;}
     parsed.fileName=String(file.name||'').replace(/\.xlsx$/i,'').replace(/[-_]+/g,' ').trim();
@@ -1367,9 +1377,17 @@
     closeModal();saveState();renderTournament();app.scrollTop=0;
     showToast(t('Listo: {a} equipos nuevos, {u} actualizados y {n} jugadores.',{a:sum.added,u:sum.updated,n:sum.players}));
   }
-  function downloadTemplate() {
-    const tour=creatingTournament?null:state.tournament;
-    download(UCXlsx.write(UCTournamentSheet.template({t,lang,tournament:tour})),UCXlsx.MIME,`${tour?exportSlug(tour.name)+'-':''}${t('plantilla-torneo')}.xlsx`);
+  /* Logo (data URL WebP) → PNG, que es lo que Excel abre en todas partes. */
+  async function logoPng(dataUrl) {
+    const img=new Image();img.src=dataUrl;await img.decode();
+    const c=document.createElement('canvas');c.width=c.height=128;c.getContext('2d').drawImage(img,0,0,128,128);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+  async function downloadTemplate() {
+    const tour=creatingTournament?null:state.tournament,logos={};
+    for(const team of tour?.teams||[])if(team.logo)try{logos[team.id]={ext:'png',data:await logoPng(team.logo)};}catch{}
+    download(UCXlsx.write(UCTournamentSheet.template({t,lang,tournament:tour,logos})),UCXlsx.MIME,`${tour?exportSlug(tour.name)+'-':''}${t('plantilla-torneo')}.xlsx`);
     showToast(t('Plantilla descargada. Completala y después tocá IMPORTAR EXCEL.'));
   }
   window.matchMedia?.('(min-width: 900px)').addEventListener?.('change',()=>{if(app.querySelector('.tournament-screen')&&!teamSheet&&tournamentTab==='fixture')renderTournament();});
@@ -1631,6 +1649,7 @@
   }
   function tournamentAction(action,el) {
     if(!action.startsWith('t-'))return false;
+    if(action==='t-logo-clear'){captureTeamSheet();if(teamSheet)teamSheet.logo='';renderTournament();return true;}
     const tour=state.tournament,team=tournamentTeam(el.dataset.team);
     if(action==='t-new-team'&&tour){if(tour.teams.length>=TN.LIMITS.teams)showToast(t('Llegaste al máximo de equipos.'));else openTeamSheet('');}
     else if(action==='t-open-team'&&team)openTeamSheet(team.id);
@@ -1700,6 +1719,23 @@
     top.style.setProperty('--team-color',color);top.style.setProperty('--team-ink',contrastColor(color));
     form.querySelectorAll('.sheet-colors .color-preset').forEach(b=>{const on=b.dataset.color.toLowerCase()===color.toLowerCase();b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   }
+  /* Foto → cuadrado de 128 px (recorte al centro) como data URL WebP; PNG si el navegador no escribe WebP. */
+  async function logoFromFile(file) {
+    const bmp=await createImageBitmap(file),side=Math.min(bmp.width,bmp.height),c=document.createElement('canvas');
+    c.width=c.height=128;c.getContext('2d').drawImage(bmp,(bmp.width-side)/2,(bmp.height-side)/2,side,side,0,0,128,128);
+    if(bmp.close)bmp.close();
+    for(const q of [.85,.6,.4]){const url=c.toDataURL('image/webp',q);if(url.startsWith('data:image/webp')&&TN.cleanLogo(url))return url;}
+    const png=c.toDataURL('image/png');return TN.cleanLogo(png)?png:'';
+  }
+  async function pickTeamLogo(input) {
+    const file=input.files?.[0];if(!file||!teamSheet)return;
+    if(file.size>8*1024*1024){showToast(t('La imagen es muy pesada (máximo 8 MB).'));input.value='';return;}
+    try{
+      const logo=await logoFromFile(file);
+      if(!logo){showToast(t('No se pudo achicar la imagen. Probá con otra.'));return;}
+      captureTeamSheet();teamSheet.logo=logo;renderTournament();
+    }catch{showToast(t('No se pudo leer la imagen. Probá con otra.'));}
+  }
   /* Valida y guarda la ficha: nombre del equipo obligatorio; filas con número deben tener nombre; sin números repetidos. */
   function saveTeamSheet() {
     const tour=state.tournament,s=captureTeamSheet();if(!tour||!s)return;
@@ -1721,6 +1757,7 @@
     if(!team){team=TN.makeTeam(name,color);tour.teams.push(team);}
     const old=new Map(team.players.map(p=>[p.id,p]));
     team.name=name;team.color=color;
+    if(s.logo&&TN.cleanLogo(s.logo))team.logo=s.logo;else delete team.logo;
     team.players=entries.map(e=>{const p=old.get(e.pid);if(p){p.name=e.name;p.number=e.number;return p;}return TN.makePlayer(e.name,e.number);});
     const added=!s.id;teamSheet=null;saveState();renderTournament();app.scrollTop=0;
     showToast(t(added?'Equipo {name} agregado con {n} jugadores.':'Equipo {name} guardado con {n} jugadores.',{name,n:team.players.length}));
@@ -1982,6 +2019,7 @@
   });
 
   document.addEventListener("change", event => {
+    if(event.target.id==='ts-logo'){pickTeamLogo(event.target);return;}
     if(tournamentChange(event.target))return;
     if(event.target.name==='type'&&event.target.closest('[data-form="call"]')){const guidance=document.getElementById('call-guidance');if(guidance)guidance.textContent=t(CALL_GUIDANCE[event.target.value]||'');}
     if (event.target.dataset.setting === "ruleset") {

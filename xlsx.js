@@ -60,7 +60,7 @@
       const name = dec.decode(bytes.subarray(p + 46, p + 46 + nl));
       const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
       const raw = bytes.subarray(start, start + size);
-      if (/\.(xml|rels)$/i.test(name)) out.set(name.replace(/^\//, ''), method === 8 ? await inflate(raw) : method === 0 ? raw : null);
+      if (/\.(xml|rels|png|jpe?g|gif|webp)$/i.test(name)) out.set(name.replace(/^\//, ''), method === 8 ? await inflate(raw) : method === 0 ? raw : null);
       p += 46 + nl + xl + cl;
     }
     return out;
@@ -129,7 +129,7 @@
       `<cfRule type="cellIs" dxfId="${ctx.dxfs.findIndex(d => d.fill === hex6(r.fill) && d.font === hex6(r.font))}" priority="${prio++}" operator="equal"><formula>"${esc(r.text)}"</formula></cfRule>`).join('')}</conditionalFormatting>`).join('');
     const tab = sheet.tabColor ? `<sheetPr><tabColor rgb="FF${sheet.tabColor.replace('#', '').toUpperCase()}"/></sheetPr>` : '';
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="${NS}" xmlns:r="${NS_R}">${tab}<sheetViews><sheetView workbookViewId="0" showGridLines="0"${sheet.active ? ' tabSelected="1"' : ''}>${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="20" customHeight="1"/>${cols}<sheetData>${rows}</sheetData>${merges}${cond}${vals}<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/></worksheet>`;
+<worksheet xmlns="${NS}" xmlns:r="${NS_R}">${tab}<sheetViews><sheetView workbookViewId="0" showGridLines="0"${sheet.active ? ' tabSelected="1"' : ''}>${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="20" customHeight="1"/>${cols}<sheetData>${rows}</sheetData>${merges}${cond}${vals}<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>${sheet.images?.length ? '<drawing r:id="rId1"/>' : ''}</worksheet>`;
   }
 
   /* sheets: [{ name, rows, cols, merges, validations, freeze, tabColor, select }]. Devuelve los bytes del .xlsx. */
@@ -141,9 +141,27 @@
       for (const row of sh.rows || []) for (const cell of Array.isArray(row) ? row : row.cells || []) if (cell && cell.fill && !ctx.swatches.includes(hex6(cell.fill))) ctx.swatches.push(hex6(cell.fill));
       for (const c of sh.conditional || []) for (const r of c.rules) { const d = { fill: hex6(r.fill), font: hex6(r.font) }; if (!ctx.dxfs.some(x => x.fill === d.fill && x.font === d.font)) ctx.dxfs.push(d); }
     }
+    /* Imágenes: sheet.images = [{ col, row (0-based), width, height (px), ext: 'png'|'jpeg', data: Uint8Array }]. */
+    const imageSheets = [], imageFiles = [];
+    let imageNo = 0;
+    list.forEach((sh, i) => {
+      if (!sh.images?.length) return;
+      const n = i + 1, rels = [];
+      imageSheets.push(n);
+      const anchors = sh.images.map((im, k) => {
+        imageNo++;
+        imageFiles.push({ name: `xl/media/image${imageNo}.${im.ext}`, data: im.data });
+        rels.push(`<Relationship Id="rId${k + 1}" Type="${NS_R}/image" Target="../media/image${imageNo}.${im.ext}"/>`);
+        const cx = Math.round(im.width * 9525), cy = Math.round(im.height * 9525);
+        return `<xdr:oneCellAnchor><xdr:from><xdr:col>${im.col}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>${im.row}</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="${k + 2}" name="${esc(im.name || 'Logo')} ${k + 1}"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId${k + 1}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>`;
+      }).join('');
+      imageFiles.push({ name: `xl/drawings/drawing${n}.xml`, data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="${NS_R}">${anchors}</xdr:wsDr>` });
+      imageFiles.push({ name: `xl/drawings/_rels/drawing${n}.xml.rels`, data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>` });
+      imageFiles.push({ name: `xl/worksheets/_rels/sheet${n}.xml.rels`, data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${NS_R}/drawing" Target="../drawings/drawing${n}.xml"/></Relationships>` });
+    });
     const files = [
       { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${list.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${list.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${imageSheets.map(n => `<Override PartName="/xl/drawings/drawing${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`).join('')}</Types>` },
       { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${NS_R}/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
       { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -151,7 +169,8 @@
       { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${list.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${NS_R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${list.length + 1}" Type="${NS_R}/styles" Target="styles.xml"/></Relationships>` },
       { name: 'xl/styles.xml', data: stylesXml(ctx.swatches, ctx.dxfs) },
-      ...list.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s, ctx) }))
+      ...list.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: sheetXml(s, ctx) })),
+      ...imageFiles
     ];
     return zip(files);
   }
@@ -205,8 +224,33 @@
         rows[ri] = row;
       });
       for (let i = 0; i < rows.length; i++) if (!rows[i]) rows[i] = [];
-      return { name: s.name, rows };
+      return { name: s.name, rows, images: readImages(target) };
     });
+
+    /* Imágenes ancladas a una hoja: [{ col, row, ext, data }] (cualquier tipo de anclaje que use Excel, Sheets o LibreOffice). */
+    function readImages(sheetPath) {
+      const dir = sheetPath.slice(0, sheetPath.lastIndexOf('/') + 1), file = sheetPath.slice(dir.length);
+      const relsOf = (path) => { const d = path.slice(0, path.lastIndexOf('/') + 1), f = path.slice(d.length), out = {}; get(`${d}_rels/${f}.rels`).replace(/<Relationship\b([^>]*)\/?>/g, (_, a) => { const o = attrs(a); out[o.Id] = o; }); return out; };
+      const resolve = (base, target) => { if (target.startsWith('/')) return target.slice(1); const parts = base.split('/').slice(0, -1); for (const p of target.split('/')) { if (p === '..') parts.pop(); else if (p !== '.') parts.push(p); } return parts.join('/'); };
+      const out = [];
+      const sheetRels = relsOf(sheetPath);
+      for (const rel of Object.values(sheetRels)) {
+        if (!/\/drawing$/.test(rel.Type || '')) continue;
+        const dpath = resolve(sheetPath, rel.Target), dxml = get(dpath), drels = relsOf(dpath);
+        dxml.replace(/<(twoCellAnchor|oneCellAnchor|absoluteAnchor)\b[\s\S]*?<\/\1>/g, (block) => {
+          const blip = /<blip\b([^>]*)\/?>/.exec(block);
+          if (!blip) return '';
+          const target = drels[attrs(blip[1])['r:embed']]?.Target;
+          const data = target && files.get(resolve(dpath, target));
+          const ext = (/\.(png|jpe?g|gif|webp)$/i.exec(target || '') || [])[1];
+          if (!data || !ext) return '';
+          const col = Number(/<from>[\s\S]*?<col>(\d+)<\/col>/.exec(block)?.[1] ?? 0), row = Number(/<from>[\s\S]*?<row>(\d+)<\/row>/.exec(block)?.[1] ?? 0);
+          out.push({ col, row, ext: ext.toLowerCase().replace('jpg', 'jpeg'), data });
+          return '';
+        });
+      }
+      return out;
+    }
   }
 
   const isXlsx = bytes => bytes && bytes[0] === 0x50 && bytes[1] === 0x4b;

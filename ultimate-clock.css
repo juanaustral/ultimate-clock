@@ -716,3 +716,12 @@ a.button{text-decoration:none}
 .gate-version{justify-self:center;min-height:32px;padding:0 8px;background:none;border:0;color:var(--muted);font:700 12px/1 var(--font-body);letter-spacing:.06em;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .gate-version[hidden]{display:none}
 .login-card .changelog{max-height:50vh;overflow:auto}
+
+.team-logo{width:28px;height:28px;border-radius:6px;object-fit:cover;flex:none;background:#fff}
+.team-name-button .team-logo{margin-right:8px;vertical-align:middle}
+.team-logo.is-list{width:32px;height:32px}
+.team-logo.is-sheet{width:56px;height:56px;border-radius:10px}
+.team-logo.is-empty{display:inline-block;border:2px dashed currentColor;opacity:.4;background:none}
+.logo-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.fx-logo{width:20px;height:20px;border-radius:4px;object-fit:cover;flex:none;background:#fff}

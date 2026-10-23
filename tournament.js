@@ -14,6 +14,12 @@
     const clean = text(name, LIMITS.name);
     return clean ? { id: uid('player'), name: clean, number: cleanNumber(number) } : null;
   }
+  /* Logo del equipo: solo una imagen embebida (data URL) chica; todo lo demás se descarta. */
+  const LOGO_MAX = 40000;
+  function cleanLogo(value) {
+    const v = String(value || '');
+    return v.length <= LOGO_MAX && /^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(v) ? v : '';
+  }
   function makeTeam(name, color) {
     const clean = text(name, LIMITS.name);
     return clean ? { id: uid('team'), name: clean, color: isHex(color) ? color : '#1b47e2', players: [] } : null;
@@ -104,7 +110,8 @@
         const playerName = text(p?.name, LIMITS.name);
         if (playerName) players.push({ id: unique(p.id, 'player'), name: playerName, number: cleanNumber(p.number) });
       }
-      teams.push({ id: unique(team.id, 'team'), name: teamName, color: isHex(team.color) ? team.color : '#1b47e2', players });
+      const logo = cleanLogo(team.logo);
+      teams.push({ id: unique(team.id, 'team'), name: teamName, color: isHex(team.color) ? team.color : '#1b47e2', ...(logo ? { logo } : {}), players });
     }
     const fixture = root.UCFixture ? root.UCFixture.sanitize(input.fixture, teams.map(t => t.id)) : (typeof require !== 'undefined' ? require('./fixture.js').sanitize(input.fixture, teams.map(t => t.id)) : null);
     const out = { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), scoring: sanitizeScoring(input.scoring), fixture, teams };
@@ -235,6 +242,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { slugify, sanitizeShare, FORMAT, LIMITS, TIEBREAKS, teamHistory, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
+  const api = { cleanLogo, LOGO_MAX, slugify, sanitizeShare, FORMAT, LIMITS, TIEBREAKS, teamHistory, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
