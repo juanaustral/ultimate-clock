@@ -13,7 +13,7 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) p
     page.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
     await page.goto(URL);
     await page.waitForSelector('.login-gate');
-    await page.click('[data-gate=local]');
+    await page.click('[data-gate=free]');
     await page.waitForTimeout(500);
     ok((await page.$('#syncBadge:not([hidden])')) === null, 'sin cuenta no hay indicador');
     await page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click(); });

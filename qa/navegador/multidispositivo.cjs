@@ -19,7 +19,7 @@ async function abrirDispositivo(browser, nombre) {
 async function login(page, usuario, clave) {
   await page.goto(URL);
   await page.waitForSelector('.login-gate');
-  await page.fill('#lg-user', usuario); await page.fill('#lg-pass', clave);
+  await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', usuario); await page.fill('#lg-pass', clave);
   await page.click('.login-card [type=submit]');
 }
 const menu = (page, id) => page.evaluate((i) => { const m = document.querySelector('.header-actions'); if (!m.classList.contains('is-open')) document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById(i).click(); }, id);
@@ -33,7 +33,7 @@ const botonReloj = (page) => page.evaluate(() => document.querySelector('.clock-
   const A = await abrirDispositivo(browser, 'A'), B = await abrirDispositivo(browser, 'B'), C = await abrirDispositivo(browser, 'C');
 
   // 1) A arma un torneo de 3 equipos, inicia sesión, genera el fixture y empieza el primer partido
-  await A.page.goto(URL); await A.page.waitForSelector('.login-gate'); await A.page.click('[data-gate=local]'); await A.page.waitForTimeout(500);
+  await A.page.goto(URL); await A.page.waitForSelector('.login-gate'); await A.page.click('[data-gate=free]'); await A.page.waitForTimeout(500);
   await A.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click(); });
   const s = await A.page.evaluate(() => JSON.parse(localStorage.getItem('ultimate-clock-v2')));
   const eq = (i) => ({ id: 'E' + i, name: 'Equipo ' + i, color: ['#1b47e2', '#d4282c', '#1a8f4c'][i - 1], players: [] });
@@ -41,7 +41,7 @@ const botonReloj = (page) => page.evaluate(() => document.querySelector('.clock-
   await A.page.evaluate((x) => localStorage.setItem('ultimate-clock-v2', JSON.stringify(x)), s);
   await A.page.reload(); await A.page.waitForTimeout(600);
   await menu(A.page, 'menuLogin'); await A.page.waitForSelector('.login-gate');
-  await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1'); await A.page.click('.login-card [type=submit]');
+  await A.page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1'); await A.page.click('.login-card [type=submit]');
   await A.page.waitForSelector('#syncBadge:not([hidden])');
   await hasta(async () => (await A.page.evaluate(() => document.getElementById('syncBadge').className)).includes('is-ok'));
   await menu(A.page, 'menuTournament');

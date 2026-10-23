@@ -17,7 +17,7 @@ async function abrirDispositivo(browser) {
 async function login(page, usuario, clave) {
   await page.goto(URL);
   await page.waitForSelector('.login-gate');
-  await page.fill('#lg-user', usuario);
+  await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', usuario);
   await page.fill('#lg-pass', clave);
   await page.click('.login-card [type=submit]');
 }
@@ -40,13 +40,13 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   // 1) Pantalla de entrada
   await A.page.goto(URL);
   await A.page.waitForSelector('.login-gate');
-  await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'mala-clave-xx');
+  await A.page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'mala-clave-xx');
   await A.page.click('.login-card [type=submit]');
   await A.page.waitForSelector('.login-error:not([hidden])');
   ok(/incorrectos|Wrong/.test(await A.page.textContent('.login-error')), 'clave errónea muestra mensaje genérico');
-  ok(/USAR SIN CUENTA|USE WITHOUT/.test(await A.page.textContent('[data-gate=local]')), 'existe el botón USAR SIN CUENTA');
+  ok(/USAR GRATIS|USE FREE/.test(await A.page.textContent('[data-gate=free]')), 'existe el botón USAR GRATIS');
   // 2) A empieza sin cuenta, arma un torneo de 3 equipos y después inicia sesión: los datos locales suben a la cuenta
-  await A.page.click('[data-gate=local]');
+  await A.page.click('[data-gate=free]');
   await A.page.waitForTimeout(500);
   await A.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.querySelector('[data-action="quick-theme"][data-theme="dark"]').click(); });
   const s = await A.page.evaluate(() => JSON.parse(localStorage.getItem('ultimate-clock-v2')));
@@ -57,7 +57,7 @@ const lsLleno = (page) => page.evaluate(() => !!localStorage.getItem('ultimate-c
   await A.page.waitForTimeout(600);
   await A.page.evaluate(() => { document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById('menuLogin').click(); });
   await A.page.waitForSelector('.login-gate');
-  await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1');
+  await A.page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1');
   await A.page.click('.login-card [type=submit]');
   await A.page.waitForSelector('#syncBadge:not([hidden])');
   ok(true, 'login correcto: aparece el indicador de sincronización');

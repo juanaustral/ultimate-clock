@@ -50,19 +50,19 @@ SECTIONS = [
 <li><strong>Install it as an app.</strong> iPhone: Share button → {K('Add to Home Screen')}. Android: ⋮ menu → {K('Install app')}.</li>
 <li><strong>Works offline.</strong> Open it once with signal; after that it works at the field without internet.</li>
 </ul>''')),
-        shot('01-entrada', ('Pantalla de entrada con usuario, contraseña y USAR SIN CUENTA', 'Sign-in screen with username, password and USE WITHOUT AN ACCOUNT'), ('Entrar o usar sin cuenta', 'Sign in or use without an account'), (
+        shot('01-entrada', ('Pantalla de entrada con USAR GRATIS e INGRESAR CON USUARIO', 'Start screen with USE FREE and SIGN IN WITH USER'), ('Entrar o usar sin cuenta', 'Sign in or use without an account'), (
             f'''<h3>¿Con cuenta o sin cuenta?</h3>
 <p>Al abrir la app elegís:</p>
 <ul>
-<li>{K('ENTRAR')} con usuario y contraseña: todo se guarda <strong>en el servidor</strong> al instante. Podés usar varios teléfonos a la vez, seguir un partido en otro dispositivo si el tuyo falla y <strong>compartir el fixture en vivo</strong>.</li>
-<li>{K('USAR SIN CUENTA')}: todo queda <strong>solo en ese teléfono</strong>. Para conservarlo o pasarlo a otro, exportalo.</li>
+<li>{K('INGRESAR CON USUARIO')} (Modo Pro): todo se guarda <strong>en el servidor</strong> al instante. Podés usar varios teléfonos a la vez, seguir un partido en otro dispositivo si el tuyo falla y <strong>compartir el fixture en vivo</strong>.</li>
+<li>{K('USAR GRATIS')}: solo <strong>MODO PARTIDO</strong>, sin torneo ni sincronización; todo queda <strong>solo en ese teléfono</strong>. Para conservarlo o pasarlo a otro, exportalo.</li>
 </ul>
-<p>Las cuentas las da la organización (por ahora Ultimate Frisbee Mendoza). Si no tenés una, usá la app sin cuenta: funciona igual.</p>''',
+<p>Las cuentas las da la organización (por ahora Ultimate Frisbee Mendoza). Si no tenés una, usá la app gratis: el modo partido funciona igual.</p>''',
             f'''<h3>With or without an account?</h3>
 <p>When the app opens you choose:</p>
 <ul>
-<li>{K('SIGN IN')} with username and password: everything is saved <strong>on the server</strong> instantly. You can use several phones at once, continue a game on another device if yours fails and <strong>share the fixture live</strong>.</li>
-<li>{K('USE WITHOUT AN ACCOUNT')}: everything stays <strong>only on that phone</strong>. Export it to keep it or move it to another device.</li>
+<li>{K('SIGN IN WITH USER')} with username and password: everything is saved <strong>on the server</strong> instantly. You can use several phones at once, continue a game on another device if yours fails and <strong>share the fixture live</strong>.</li>
+<li>{K('USE FREE')}: everything stays <strong>only on that phone</strong>. Export it to keep it or move it to another device.</li>
 </ul>
 <p>Accounts are given by the organizers (currently Ultimate Frisbee Mendoza). If you do not have one, use the app without an account: it works the same.</p>''')),
         text((f'<div class="tip"><strong>Consejo:</strong> antes del partido subí el volumen y tocá {K("MENU")} → {K("PROBAR SONIDO")}.</div>',
@@ -171,7 +171,7 @@ SECTIONS = [
 <dt>MODO CLARO / OSCURO · ESPAÑOL / ENGLISH</dt><dd>Claro para el sol, oscuro para la noche. Idioma de la app.</dd>
 <dt>＋ NUEVO PARTIDO · PLANILLA · GUARDAR</dt><dd>Empezar otro partido, ver la planilla y cerrar el partido.</dd>
 <dt>ENTRAR AL MODO TORNEO / VER TORNEO · SALIR DEL MODO TORNEO</dt><dd>Pasar de un modo al otro; en torneo, {K("VER TORNEO")} abre el fixture.</dd>
-<dt>Cuenta</dt><dd>{K("INICIAR SESIÓN")} o el estado de la sincronización: {K("✓ SINCRONIZADO")}, {K("SINCRONIZANDO…")} o, si no hay internet, {K("SIN CONEXIÓN · SINCRONIZAR AHORA")}. {K("SALIR DE ESTE USUARIO")} vuelve al modo sin usuario.</dd>
+<dt>Cuenta</dt><dd>{K("INGRESAR AL MODO PRO")} o el estado de la sincronización: {K("✓ SINCRONIZADO")}, {K("SINCRONIZANDO…")} o, si no hay internet, {K("SIN CONEXIÓN · SINCRONIZAR AHORA")}. {K("SALIR DE ESTE USUARIO")} vuelve al modo sin usuario.</dd>
 <dt>Sonido y pantalla</dt><dd>Activar y probar el sonido, pantalla completa y {K("⚙ EDITAR TIEMPOS")}.</dd>
 <dt>Ayuda</dt><dd>{K("CÓMO USAR LA APP")} (recorrido guiado), {K("MANUAL DE USUARIO")} (este manual) e {K("INFO")}.</dd>
 <dt>REINICIAR CONTADORES</dt><dd>Pone el partido actual en cero (pide confirmar). No borra planillas guardadas.</dd>
@@ -180,7 +180,7 @@ SECTIONS = [
 <dt>LIGHT / DARK MODE · ESPAÑOL / ENGLISH</dt><dd>Light for sunshine, dark for night. App language.</dd>
 <dt>＋ NEW GAME · SCORESHEET · SAVE</dt><dd>Start another game, see the scoresheet and close the game.</dd>
 <dt>ENTER TOURNAMENT MODE / VIEW TOURNAMENT · EXIT TOURNAMENT MODE</dt><dd>Switch modes; in tournament mode, {K("VIEW TOURNAMENT")} opens the fixture.</dd>
-<dt>Account</dt><dd>{K("SIGN IN")} or the sync status: {K("✓ SYNCED")}, {K("SYNCING…")} or, with no internet, {K("OFFLINE · SYNC NOW")}. {K("LOG OUT OF THIS USER")} goes back to no-user mode.</dd>
+<dt>Account</dt><dd>{K("ENTER PRO MODE")} or the sync status: {K("✓ SYNCED")}, {K("SYNCING…")} or, with no internet, {K("OFFLINE · SYNC NOW")}. {K("LOG OUT OF THIS USER")} goes back to no-user mode.</dd>
 <dt>Sound and screen</dt><dd>Turn on and test sound, full screen and {K("⚙ EDIT TIMES")}.</dd>
 <dt>Help</dt><dd>{K("HOW TO USE THE APP")} (guided tour), {K("USER MANUAL")} (this manual) and {K("INFO")}.</dd>
 <dt>RESET COUNTERS</dt><dd>Sets the current game to zero (asks to confirm). Saved scoresheets are kept.</dd>
@@ -202,9 +202,9 @@ SECTIONS = [
 </ul>''')),
         text((
             f'''<h3>Salir de este usuario</h3>
-<p>Si prestaste el teléfono o te equivocaste de cuenta: {K("MENU")} → {K("SALIR DE ESTE USUARIO")}. La app se vacía de los datos de esa cuenta (siguen en el servidor) y vuelve al <strong>modo sin usuario</strong>, sin pedirte nada. Si había cambios sin subir, te avisa antes. Para volver: {K("MENU")} → {K("INICIAR SESIÓN")}.</p>''',
+<p>Si prestaste el teléfono o te equivocaste de cuenta: {K("MENU")} → {K("SALIR DE ESTE USUARIO")}. La app se vacía de los datos de esa cuenta (siguen en el servidor) y vuelve al <strong>modo sin usuario</strong>, sin pedirte nada. Si había cambios sin subir, te avisa antes. Para volver: {K("MENU")} → {K("INGRESAR AL MODO PRO")}.</p>''',
             f'''<h3>Log out of this user</h3>
-<p>If you lent the phone or used the wrong account: {K("MENU")} → {K("LOG OUT OF THIS USER")}. The app clears that account's data from the device (it stays on the server) and goes back to <strong>no-user mode</strong> without asking for anything. If there were changes not uploaded yet, it warns you first. To come back: {K("MENU")} → {K("SIGN IN")}.</p>''')),
+<p>If you lent the phone or used the wrong account: {K("MENU")} → {K("LOG OUT OF THIS USER")}. The app clears that account's data from the device (it stays on the server) and goes back to <strong>no-user mode</strong> without asking for anything. If there were changes not uploaded yet, it warns you first. To come back: {K("MENU")} → {K("ENTER PRO MODE")}.</p>''')),
         shot('28-retomar', ('Aviso para retomar un partido en curso de otro dispositivo', 'Notice to resume a game in progress from another device'), ('Retomar en otro dispositivo', 'Resume on another device'), (
             f'''<h3>Si el teléfono falla</h3><p>Entrá con la misma cuenta en otro teléfono o tablet. La app avisa que hay un <strong>partido en curso en otro dispositivo</strong> y muestra el marcador. Tocá {K("RETOMAR AQUÍ")}: seguís desde el último evento, con el reloj pausado en ese momento. Revisalo antes de seguir.</p>''',
             f'''<h3>If the phone fails</h3><p>Sign in with the same account on another phone or tablet. The app says there is a <strong>game in progress on another device</strong> and shows the score. Tap {K("RESUME HERE")}: you continue from the last event, with the clock paused at that moment. Check it before going on.</p>''')),
