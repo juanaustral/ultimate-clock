@@ -19,7 +19,7 @@ async function abrirDispositivo(browser, nombre) {
 async function login(page, usuario, clave) {
   await page.goto(URL);
   await page.waitForSelector('.login-gate');
-  await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', usuario); await page.fill('#lg-pass', clave);
+  await page.click('[data-gate=pro]',{timeout:1500}).catch(()=>{}); await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', usuario); await page.fill('#lg-pass', clave);
   await page.click('.login-card [type=submit]');
 }
 const menu = (page, id) => page.evaluate((i) => { const m = document.querySelector('.header-actions'); if (!m.classList.contains('is-open')) document.querySelector('[data-action="toggle-menu"]').click(); document.getElementById(i).click(); }, id);
@@ -41,7 +41,7 @@ const botonReloj = (page) => page.evaluate(() => document.querySelector('.clock-
   await A.page.evaluate((x) => localStorage.setItem('ultimate-clock-v2', JSON.stringify(x)), s);
   await A.page.reload(); await A.page.waitForTimeout(600);
   await menu(A.page, 'menuLogin'); await A.page.waitForSelector('.login-gate');
-  await A.page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1'); await A.page.click('.login-card [type=submit]');
+  await A.page.click('[data-gate=pro]',{timeout:1500}).catch(()=>{}); await A.page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await A.page.fill('#lg-user', 'Mendoza'); await A.page.fill('#lg-pass', 'clave-de-prueba-1'); await A.page.click('.login-card [type=submit]');
   await A.page.waitForSelector('#syncBadge:not([hidden])');
   await hasta(async () => (await A.page.evaluate(() => document.getElementById('syncBadge').className)).includes('is-ok'));
   await menu(A.page, 'menuTournament');

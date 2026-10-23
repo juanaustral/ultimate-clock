@@ -31,7 +31,8 @@
 
   /* ---------- Plantilla ---------- */
   /* tournament (opcional): se precargan su nombre, tipo y equipos para completar o corregir. */
-  function template({ t = s => s, lang = 'es', tournament = null } = {}) {
+  /* logos: { <id de equipo>: { ext: 'png'|'jpeg', data: Uint8Array } } para incrustar el logo de cada equipo. */
+  function template({ t = s => s, lang = 'es', tournament = null, logos = null } = {}) {
     const tr = (s, v) => (v ? t(s, v) : t(s));
     const typeLabels = [tr('Todos contra todos'), tr('Eliminación simple')];
     const colorNames = COLORS.map(c => c[lang === 'en' ? 1 : 0]);
@@ -44,6 +45,7 @@
       tr('Cada hoja EQUIPO es un equipo: nombre, color y sus jugadores, uno por fila. El número de camiseta es opcional.'),
       tr('Completá solo las celdas amarillas. No cambies los títulos. A la derecha de cada celda amarilla hay una flecha ← que dice qué poner.'),
       tr('Para elegir el color: tocá la celda del color y abrí la lista con la flecha ▼. La celda se pinta del color que elegiste. La hoja COLORES muestra todos.'),
+      tr('Logo (opcional): en cada hoja de equipo, insertá una imagen en la celda LOGO (Insertar → Imagen). Se achica sola al importar.'),
       tr('¿Más equipos? Copiá una hoja de equipo: clic derecho en la pestaña → Mover o copiar → Crear una copia. Las hojas de equipo vacías se ignoran.'),
       tr('Guardá el archivo como Excel (.xlsx). En Google Sheets: Archivo → Descargar → Microsoft Excel.'),
       tr('En Ultimate Clock: MENU → VER TORNEO → IMPORTAR EXCEL, y elegí este archivo.')
@@ -97,11 +99,11 @@
       const players = team ? TN.sortPlayers(team.players) : [];
       const rows = [
         { ht: 40, cells: [{ v: `${tr('EQUIPO')} ${i + 1}`, s: 'title' }, { s: 'title' }, { s: 'title' }] },
-        [],
+        [null, null, null, { v: tr('LOGO'), s: 'label' }],
         { ht: 28, cells: [{ v: tr('Equipo'), s: 'label' }, { v: team?.name || '', s: 'input' }, { v: tr('← Escribí el nombre del equipo. Ej.: Los Cóndores'), s: 'hint' }] },
         { ht: 28, cells: [{ v: tr('Color'), s: 'label' }, { v: team ? colorLabel(team.color, lang) : colorNames[i % colorNames.length], s: 'input' }, { v: tr('← Elegí de la lista (▼): la celda se pinta de ese color. También sirve un código como #1B47E2.'), s: 'hint' }] },
         { ht: 30, cells: [null, { v: tr('Los colores con su muestra están en la hoja COLORES.'), s: 'note' }] },
-        [],
+        [null, null, null, { v: tr('Insertá tu logo acá'), s: 'hint' }],
         { ht: 26, cells: [{ v: tr('N.º camiseta'), s: 'header' }, { v: tr('Nombre y apellido del jugador'), s: 'header' }, { v: tr('Cómo completar'), s: 'header' }] }
       ];
       const tips = [tr('← Un jugador por fila, de arriba hacia abajo.'), tr('← El número de camiseta es opcional (hasta 3 dígitos).'), tr('← Las filas que dejes vacías se ignoran.')];
@@ -112,7 +114,8 @@
       const firstRow = HEAD_ROW + 1, lastRow = HEAD_ROW + PLAYER_ROWS;
       return {
         name: team ? team.name : `${tr('EQUIPO')} ${i + 1}`, tabColor: team?.color && team.color.toLowerCase() !== '#ffffff' ? team.color : '#f59e0b',
-        cols: [16, 46, 58], merges: ['A1:C1'], freeze: HEAD_ROW, select: 'B3', rows,
+        cols: [16, 46, 58, 24], merges: ['A1:C1'], freeze: HEAD_ROW, select: 'B3', rows,
+        images: team && logos?.[team.id] ? [{ col: 3, row: 2, width: 96, height: 96, ext: logos[team.id].ext, data: logos[team.id].data, name: tr('LOGO') }] : [],
         conditional: [{ sqref: 'B4', rules: colorRules }],
         validations: [
           { sqref: 'B3', prompt: { title: tr('Nombre del equipo'), text: tr('Escribí el nombre del equipo. Ej.: Los Cóndores') } },
@@ -158,7 +161,7 @@
     const out = { name: '', type: null, teams: [], warnings: [] };
     const warn = (sheet, key, vars = {}) => out.warnings.push({ sheet, key, vars });
     const byName = new Map();
-    const addTeam = (sheet, name, colorText, players) => {
+    const addTeam = (sheet, name, colorText, players, image) => {
       const label = String(name).trim().slice(0, TN.LIMITS.name);
       let color = colorFromText(colorText);
       if (color === undefined) { warn(sheet, 'No se reconoce el color "{color}": se usa uno de la lista.', { color: colorText }); color = null; }
@@ -166,7 +169,7 @@
       const existing = byName.get(key);
       if (existing) { warn(sheet, 'El equipo {team} aparece en más de una hoja: se juntaron sus jugadores.', { team: label }); existing.players.push(...players); if (color && !existing.color) existing.color = color; return; }
       if (out.teams.length >= TN.LIMITS.teams) { warn(sheet, 'Se superó el máximo de {n} equipos: el resto no se importa.', { n: TN.LIMITS.teams }); return; }
-      const team = { name: label, color, players };
+      const team = { name: label, color, players, ...(image ? { image } : {}) };
       byName.set(key, team); out.teams.push(team);
     };
     for (const sheet of sheets || []) {
@@ -214,7 +217,7 @@
         name = sheet.name;
       }
       if (players.length > TN.LIMITS.players) { warn(sheet.name, '{team}: más de {n} jugadores; se importan los primeros {n}.', { team: name, n: TN.LIMITS.players }); players.length = TN.LIMITS.players; }
-      addTeam(sheet.name, name, colorText, players);
+      addTeam(sheet.name, name, colorText, players, (sheet.images || []).find(im => im.ext !== 'gif' && im.data?.length));
     }
     const palette = COLORS.map(c => c[2]);
     out.teams.forEach((team, i) => {
@@ -239,6 +242,7 @@
         tournament.teams.push(team); summary.added++;
       } else summary.updated++;
       if (incoming.color) team.color = incoming.color;
+      if (incoming.logo && TN.cleanLogo(incoming.logo)) team.logo = incoming.logo;
       const next = [], used = new Set();
       for (const p of incoming.players.slice(0, TN.LIMITS.players)) {
         const prev = team.players.find(x => !used.has(x.id) && fold(x.name) === fold(p.name));

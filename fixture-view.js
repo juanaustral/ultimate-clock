@@ -22,11 +22,15 @@
     if (row.state === 'libre') return `<span class="fx-tag">${esc(t('PASA DIRECTO'))}</span>`;
     return '';
   }
+  /* Logo del equipo si lo tiene; si no, el punto de color de siempre. */
+  function teamMark(team, esc, color) {
+    return team?.logo ? `<img class="fx-logo" src="${esc(team.logo)}" alt="" width="20" height="20" loading="lazy">` : `<i class="fx-dot" style="background:${esc(color)}"></i>`;
+  }
   function teamLine(id, score, row, o, fallback) {
     const { esc, teams } = o, team = id ? teams.get(id) : null;
     const win = row.winner && id && row.winner === id, lose = row.winner && id && row.winner !== id;
     const color = team?.color || 'transparent';
-    return `<span class="fx-team${win ? ' is-win' : ''}${lose ? ' is-lose' : ''}${team ? '' : ' is-tbd'}"><i class="fx-dot" style="background:${esc(color)}"></i><b>${esc(team ? team.name : fallback)}</b><em>${score ?? ''}</em></span>`;
+    return `<span class="fx-team${win ? ' is-win' : ''}${lose ? ' is-lose' : ''}${team ? '' : ' is-tbd'}">${teamMark(team, esc, color)}<b>${esc(team ? team.name : fallback)}</b><em>${score ?? ''}</em></span>`;
   }
   /* Tarjeta de un cruce. En el editor es un botón que abre las acciones (jugar, cargar o corregir el resultado). */
   function card(row, o, extra = '') {

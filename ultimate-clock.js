@@ -181,25 +181,42 @@
   function loginGate(cancelable=false) {
     return new Promise(resolve=>{
       const box=document.createElement('dialog');box.className='login-gate';box.setAttribute('aria-label','Ultimate Clock');
+      /* Vistas: welcome (gratis o Pro) → pro (beneficios, ingresar o solicitar) → login; news = novedades. Desde el menú se abre directo el login. */
       box.innerHTML=`<form class="login-card" novalidate><h1>ULTIMATE CLOCK</h1>
-        <div class="gate-choices"${cancelable?' hidden':''}><button class="button button-primary" type="button" data-gate="free">${esc(t('USAR GRATIS'))}</button><p class="sheet-hint">${esc(t('Solo MODO PARTIDO, guardado en este dispositivo. Sin servidor ni modo torneo.'))}</p><button class="button" type="button" data-gate="user">${esc(t('INGRESAR CON USUARIO'))}</button><p class="sheet-hint">${esc(t('Modo Pro: torneos, fixture, guardado en el servidor y varios dispositivos.'))}</p></div>
-        <div class="gate-login"${cancelable?'':' hidden'}><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
-        <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
-        <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
-        <p class="login-error" role="alert" hidden></p>
-        <button class="button button-primary" type="submit">${esc(t('ENTRAR'))}</button>
-        <button class="button" type="button" data-gate="back">${esc(t(cancelable?'Cancelar':'ATRÁS'))}</button></div></form>`;
+        <section data-view="welcome" class="gate-view"><p class="gate-lead">${esc(t('Reloj, goles, llamados, pull, time outs y planilla de tu partido. Gratis y sin internet.'))}</p>
+          <button class="button button-primary" type="button" data-gate="free">${esc(t('UTILIZAR MODO GRATIS'))}</button><p class="sheet-hint">${esc(t('Solo MODO PARTIDO, guardado en este dispositivo. Sin servidor ni modo torneo.'))}</p>
+          <button class="button" type="button" data-gate="pro">${esc(t('UTILIZAR MODO PRO'))}</button><p class="sheet-hint">${esc(t('Modo Pro: torneos, fixture, guardado en el servidor y varios dispositivos.'))}</p></section>
+        <section data-view="pro" class="gate-view" hidden><h2 class="gate-title">${esc(t('MODO PRO'))}</h2>${proBenefits()}
+          <button class="button button-primary" type="button" data-gate="user">${esc(t('INGRESAR CON MI USUARIO'))}</button>
+          <a class="button" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO'))}</a>
+          <button class="button gate-back" type="button" data-gate="back">${esc(t('ATRÁS'))}</button></section>
+        <section data-view="login" class="gate-view" hidden><p>${esc(t('Entrá con tu cuenta para guardar partidos y torneos en el servidor y usarlos desde varios dispositivos.'))}</p>
+          <div class="field"><label for="lg-user">${esc(t('Usuario'))}</label><input id="lg-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32"></div>
+          <div class="field"><label for="lg-pass">${esc(t('Contraseña'))}</label><input id="lg-pass" name="clave" type="password" autocomplete="current-password" maxlength="200"></div>
+          <p class="login-error" role="alert" hidden></p>
+          <button class="button button-primary" type="submit">${esc(t('ENTRAR'))}</button>
+          <button class="button gate-back" type="button" data-gate="back">${esc(t(cancelable?'Cancelar':'ATRÁS'))}</button></section>
+        <section data-view="news" class="gate-view" hidden><h2 class="gate-title">${esc(t('Novedades'))}</h2>${changelogMarkup()}<button class="button gate-back" type="button" data-gate="back">${esc(t('ATRÁS'))}</button></section>
+        <button class="gate-version" type="button" data-gate="news" aria-label="${esc(t('Novedades de la versión'))}">v${UCChangelog.VERSION}</button></form>`;
       document.body.append(box);
       /* <dialog> modal: queda por encima de cualquier cuadro ya abierto (la capa superior del navegador). */
       box.addEventListener('cancel',e=>e.preventDefault());
       if(box.showModal)box.showModal();
       const form=box.querySelector('form'),err=box.querySelector('.login-error'),user=box.querySelector('#lg-user');
-      if(cancelable)user.focus();
       const done=ok=>{box.remove();resolve(ok);};
-      const choices=box.querySelector('.gate-choices'),loginBox=box.querySelector('.gate-login');
-      box.querySelector('[data-gate="free"]').addEventListener('click',()=>{UCSession.usarLocal();done(false);});
-      box.querySelector('[data-gate="user"]').addEventListener('click',()=>{choices.hidden=true;loginBox.hidden=false;user.focus();});
-      box.querySelector('[data-gate="back"]').addEventListener('click',()=>{if(cancelable){done(false);return;}loginBox.hidden=true;choices.hidden=false;err.hidden=true;});
+      let view='welcome',previous='welcome';
+      const show=name=>{previous=view;view=name;box.querySelectorAll('.gate-view').forEach(v=>{v.hidden=v.dataset.view!==name;});box.querySelector('.gate-version').hidden=name==='news';err.hidden=true;if(name==='login')user.focus();box.scrollTop=0;};
+      if(cancelable)show('login');
+      const on=(name,fn)=>box.querySelector(`[data-gate="${name}"]`).addEventListener('click',fn);
+      on('free',()=>{UCSession.usarLocal();done(false);});
+      on('pro',()=>show('pro'));
+      on('user',()=>show('login'));
+      on('news',()=>show('news'));
+      box.querySelectorAll('[data-gate="back"]').forEach(b=>b.addEventListener('click',()=>{
+        if(view==='news'){show(previous==='news'?'welcome':previous);return;}
+        if(view==='login'){if(cancelable){done(false);return;}show('pro');return;}
+        show('welcome');
+      }));
       form.addEventListener('submit',async e=>{
         e.preventDefault();e.stopPropagation();const btn=form.querySelector('[type="submit"]');
         if(!user.value.trim()||!form.clave.value){err.textContent=t('Escribí tu usuario y tu contraseña.');err.hidden=false;return;}
@@ -550,9 +567,12 @@
     return `--team-color:${esc(team.color)};--team-ink:${contrastColor(team.color)};`;
   }
 
+  /* Logo del equipo (el del torneo si el equipo del partido viene de uno). */
+  const teamLogo=team=>team?.logo||(team?.tid?tournamentTeam(team.tid)?.logo:'')||'';
+  const logoImg=(team,cls='team-logo')=>{const src=teamLogo(team);return src?`<img class="${cls}" src="${esc(src)}" alt="" width="28" height="28">`:'';};
   function teamMarkup(team,index) {
     return `<article class="instrument team-card team-${index+1}" data-team-card="${index}" style="${teamStyle(team)}">
-      <button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="${esc(t('Editar nombre y color de {team}',{team:team.name}))}"><strong class="team-name">${esc(team.name)}</strong><span class="team-edit" aria-hidden="true">✎</span></button>
+      <button class="team-name-button" type="button" data-action="edit-team" data-team="${index}" aria-label="${esc(t('Editar nombre y color de {team}',{team:team.name}))}">${logoImg(team)}<strong class="team-name">${esc(team.name)}</strong><span class="team-edit" aria-hidden="true">✎</span></button>
       <div class="score-display" role="img" aria-label="${esc(t('{n} goles de {team}',{n:team.score,team:team.name}))}">${team.score}</div>
       <div class="score-actions"><button class="score-button minus" type="button" data-action="minus" data-team="${index}" aria-label="${esc(t('Restar un punto a {team}',{team:team.name}))}">−</button><button class="score-button plus" type="button" data-action="goal" data-team="${index}" aria-label="${esc(t('Sumar un gol a {team}',{team:team.name}))}">${esc(t('+ GOL'))}</button></div>
     </article>`;
@@ -1013,10 +1033,11 @@
     openModal(t('Equipo {n}',{n:teamIndex + 1}), `<form data-form="team" data-team="${teamIndex}"><div class="field"><label for="team-name">${esc(t('Nombre del equipo'))}</label><input id="team-name" name="name" value="${esc(team.name)}" maxlength="30" autocomplete="off"></div><div class="team-color-options">${['#1b47e2','#f59e0b','#16a34a','#c62525','#16171b','#ffffff'].map(c=>`<button type="button" class="color-preset" style="background:${c};color:${E.ink(c)}" data-action="team-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}">●</button>`).join('')}</div><button class="button more-colors" type="button" data-action="more-colors">${esc(t('MÁS COLORES'))}</button><div class="field extended-colors" id="extendedColors" hidden><label for="team-color">${esc(t('Elegí cualquier color'))}</label><input id="team-color" name="color" type="color" value="${esc(team.color)}"></div><div class="color-preview" id="colorPreview" style="background:${esc(team.color)};color:${ink}">${esc(t('Vista previa del equipo'))}</div><div class="field"><label for="team-players">${esc(t('Jugadores (opcional)'))}</label><textarea id="team-players" name="players" rows="5" maxlength="2400" autocomplete="off" placeholder="${esc('7 Ana\nBeto\n9 Cris')}">${esc(TN.rosterToText(team.roster))}</textarea></div><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-primary" type="submit">${esc(t('Guardar equipo'))}</button></div></form>`);
   }
 
-  function openChangelog() {
+  function changelogMarkup() {
     const {VERSION,ENTRIES}=UCChangelog,date=new Intl.DateTimeFormat(lang==='en'?'en-US':'es-AR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
-    openModal(t('Novedades'),`<p class="changelog-current">${esc(t('Estás usando la versión {v}.',{v:VERSION}))}</p><ol class="changelog">${ENTRIES.map(e=>`<li><div class="changelog-head">${e.version?`<strong>v${e.version}</strong>`:''}<time datetime="${e.date}">${esc(date.format(new Date(e.date)))}</time></div><ul>${(e[lang]||e.es).map(item=>`<li>${esc(item)}</li>`).join('')}</ul></li>`).join('')}</ol>`);
+    return `<p class="changelog-current">${esc(t('Estás usando la versión {v}.',{v:VERSION}))}</p><ol class="changelog">${ENTRIES.map(e=>`<li><div class="changelog-head">${e.version?`<strong>v${e.version}</strong>`:''}<time datetime="${e.date}">${esc(date.format(new Date(e.date)))}</time></div><ul>${(e[lang]||e.es).map(item=>`<li>${esc(item)}</li>`).join('')}</ul></li>`).join('')}</ol>`;
   }
+  function openChangelog() {openModal(t('Novedades'),changelogMarkup());}
   function openReset() {
     openModal(t("Reiniciar contadores"), `<p>${esc(t('¿Reiniciar todos los contadores? Se reinician tiempos, puntajes y eventos sin guardar del partido actual. El historial guardado y los perfiles no se borrarán.'))}</p><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cancelar'))}</button><button class="button button-danger" type="button" data-action="confirm-reset">${esc(t('Reiniciar contadores'))}</button></div>`);
   }
@@ -1105,7 +1126,7 @@
   function newSheetRow(player) {return {pid:player?.id||'',name:player?.name||'',number:player?.number||''};}
   function openTeamSheet(teamId) {
     const team=teamId?tournamentTeam(teamId):null;
-    teamSheet=team?{id:team.id,name:team.name,color:team.color,rows:team.players.map(newSheetRow)}:{id:'',name:'',color:TEAM_PRESETS[(state.tournament?.teams.length||0)%TEAM_PRESETS.length],rows:[]};
+    teamSheet=team?{id:team.id,name:team.name,color:team.color,logo:team.logo||'',rows:team.players.map(newSheetRow)}:{id:'',name:'',logo:'',color:TEAM_PRESETS[(state.tournament?.teams.length||0)%TEAM_PRESETS.length],rows:[]};
     while(teamSheet.rows.length<SHEET_MIN_ROWS)teamSheet.rows.push(newSheetRow());
     renderTournament();app.scrollTop=0;
     if(!team)app.querySelector('.ts-team-name')?.focus({preventScroll:true});
@@ -1126,7 +1147,8 @@
     app.innerHTML=`<section class="tournament-screen team-sheet"><div class="screen-head"><button class="back-button" type="button" data-action="t-cancel-sheet">← ${esc(t('Torneo'))}</button><div><span class="screen-eyebrow">${esc(state.tournament.name)}</span><h1>${esc(t(editing?'Ficha del equipo':'Nuevo equipo'))}</h1></div></div>
       <form data-form="t-team" data-team="${esc(s.id)}" class="sheet-form" novalidate>
         <section class="settings-section sheet-top" style="${teamStyle(s)}"><div class="field"><label for="ts-team-name">${esc(t('Nombre del equipo'))}</label><input id="ts-team-name" class="ts-team-name" name="name" maxlength="${TN.LIMITS.name}" autocomplete="off" value="${esc(s.name)}" placeholder="${esc(t('Ej.: Ñandúes'))}" ${editing?'':'autofocus'}></div>
-          <div class="field"><label>${esc(t('Color'))}</label><div class="sheet-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c.toLowerCase()===s.color.toLowerCase()?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="t-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c.toLowerCase()===s.color.toLowerCase()}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color" value="${esc(s.color)}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div></section>
+          <div class="field"><label>${esc(t('Color'))}</label><div class="sheet-colors">${TEAM_PRESETS.map(c=>`<button type="button" class="color-preset${c.toLowerCase()===s.color.toLowerCase()?' active':''}" style="background:${c};color:${E.ink(c)}" data-action="t-color" data-color="${c}" aria-label="${esc(t('Elegir color {color}',{color:c}))}" aria-pressed="${c.toLowerCase()===s.color.toLowerCase()}"></button>`).join('')}<label class="color-custom" title="${esc(t('Elegí cualquier color'))}"><span aria-hidden="true">＋</span><input type="color" name="color" value="${esc(s.color)}" aria-label="${esc(t('Elegí cualquier color'))}"></label></div></div>
+          <div class="field logo-field"><label for="ts-logo">${esc(t('Logo del equipo'))}</label><div class="logo-row">${s.logo?`<img class="team-logo is-sheet" src="${esc(s.logo)}" alt="" width="56" height="56">`:`<span class="team-logo is-sheet is-empty" aria-hidden="true"></span>`}<label class="button" for="ts-logo">${esc(t(s.logo?'CAMBIAR LOGO':'SUBIR LOGO'))}</label><input id="ts-logo" class="logo-input" type="file" accept="image/*">${s.logo?`<button class="button" type="button" data-action="t-logo-clear">${esc(t('QUITAR LOGO'))}</button>`:''}</div><p class="sheet-hint">${esc(t('Se muestra en el tablero, el fixture y el link en vivo. Se achica solo a 128 px.'))}</p></div></section>
         <section class="settings-section"><div class="section-heading"><h2>${esc(t('Jugadores'))}</h2></div><p class="sheet-hint">${esc(t('El nombre es obligatorio; el número de camiseta es opcional.'))}</p>
           <div class="sheet-rows">${s.rows.map(sheetRowMarkup).join('')}</div>
           <button class="button sheet-add-row" type="button" data-action="t-add-row">＋ ${esc(t('AGREGAR JUGADOR'))}</button>
@@ -1188,7 +1210,7 @@
       <div class="export-actions"><button class="button export-whatsapp" type="button" data-action="t-share-wa">${WHATSAPP_SVG}${esc(t('ENVIAR POR WHATSAPP'))}</button><a class="button" href="${esc(url)}" target="_blank" rel="noopener">${esc(t('ABRIR'))}</a><button class="button button-danger" type="button" data-action="t-share-off">${esc(t('DEJAR DE COMPARTIR'))}</button></div></section>`;
   }
   function teamsTab(tour) {
-    const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}"><strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))} · ${esc(t('EDITAR'))}</span></button>`).join('');
+    const teamRows=tour.teams.map(team=>`<button class="tournament-team" type="button" data-action="t-open-team" data-team="${esc(team.id)}" style="${teamStyle(team)}">${logoImg(team,'team-logo is-list')}<strong>${esc(team.name)}</strong><span>${team.players.length} ${esc(t(team.players.length===1?'jugador':'jugadores'))} · ${esc(t('EDITAR'))}</span></button>`).join('');
     const order=tour.teams.map((team,i)=>`<li class="order-row" style="${teamStyle(team)}"><strong>${i+1}. ${esc(team.name)}</strong><span class="order-actions"><button class="icon-button" type="button" data-action="t-move" data-team="${esc(team.id)}" data-delta="-1" aria-label="${esc(t('Subir'))}"${i?'':' disabled'}>▲</button><button class="icon-button" type="button" data-action="t-move" data-team="${esc(team.id)}" data-delta="1" aria-label="${esc(t('Bajar'))}"${i<tour.teams.length-1?'':' disabled'}>▼</button><button class="icon-button" type="button" data-action="t-history" data-team="${esc(team.id)}">${esc(t('HISTORIAL'))}</button></span></li>`).join('');
     return `<section class="settings-section"><div class="section-heading"><h2>${esc(t('Equipos'))}</h2><span>${tour.teams.length}</span></div>
         ${teamRows?`<div class="tournament-teams">${teamRows}</div>`:`<p>${esc(t('Todavía no hay equipos. Tocá el botón para completar la ficha del primero.'))}</p>`}
@@ -1323,6 +1345,12 @@
     let parsed=null;
     try{if(file.size<=5e6)parsed=UCTournamentSheet.parse(await UCXlsx.read(new Uint8Array(await file.arrayBuffer())));}catch{}
     if(!parsed){showToast(t('No pude leer ese Excel. Usá la plantilla y guardala como .xlsx.'));return;}
+    /* Los logos del Excel llegan como imagen cruda: se achican a 128 px como los que se suben desde la ficha. */
+    for(const team of parsed.teams){
+      if(!team.image)continue;
+      try{const logo=await logoFromFile(new Blob([team.image.data],{type:'image/'+team.image.ext}));if(logo)team.logo=logo;}catch{}
+      delete team.image;
+    }
     const warnings=parsed.warnings.length?`<ul class="import-warnings">${parsed.warnings.slice(0,30).map(w=>`<li>${w.sheet?`<b>${esc(w.sheet)}:</b> `:''}${esc(t(w.key,w.vars))}</li>`).join('')}</ul>`:'';
     if(!parsed.teams.length){openModal(t('Importar Excel'),`<p>${esc(t('No encontré equipos en el archivo. Completá al menos una hoja de equipo con el nombre y los jugadores.'))}</p>${warnings}<div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('Cerrar'))}</button><button class="button button-primary" type="button" data-action="t-template">${esc(t('DESCARGAR PLANTILLA'))}</button></div>`);return;}
     parsed.fileName=String(file.name||'').replace(/\.xlsx$/i,'').replace(/[-_]+/g,' ').trim();
@@ -1349,9 +1377,17 @@
     closeModal();saveState();renderTournament();app.scrollTop=0;
     showToast(t('Listo: {a} equipos nuevos, {u} actualizados y {n} jugadores.',{a:sum.added,u:sum.updated,n:sum.players}));
   }
-  function downloadTemplate() {
-    const tour=creatingTournament?null:state.tournament;
-    download(UCXlsx.write(UCTournamentSheet.template({t,lang,tournament:tour})),UCXlsx.MIME,`${tour?exportSlug(tour.name)+'-':''}${t('plantilla-torneo')}.xlsx`);
+  /* Logo (data URL WebP) → PNG, que es lo que Excel abre en todas partes. */
+  async function logoPng(dataUrl) {
+    const img=new Image();img.src=dataUrl;await img.decode();
+    const c=document.createElement('canvas');c.width=c.height=128;c.getContext('2d').drawImage(img,0,0,128,128);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+  async function downloadTemplate() {
+    const tour=creatingTournament?null:state.tournament,logos={};
+    for(const team of tour?.teams||[])if(team.logo)try{logos[team.id]={ext:'png',data:await logoPng(team.logo)};}catch{}
+    download(UCXlsx.write(UCTournamentSheet.template({t,lang,tournament:tour,logos})),UCXlsx.MIME,`${tour?exportSlug(tour.name)+'-':''}${t('plantilla-torneo')}.xlsx`);
     showToast(t('Plantilla descargada. Completala y después tocá IMPORTAR EXCEL.'));
   }
   window.matchMedia?.('(min-width: 900px)').addEventListener?.('change',()=>{if(app.querySelector('.tournament-screen')&&!teamSheet&&tournamentTab==='fixture')renderTournament();});
@@ -1550,8 +1586,12 @@
     if(locked){if(el.dataset.action!=='pro-locked')el.dataset.proAction=el.dataset.action||'';el.dataset.action='pro-locked';el.setAttribute('aria-disabled','true');}
     else if(el.dataset.action==='pro-locked'){el.dataset.action=el.dataset.proAction;el.removeAttribute('aria-disabled');}
   }
+  /* Lista de beneficios del Modo Pro: la usan la bienvenida y el aviso de las funciones bloqueadas. */
+  function proBenefits() {
+    return `<p class="pro-sub">${esc(t('El Modo Pro incluye:'))}</p><ul class="pro-list"><li>${esc(t('MODO TORNEO: equipos, fixture, tabla y estadísticas'))}</li><li>${esc(t('Guardado en el servidor y sincronización entre dispositivos'))}</li><li>${esc(t('Varios dispositivos controlando el mismo torneo'))}</li><li>${esc(t('Logo de cada equipo en el tablero, el fixture y el link en vivo'))}</li><li>${esc(t('Link en vivo para compartir: marcadores, feed, estadísticas y goleadores'))}</li></ul>`;
+  }
   function openProModal() {
-    openModal(t('Esta función sólo está disponible en el Modo Pro'),`<div class="pro-modal"><p class="pro-sub">${esc(t('El Modo Pro incluye:'))}</p><ul class="pro-list"><li>${esc(t('MODO TORNEO: equipos, fixture, tabla y estadísticas'))}</li><li>${esc(t('Guardado en el servidor y sincronización entre dispositivos'))}</li><li>${esc(t('Varios dispositivos controlando el mismo torneo'))}</li><li>${esc(t('Compartir el fixture en vivo con un link'))}</li></ul><a class="button button-primary pro-request-link" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO ACÁ'))}</a><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('CERRAR'))}</button><button class="button" type="button" data-action="account-login">${esc(t('YA TENGO USUARIO'))}</button></div></div>`);
+    openModal(t('Esta función sólo está disponible en el Modo Pro'),`<div class="pro-modal">${proBenefits()}<a class="button button-primary pro-request-link" href="solicitarpro/?lang=${lang}">${esc(t('SOLICITÁ TU MODO PRO ACÁ'))}</a><div class="modal-actions"><button class="button" type="button" data-action="close-modal">${esc(t('CERRAR'))}</button><button class="button" type="button" data-action="account-login">${esc(t('YA TENGO USUARIO'))}</button></div></div>`);
   }
   function updateAccountUI() {
     const user=UCSession.usuario(),login=document.getElementById('menuLogin'),logout=document.getElementById('menuLogout');
@@ -1609,6 +1649,7 @@
   }
   function tournamentAction(action,el) {
     if(!action.startsWith('t-'))return false;
+    if(action==='t-logo-clear'){captureTeamSheet();if(teamSheet)teamSheet.logo='';renderTournament();return true;}
     const tour=state.tournament,team=tournamentTeam(el.dataset.team);
     if(action==='t-new-team'&&tour){if(tour.teams.length>=TN.LIMITS.teams)showToast(t('Llegaste al máximo de equipos.'));else openTeamSheet('');}
     else if(action==='t-open-team'&&team)openTeamSheet(team.id);
@@ -1678,6 +1719,23 @@
     top.style.setProperty('--team-color',color);top.style.setProperty('--team-ink',contrastColor(color));
     form.querySelectorAll('.sheet-colors .color-preset').forEach(b=>{const on=b.dataset.color.toLowerCase()===color.toLowerCase();b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));});
   }
+  /* Foto → cuadrado de 128 px (recorte al centro) como data URL WebP; PNG si el navegador no escribe WebP. */
+  async function logoFromFile(file) {
+    const bmp=await createImageBitmap(file),side=Math.min(bmp.width,bmp.height),c=document.createElement('canvas');
+    c.width=c.height=128;c.getContext('2d').drawImage(bmp,(bmp.width-side)/2,(bmp.height-side)/2,side,side,0,0,128,128);
+    if(bmp.close)bmp.close();
+    for(const q of [.85,.6,.4]){const url=c.toDataURL('image/webp',q);if(url.startsWith('data:image/webp')&&TN.cleanLogo(url))return url;}
+    const png=c.toDataURL('image/png');return TN.cleanLogo(png)?png:'';
+  }
+  async function pickTeamLogo(input) {
+    const file=input.files?.[0];if(!file||!teamSheet)return;
+    if(file.size>8*1024*1024){showToast(t('La imagen es muy pesada (máximo 8 MB).'));input.value='';return;}
+    try{
+      const logo=await logoFromFile(file);
+      if(!logo){showToast(t('No se pudo achicar la imagen. Probá con otra.'));return;}
+      captureTeamSheet();teamSheet.logo=logo;renderTournament();
+    }catch{showToast(t('No se pudo leer la imagen. Probá con otra.'));}
+  }
   /* Valida y guarda la ficha: nombre del equipo obligatorio; filas con número deben tener nombre; sin números repetidos. */
   function saveTeamSheet() {
     const tour=state.tournament,s=captureTeamSheet();if(!tour||!s)return;
@@ -1699,6 +1757,7 @@
     if(!team){team=TN.makeTeam(name,color);tour.teams.push(team);}
     const old=new Map(team.players.map(p=>[p.id,p]));
     team.name=name;team.color=color;
+    if(s.logo&&TN.cleanLogo(s.logo))team.logo=s.logo;else delete team.logo;
     team.players=entries.map(e=>{const p=old.get(e.pid);if(p){p.name=e.name;p.number=e.number;return p;}return TN.makePlayer(e.name,e.number);});
     const added=!s.id;teamSheet=null;saveState();renderTournament();app.scrollTop=0;
     showToast(t(added?'Equipo {name} agregado con {n} jugadores.':'Equipo {name} guardado con {n} jugadores.',{name,n:team.players.length}));
@@ -1960,6 +2019,7 @@
   });
 
   document.addEventListener("change", event => {
+    if(event.target.id==='ts-logo'){pickTeamLogo(event.target);return;}
     if(tournamentChange(event.target))return;
     if(event.target.name==='type'&&event.target.closest('[data-form="call"]')){const guidance=document.getElementById('call-guidance');if(guidance)guidance.textContent=t(CALL_GUIDANCE[event.target.value]||'');}
     if (event.target.dataset.setting === "ruleset") {

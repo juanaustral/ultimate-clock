@@ -24,7 +24,7 @@ const colores = ['Rojo', 'Verde', 'Azul', 'Naranja', 'Violeta', 'Amarillo', 'Cel
 
   await page.goto(BASE + 'index.html');
   await page.waitForSelector('.login-gate');
-  await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', 'Mendoza');
+  await page.click('[data-gate=pro]',{timeout:1500}).catch(()=>{}); await page.click('[data-gate=user]',{timeout:1500}).catch(()=>{}); await page.fill('#lg-user', 'Mendoza');
   await page.fill('#lg-pass', process.env.UC_CLAVE_PRUEBA || 'clave-de-prueba-1');
   await page.click('.login-card [type=submit]');
   await page.waitForTimeout(1500);
@@ -48,7 +48,7 @@ const colores = ['Rojo', 'Verde', 'Azul', 'Naranja', 'Violeta', 'Amarillo', 'Cel
   const plantilla = path.join(OUT, 'plantilla.xlsx');
   fs.writeFileSync(plantilla, Buffer.from(b64[1], 'base64'));
   const hojas = await X.read(fs.readFileSync(plantilla));
-  ok(hojas.length === 10 && hojas[0].name === 'INSTRUCCIONES' && hojas[2].name === 'EQUIPO 1', 'la plantilla trae INSTRUCCIONES, TORNEO y 8 hojas EQUIPO: ' + hojas.map((h) => h.name).join(', '));
+  ok(hojas.length === 11 && hojas[0].name === 'INSTRUCCIONES' && hojas[2].name === 'EQUIPO 1', 'la plantilla trae INSTRUCCIONES, TORNEO, 8 hojas EQUIPO y COLORES: ' + hojas.map((h) => h.name).join(', '));
 
   // Completar y subir
   const spec = S.template();
@@ -134,7 +134,8 @@ const colores = ['Rojo', 'Verde', 'Azul', 'Naranja', 'Violeta', 'Amarillo', 'Cel
   const textoPub = await pub.textContent('body');
   ok(/Copa Primavera/.test(textoPub) && /EN JUEGO/.test(textoPub), 'la página en vivo muestra el torneo y el partido en juego');
   ok(!/Jugador \d/.test(textoPub), 'la página en vivo no muestra jugadores');
-  ok(!(await pub.$('button.fx-match')), 'la página en vivo es solo lectura');
+  // Los cruces se tocan para ver estadísticas, pero no hay ninguna acción de edición (jugar, cargar o corregir resultados).
+  ok(!(await pub.$('[data-action="t-fixture-play"], [data-action="t-fx-result"], [data-action="t-fx-correct"], [data-action="t-fx-mode"], [data-action="t-fixture-generate"]')), 'la página en vivo es solo lectura');
   await pub.screenshot({ path: path.join(OUT, '3-vivo-escritorio.png') });
   const antes = await pub.textContent(`.fx-match.is-jugando`);
   await page.click('[data-action="t-back"]');

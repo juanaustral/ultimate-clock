@@ -3,7 +3,7 @@ const I=require('../i18n.js');
 const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
 /* Cada t('...') literal de la app y cada data-i18n del HTML tiene su versión en inglés. */
 test('every literal translation key has an English entry',()=>{
-  const js=read('ultimate-clock.js')+read('sheet-export.js')+read('tournament-sheet.js')+read('fixture-view.js');
+  const js=read('ultimate-clock.js')+read('sheet-export.js')+read('tournament-sheet.js')+read('fixture-view.js')+read('vivo.js');
   const keys=new Set();
   /* Avisos de la importación de Excel, estados del menú de sincronización y modos del fixture (se traducen al mostrarse). */
   for(const m of read('tournament-sheet.js').matchAll(/warn\([^,]+, '([^']+)'/g))keys.add(m[1]);
