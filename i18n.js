@@ -523,7 +523,6 @@
     'Guardado en el servidor y sincronización entre dispositivos':'Server storage and sync between devices',
     'Varios dispositivos controlando el mismo torneo':'Several devices controlling the same tournament',
     'Compartir el fixture en vivo con un link':'Share the fixture live with a link',
-    'Próximamente estará disponible para solicitarlo':'Coming soon: you will be able to request it',
     'Un partido suelto. Escribís el nombre de los equipos y, si querés, de quienes hacen el pase y el gol.':'A single match. You type the team names and, if you want, who assisted and who scored.',
     'Cargás los equipos y sus jugadores una sola vez y los elegís de listas al empezar y al anotar goles.':'You load teams and their players once and pick them from lists when you start and when goals are scored.',
     'Gol de <strong>{team}</strong> a los {time}. Elegí los jugadores de la lista; los dos campos son opcionales.':'Goal for <strong>{team}</strong> at {time}. Pick the players from the list; both fields are optional.',
