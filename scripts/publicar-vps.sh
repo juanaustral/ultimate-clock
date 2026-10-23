@@ -25,6 +25,8 @@ git -C "$WORK/repo" checkout --quiet "$REF"
 echo "    commit $(git -C "$WORK/repo" rev-parse --short HEAD)"
 # El manual y sus capturas (manual/img/*.webp) viajan con la app.
 FILES+=(manual.html manual/index.html manual/manual.js)
+# Formulario para solicitar el Modo Pro (/ultimateclock/solicitarpro/); envía a /api/solicitud-pro del backend de contacto.
+FILES+=(solicitarpro/index.html solicitarpro/solicitarpro.js)
 while IFS= read -r img; do FILES+=("$img"); done < <(cd "$WORK/repo" && ls manual/img/*.webp)
 for f in "${FILES[@]}"; do [ -f "$WORK/repo/$f" ] || { echo "Falta $f en el repositorio; no se publica nada."; exit 1; }; done
 

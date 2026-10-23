@@ -9,7 +9,7 @@ self.addEventListener('fetch',event=>{
   const request=event.request;
   const url=new URL(request.url);
   /* La API nunca se sirve de la caché: sin esto, las bajadas de sincronización devolverían siempre la primera respuesta. */
-  if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.includes('/api/'))return;
+  if(request.method!=='GET'||url.origin!==self.location.origin||url.pathname.includes('/api/')||url.pathname.includes('/solicitarpro'))return; /* el formulario del Modo Pro necesita red y es otra página: sin esto la caché lo reemplazaría por el tablero */
   const network=fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy));}return response;});
   event.respondWith(caches.match(request,{ignoreSearch:true}).then(hit=>hit||(request.mode==='navigate'?caches.match('./index.html'):undefined)).then(hit=>{
     if(!hit)return network;

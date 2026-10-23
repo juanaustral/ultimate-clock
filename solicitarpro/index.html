@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es" data-theme="light" class="vivo">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1b47e2">
+    <meta name="robots" content="noindex">
+    <title>Solicitá tu Modo Pro · Ultimate Clock</title>
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../tokens.css">
+    <link rel="stylesheet" href="../ultimate-clock.css">
+    <script src="solicitarpro.js" defer></script>
+  </head>
+  <body>
+    <header class="vivo-bar">
+      <a class="brand" href="../" aria-label="Ultimate Clock"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg><strong>ULTIMATE CLOCK</strong></a>
+    </header>
+    <main class="pro-request">
+      <form class="login-card pro-form" id="proForm" novalidate>
+        <h1 data-t="title">SOLICITÁ TU MODO PRO</h1>
+        <p data-t="intro">El Modo Pro incluye torneos y fixture, guardado en el servidor, varios dispositivos y compartir en vivo. Contanos sobre tu torneo y te generamos un usuario y una contraseña para activarlo.</p>
+        <div class="field"><label for="pr-name" data-t="name">Nombre</label><input id="pr-name" name="name" autocomplete="name" maxlength="120" required></div>
+        <div class="field"><label for="pr-team" data-t="team">Equipo de Ultimate</label><input id="pr-team" name="team" maxlength="120" required></div>
+        <div class="field"><label for="pr-tournament" data-t="tournament">Torneo que lo solicita</label><input id="pr-tournament" name="tournament" maxlength="160" required></div>
+        <div class="field"><label for="pr-message" data-t="message">Mensaje (contanos sobre tu torneo y comunidad de ultimate)</label><textarea id="pr-message" name="message" rows="5" maxlength="3000" required></textarea></div>
+        <div class="field"><label for="pr-email" data-t="email">E-mail de contacto</label><input id="pr-email" name="email" type="email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" maxlength="200" required></div>
+        <div class="pro-trap" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+        <p class="login-error" role="alert" hidden></p>
+        <button class="button button-primary" type="submit" data-t="send">ENVIAR SOLICITUD</button>
+        <a class="button" href="../" data-t="back">VOLVER A ULTIMATE CLOCK</a>
+      </form>
+      <section class="login-card pro-done" id="proDone" hidden>
+        <h1 data-t="doneTitle">¡SOLICITUD ENVIADA!</h1>
+        <p data-t="doneText">Gracias. Revisamos tu pedido y te escribimos al e-mail que dejaste con el usuario y la contraseña.</p>
+        <a class="button button-primary" href="../" data-t="back">VOLVER A ULTIMATE CLOCK</a>
+      </section>
+    </main>
+  </body>
+</html>
