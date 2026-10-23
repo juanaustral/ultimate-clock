@@ -10,8 +10,13 @@
   const COLORS = [
     ['Azul', 'Blue', '#1b47e2'], ['Naranja', 'Orange', '#f59e0b'], ['Verde', 'Green', '#16a34a'], ['Rojo', 'Red', '#c62525'],
     ['Negro', 'Black', '#16171b'], ['Blanco', 'White', '#ffffff'], ['Amarillo', 'Yellow', '#facc15'], ['Violeta', 'Purple', '#7c3aed'],
-    ['Rosa', 'Pink', '#ec4899'], ['Celeste', 'Light blue', '#38bdf8'], ['Gris', 'Grey', '#6b7280'], ['Bordó', 'Maroon', '#7f1d1d']
+    ['Rosa', 'Pink', '#ec4899'], ['Celeste', 'Light blue', '#38bdf8'], ['Gris', 'Grey', '#6b7280'], ['Bordó', 'Maroon', '#7f1d1d'],
+    ['Azul marino', 'Navy', '#1e3a8a'], ['Turquesa', 'Teal', '#14b8a6'], ['Verde oscuro', 'Dark green', '#14532d'], ['Verde lima', 'Lime', '#84cc16'],
+    ['Menta', 'Mint', '#86efac'], ['Dorado', 'Gold', '#ca8a04'], ['Marrón', 'Brown', '#78350f'], ['Beige', 'Beige', '#d6c7a1'],
+    ['Salmón', 'Salmon', '#fda4af'], ['Fucsia', 'Fuchsia', '#c026d3'], ['Lila', 'Lilac', '#a78bfa'], ['Gris claro', 'Light grey', '#d1d5db']
   ];
+  /* Texto legible sobre un color de fondo. */
+  const inkOn = hex => { const h = hex.replace('#', ''), n = parseInt(h, 16), l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)); return l > 150 ? '#16171b' : '#ffffff'; };
   const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
   const isHex = v => /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(v).trim());
   function colorFromText(value) {
@@ -19,7 +24,7 @@
     if (!v) return null;
     if (isHex(v)) { const h = v.replace('#', ''); return '#' + (h.length === 3 ? h.split('').map(c => c + c).join('') : h).toLowerCase(); }
     const f = fold(v);
-    const hit = COLORS.find(c => fold(c[0]) === f || fold(c[1]) === f || (f === 'bordo' && c[0] === 'Bordó') || (f === 'morado' && c[0] === 'Violeta'));
+    const hit = COLORS.find(c => fold(c[0]) === f || fold(c[1]) === f || (f === 'bordo' && c[0] === 'Bordó') || (f === 'morado' && c[0] === 'Violeta') || (f === 'verde claro' && c[0] === 'Menta') || (f === 'dark blue' && c[0] === 'Azul marino') || (f === 'azul oscuro' && c[0] === 'Azul marino') || (f === 'cyan' && c[0] === 'Celeste'));
     return hit ? hit[2] : undefined;
   }
   const colorLabel = (hex, lang) => { const c = COLORS.find(x => x[2] === String(hex).toLowerCase()); return c ? c[lang === 'en' ? 1 : 0] : String(hex || '').toUpperCase(); };
@@ -30,10 +35,15 @@
     const tr = (s, v) => (v ? t(s, v) : t(s));
     const typeLabels = [tr('Todos contra todos'), tr('Eliminación simple')];
     const colorNames = COLORS.map(c => c[lang === 'en' ? 1 : 0]);
+    const colorsSheetName = tr('COLORES');
+    const colorsRef = `'${colorsSheetName.replace(/'/g, "''")}'!$B$5:$B$${4 + COLORS.length}`;
+    /* La celda del color se pinta sola con el color elegido. */
+    const colorRules = COLORS.map(c => ({ text: c[lang === 'en' ? 1 : 0], fill: c[2], font: inkOn(c[2]) }));
     const steps = [
       tr('Hoja TORNEO: escribí el nombre del torneo y elegí el tipo de fixture.'),
       tr('Cada hoja EQUIPO es un equipo: nombre, color y sus jugadores, uno por fila. El número de camiseta es opcional.'),
-      tr('Completá solo las celdas amarillas. No cambies los títulos.'),
+      tr('Completá solo las celdas amarillas. No cambies los títulos. A la derecha de cada celda amarilla hay una flecha ← que dice qué poner.'),
+      tr('Para elegir el color: tocá la celda del color y abrí la lista con la flecha ▼. La celda se pinta del color que elegiste. La hoja COLORES muestra todos.'),
       tr('¿Más equipos? Copiá una hoja de equipo: clic derecho en la pestaña → Mover o copiar → Crear una copia. Las hojas de equipo vacías se ignoran.'),
       tr('Guardá el archivo como Excel (.xlsx). En Google Sheets: Archivo → Descargar → Microsoft Excel.'),
       tr('En Ultimate Clock: MENU → VER TORNEO → IMPORTAR EXCEL, y elegí este archivo.')
@@ -47,51 +57,72 @@
         [],
         { ht: 24, cells: [{ v: tr('CÓMO SE USA'), s: 'subtitle' }] },
         [],
-        ...steps.map((s, i) => ({ ht: 34, cells: [{ v: i + 1, s: 'number' }, { v: s, s: 'text' }] })),
+        ...steps.map((s, i) => ({ ht: 40, cells: [{ v: i + 1, s: 'number' }, { v: s, s: 'text' }] })),
         { ht: 24, cells: [{ v: tr('TIPOS DE FIXTURE'), s: 'subtitle' }] },
         { ht: 34, cells: [{ v: '⇄', s: 'number' }, { v: `${typeLabels[0]}: ${tr('cada equipo juega una vez contra cada uno; gana el que suma más puntos.')}`, s: 'text' }] },
         { ht: 34, cells: [{ v: '⇥', s: 'number' }, { v: `${typeLabels[1]}: ${tr('cuadro de llaves; el que pierde queda afuera hasta llegar a la final.')}`, s: 'text' }] },
         [],
         { ht: 24, cells: [{ v: tr('COLORES'), s: 'subtitle' }] },
-        { ht: 34, cells: [{ v: '●', s: 'number' }, { v: `${colorNames.join(' · ')}. ${tr('También podés escribir un código como #1B47E2.')}`, s: 'text' }] }
+        { ht: 34, cells: [{ v: '●', s: 'number' }, { v: tr('Hay 24 colores en la hoja COLORES, cada uno con su muestra. También podés escribir un código como #1B47E2.'), s: 'text' }] }
+      ]
+    };
+    const colorsSheet = {
+      name: colorsSheetName, tabColor: '#ec4899', cols: [12, 24, 14], merges: ['A1:C1', 'A2:C2'],
+      rows: [
+        { ht: 40, cells: [{ v: tr('COLORES'), s: 'title' }, { s: 'title' }, { s: 'title' }] },
+        { ht: 34, cells: [{ v: tr('Estos son los colores que se pueden elegir en la celda Color de cada equipo. No hace falta completar nada acá.'), s: 'note' }] },
+        [],
+        { ht: 26, cells: [{ v: tr('Muestra'), s: 'header' }, { v: tr('Color'), s: 'header' }, { v: tr('Código'), s: 'header' }] },
+        ...COLORS.map(c => ({ ht: 26, cells: [{ v: '', fill: c[2] }, { v: c[lang === 'en' ? 1 : 0], s: 'text' }, { v: c[2].toUpperCase(), s: 'text' }] }))
       ]
     };
     const type = tournament?.format === 'elim' || tournament?.fixture?.type === 'elim' ? typeLabels[1] : typeLabels[0];
     const tour = {
-      name: tr('TORNEO'), tabColor: '#1b47e2', cols: [28, 44], merges: ['A1:B1', 'A6:B6'], select: 'B3',
+      name: tr('TORNEO'), tabColor: '#1b47e2', cols: [28, 44, 62], merges: ['A1:C1', 'A6:C6'], select: 'B3',
       rows: [
-        { ht: 40, cells: [{ v: tr('TORNEO'), s: 'title' }, { s: 'title' }] },
+        { ht: 40, cells: [{ v: tr('TORNEO'), s: 'title' }, { s: 'title' }, { s: 'title' }] },
         [],
-        { ht: 28, cells: [{ v: tr('Nombre del torneo'), s: 'label' }, { v: tournament?.name || '', s: 'input' }] },
-        { ht: 28, cells: [{ v: tr('Tipo de fixture'), s: 'label' }, { v: type, s: 'input' }] },
+        { ht: 28, cells: [{ v: tr('Nombre del torneo'), s: 'label' }, { v: tournament?.name || '', s: 'input' }, { v: tr('← Escribí el nombre del torneo. Ej.: Torneo Apertura 2026'), s: 'hint' }] },
+        { ht: 28, cells: [{ v: tr('Tipo de fixture'), s: 'label' }, { v: type, s: 'input' }, { v: tr('← Tocá la celda y elegí de la lista (▼): todos contra todos o eliminación.'), s: 'hint' }] },
         [],
         { ht: 34, cells: [{ v: tr('El tipo de fixture se puede cambiar después en la app, mientras no haya partidos jugados.'), s: 'note' }] }
       ],
-      validations: [{ sqref: 'B4', list: typeLabels, strict: true, prompt: { title: tr('Tipo de fixture'), text: tr('Elegí de la lista.') } }]
+      validations: [
+        { sqref: 'B3', prompt: { title: tr('Nombre del torneo'), text: tr('Escribí el nombre del torneo. Ej.: Torneo Apertura 2026') } },
+        { sqref: 'B4', list: typeLabels, strict: true, prompt: { title: tr('Tipo de fixture'), text: tr('Elegí de la lista.') } }
+      ]
     };
     const teams = tournament?.teams?.length ? tournament.teams : Array.from({ length: TEMPLATE_TEAMS }, () => null);
     const teamSheets = teams.map((team, i) => {
       const players = team ? TN.sortPlayers(team.players) : [];
       const rows = [
-        { ht: 40, cells: [{ v: `${tr('EQUIPO')} ${i + 1}`, s: 'title' }, { s: 'title' }] },
+        { ht: 40, cells: [{ v: `${tr('EQUIPO')} ${i + 1}`, s: 'title' }, { s: 'title' }, { s: 'title' }] },
         [],
-        { ht: 28, cells: [{ v: tr('Equipo'), s: 'label' }, { v: team?.name || '', s: 'input' }] },
-        { ht: 28, cells: [{ v: tr('Color'), s: 'label' }, { v: team ? colorLabel(team.color, lang) : colorNames[i % colorNames.length], s: 'input' }] },
-        { ht: 30, cells: [null, { v: tr('Elegí un color de la lista o escribí un código como #1B47E2.'), s: 'note' }] },
+        { ht: 28, cells: [{ v: tr('Equipo'), s: 'label' }, { v: team?.name || '', s: 'input' }, { v: tr('← Escribí el nombre del equipo. Ej.: Los Cóndores'), s: 'hint' }] },
+        { ht: 28, cells: [{ v: tr('Color'), s: 'label' }, { v: team ? colorLabel(team.color, lang) : colorNames[i % colorNames.length], s: 'input' }, { v: tr('← Elegí de la lista (▼): la celda se pinta de ese color. También sirve un código como #1B47E2.'), s: 'hint' }] },
+        { ht: 30, cells: [null, { v: tr('Los colores con su muestra están en la hoja COLORES.'), s: 'note' }] },
         [],
-        { ht: 26, cells: [{ v: tr('N.º camiseta'), s: 'header' }, { v: tr('Nombre y apellido del jugador'), s: 'header' }] }
+        { ht: 26, cells: [{ v: tr('N.º camiseta'), s: 'header' }, { v: tr('Nombre y apellido del jugador'), s: 'header' }, { v: tr('Cómo completar'), s: 'header' }] }
       ];
+      const tips = [tr('← Un jugador por fila, de arriba hacia abajo.'), tr('← El número de camiseta es opcional (hasta 3 dígitos).'), tr('← Las filas que dejes vacías se ignoran.')];
       for (let r = 0; r < PLAYER_ROWS; r++) {
         const p = players[r];
-        rows.push([{ v: p?.number || '', s: 'inputCenter' }, { v: p?.name || '', s: 'input' }]);
+        rows.push([{ v: p?.number || '', s: 'inputCenter' }, { v: p?.name || '', s: 'input' }, r < tips.length ? { v: tips[r], s: 'hint' } : null]);
       }
+      const firstRow = HEAD_ROW + 1, lastRow = HEAD_ROW + PLAYER_ROWS;
       return {
         name: team ? team.name : `${tr('EQUIPO')} ${i + 1}`, tabColor: team?.color && team.color.toLowerCase() !== '#ffffff' ? team.color : '#f59e0b',
-        cols: [16, 46], merges: ['A1:B1'], freeze: HEAD_ROW, select: 'B3', rows,
-        validations: [{ sqref: 'B4', list: colorNames, strict: false, prompt: { title: tr('Color'), text: tr('Elegí de la lista o escribí un código como #1B47E2.') } }]
+        cols: [16, 46, 58], merges: ['A1:C1'], freeze: HEAD_ROW, select: 'B3', rows,
+        conditional: [{ sqref: 'B4', rules: colorRules }],
+        validations: [
+          { sqref: 'B3', prompt: { title: tr('Nombre del equipo'), text: tr('Escribí el nombre del equipo. Ej.: Los Cóndores') } },
+          { sqref: 'B4', ref: colorsRef, strict: false, prompt: { title: tr('Color'), text: tr('Elegí de la lista (▼) o escribí un código como #1B47E2.') } },
+          { sqref: `A${firstRow}:A${lastRow}`, prompt: { title: tr('N.º camiseta'), text: tr('Número de camiseta, hasta 3 dígitos. Es opcional.') } },
+          { sqref: `B${firstRow}:B${lastRow}`, prompt: { title: tr('Jugador'), text: tr('Nombre y apellido del jugador. Un jugador por fila.') } }
+        ]
       };
     });
-    return [guide, tour, ...teamSheets];
+    return [guide, tour, ...teamSheets, colorsSheet];
   }
 
   /* ---------- Lectura ---------- */
@@ -105,7 +136,7 @@
   };
   const clean = s => fold(s).replace(/[:*]+$/, '').trim();
   const matches = (re, s) => re.test(clean(s));
-  const valueRight = (row, col) => { for (let c = col + 1; c < row.length; c++) if (String(row[c] ?? '').trim()) return String(row[c]).trim(); return ''; };
+  const valueRight = (row, col) => { for (let c = col + 1; c < row.length; c++) { const v = String(row[c] ?? '').trim(); if (v && !v.startsWith('←')) return v; } return ''; };
   function findLabel(rows, re, maxRows = 12) {
     for (let r = 0; r < Math.min(rows.length, maxRows); r++) for (let c = 0; c < (rows[r] || []).length; c++) if (matches(re, rows[r][c])) return { r, c };
     return null;
@@ -139,6 +170,7 @@
       byName.set(key, team); out.teams.push(team);
     };
     for (const sheet of sheets || []) {
+      if (/^(colores|colors)$/.test(fold(sheet.name))) continue; // lista de colores de la plantilla
       const rows = sheet.rows || [];
       const tl = findLabel(rows, LABEL.tournament);
       if (tl && !findLabel(rows, LABEL.team, 6)) {
