@@ -108,7 +108,7 @@ test('el partido en curso de cada dispositivo es un registro propio y otro dispo
   assert.strictEqual(sync.bajar(db, a, 0).cambios[0].borrado, true);
 });
 
-test('link público: solo el torneo compartido, sin jugadores ni otras cuentas', () => {
+test('link público: solo el torneo compartido, sin la plantilla ni otras cuentas (goleadores sí, DEC-031)', () => {
   const publico = require('../server/publico');
   const { db, a, b } = base();
   const torneo = (on) => ({ tournament: { id: 't1', name: 'Copa', teams: [{ id: 'A', name: 'Pumas', color: '#c62525', players: [{ id: 'p', name: 'Ana', number: '7' }] }, { id: 'B', name: 'Toros', color: '#000000', players: [] }], fixture: { type: 'rr', matches: [{ id: 'rr-A-B', round: 1, pos: 0, home: 'A', away: 'B' }] }, share: { on, slug: 'copa' } } });
@@ -122,7 +122,8 @@ test('link público: solo el torneo compartido, sin jugadores ni otras cuentas',
   assert.deepStrictEqual(r.torneo.teams[0].players, []);
   assert.deepStrictEqual(r.partidos[0].events, [{ type: 'goal', team: 0 }]);
   assert.strictEqual(r.vivos[0].teams[0].score, 3);
-  assert.ok(!JSON.stringify(r).includes('Ana'));
+  assert.strictEqual(r.partidos[0].eventos[0].scorer, 'Ana'); // el goleador figura en el feed del partido
+  assert.ok(!JSON.stringify(r).includes('"number"') && !JSON.stringify(r).includes('"players":[{'), 'la plantilla (números y jugadores sin goles) no se publica');
   assert.strictEqual(publico.obtener(db, 'Santafe', 'copa'), null);
   assert.strictEqual(publico.obtener(db, 'Mendoza', '../x'), null);
   void b;

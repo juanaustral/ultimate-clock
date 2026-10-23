@@ -1,6 +1,7 @@
 'use strict';
-// Vista pública de un torneo compartido (link "en vivo"): sin sesión y solo lectura. Devuelve equipos, fixture, resultados
-// y los partidos en curso; nunca jugadores, eventos detallados ni datos de la cuenta. Solo si el torneo tiene share.on.
+// Vista pública de un torneo compartido (link "en vivo"): sin sesión y solo lectura. Devuelve equipos (con logo), fixture,
+// resultados, los partidos en curso y los eventos de cada partido (goles con goleador y pase, medio tiempo, time outs,
+// llamados, incidencias). Nunca la plantilla de jugadores ni datos de la cuenta. Solo si el torneo tiene share.on (DEC-031).
 const CACHE_MS = 3000;
 const VIVO_MAX_MS = 6 * 3600 * 1000;
 const cache = new Map();
@@ -8,14 +9,27 @@ const cache = new Map();
 const slugValido = (s) => typeof s === 'string' && /^[a-z0-9-]{1,40}$/.test(s);
 const texto = (v, max = 60) => String(v ?? '').slice(0, max);
 const color = (v) => (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(v)) ? v : '#1b47e2');
+const logo = (v) => (/^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(String(v)) && String(v).length <= 40000 ? String(v) : '');
 const leer = (txt) => { try { return JSON.parse(txt); } catch { return null; } };
 
+// Tipos de evento que cuenta el feed. "start" y "limit" solo del reloj del partido (los de llamados y pull son ruido).
+const TIPOS = new Set(['start', 'goal', 'half', 'call', 'timeout', 'incident', 'limit', 'saved', 'manual-result']);
+function limpiarEventos(m) {
+  const equipos = m.teams || [];
+  return (m.events || []).filter((e) => e && TIPOS.has(e.type) && (!['start', 'limit'].includes(e.type) || e.timer === 'clock')).slice(-200).map((e, i) => ({
+    id: texto(e.id || `${m.id || m.fixtureId}-${i}`, 80), match: texto(m.fixtureId, 80), type: e.type,
+    team: e.team === 0 || e.team === 1 ? e.team : null, tid: texto(equipos[e.team]?.tid, 80),
+    at: texto(e.at, 40), elapsed: Number(e.elapsed) || 0,
+    scorer: texto(e.scorer, 60), assist: texto(e.assist, 60), label: texto(e.label, 60), note: texto(e.note, 120)
+  }));
+}
 function limpiarPartido(m) {
   const out = {
     id: texto(m.id, 80), status: 'saved', fixtureId: texto(m.fixtureId, 80), savedAt: texto(m.savedAt, 40),
     teams: (m.teams || []).slice(0, 2).map((t) => ({ tid: texto(t.tid, 80), name: texto(t.name), color: color(t.color), score: Number(t.score) || 0 })),
     // Solo lo necesario para recalcular el marcador (goles y correcciones), sin quién hizo cada gol.
-    events: (m.events || []).filter((e) => e && (e.type === 'goal' || e.type === 'adjustment') && (e.team === 0 || e.team === 1)).map((e) => ({ type: e.type, team: e.team }))
+    events: (m.events || []).filter((e) => e && (e.type === 'goal' || e.type === 'adjustment') && (e.team === 0 || e.team === 1)).map((e) => ({ type: e.type, team: e.team })),
+    eventos: limpiarEventos(m)
   };
   if (Array.isArray(m.scoreOverride) && m.scoreOverride.length === 2) out.scoreOverride = m.scoreOverride.map((n) => Number(n) || 0);
   return out;
@@ -24,7 +38,10 @@ function limpiarVivo(m) {
   return {
     fixtureId: texto(m.fixtureId, 80), half: Number(m.half) || 1,
     teams: (m.teams || []).slice(0, 2).map((t) => ({ tid: texto(t.tid, 80), score: Number(t.score) || 0 })),
-    clock: { elapsed: Number(m.clock?.elapsed) || 0, running: !!m.clock?.running, startedAt: Number(m.clock?.startedAt) || null }
+    clock: { elapsed: Number(m.clock?.elapsed) || 0, running: !!m.clock?.running, startedAt: Number(m.clock?.startedAt) || null },
+    descanso: !!(m.half === 1 && m.breakTimer && m.breakTimer.running),
+    timeouts: Array.isArray(m.timeoutState?.usages) ? m.timeoutState.usages.slice(0, 2).map((n) => Number(n) || 0) : [0, 0],
+    eventos: limpiarEventos(m)
   };
 }
 
@@ -50,7 +67,7 @@ function armar(db, usuario, slug) {
     if (t && t.share && t.share.on === true && t.share.slug === slug) { torneo = t; break; }
   }
   if (!torneo) return null;
-  const equipos = (torneo.teams || []).map((t) => ({ id: texto(t.id, 80), name: texto(t.name), color: color(t.color), players: [] }));
+  const equipos = (torneo.teams || []).map((t) => ({ id: texto(t.id, 80), name: texto(t.name), color: color(t.color), logo: logo(t.logo), players: [] }));
   const ids = new Set(equipos.map((t) => t.id));
   const cruces = new Set((torneo.fixture?.matches || []).map((m) => m.id));
   const partidos = [];
@@ -69,4 +86,4 @@ function armar(db, usuario, slug) {
   };
 }
 
-module.exports = { obtener, limpiarPartido, slugValido };
+module.exports = { obtener, limpiarPartido, limpiarVivo, limpiarEventos, slugValido };
