@@ -162,7 +162,7 @@
       <a href="#funciones">Funciones</a>
       <a href="#torneos">Torneos</a>
       <a href="#pantallas">Pantallas</a>
-      <a href="#planes">Gratis y Pro</a>
+      <a href="#planes">Modos</a>
       <a href="../manual/">Manual</a>
     </nav>
     <a class="btn btn-accent" href="../" style="min-height:40px;padding:10px 16px">Abrir la app</a>
@@ -236,7 +236,7 @@
             <li>Llaves de eliminación y todos contra todos con fechas</li>
             <li>Tabla de posiciones y goleadores por jugador</li>
             <li>Plantilla de Excel para cargar el torneo y volver a importarlo</li>
-            <li>Torneo compartido en vivo para el público (Modo Pro)</li>
+            <li>Se activa con el Modo Pro, que es gratis: se pide con una solicitud</li>
           </ul>
         </div>
         <div class="pair">
@@ -272,31 +272,52 @@
     </div>
   </section>
 
-  <!-- Gratis vs Pro -->
+  <!-- Desktop -->
+  <section id="computadora" style="padding-top:0">
+    <div class="wrap">
+      <h2>También en la computadora.</h2>
+      <p class="lead eyebrow-less">Para ver estadísticas, seguir las llaves o mirar un partido en vivo en pantalla grande.</p>
+      <div class="plans" style="margin-top:20px">
+        <figure class="card" style="padding:10px;gap:10px">
+          <img src="img/es-27-llaves-ancho.webp" alt="Cuadro de llaves del torneo en pantalla de computadora" loading="lazy" width="1280" height="800" style="border-radius:8px;width:100%;height:auto">
+          <figcaption style="font-size:14px;color:var(--muted);padding:0 6px 6px"><b style="color:var(--ink)">Llaves</b> el cuadro completo del torneo, de un vistazo.</figcaption>
+        </figure>
+        <figure class="card" style="padding:10px;gap:10px">
+          <img src="img/es-26-vivo-ancho.webp" alt="Página en vivo del partido en pantalla de computadora" loading="lazy" width="1280" height="800" style="border-radius:8px;width:100%;height:auto">
+          <figcaption style="font-size:14px;color:var(--muted);padding:0 6px 6px"><b style="color:var(--ink)">En vivo</b> marcador, eventos y goleadores para seguir el partido.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modos y Pro -->
   <section id="planes" style="padding-top:0">
     <div class="wrap">
-      <h2>Gratis para el partido. Pro para el torneo.</h2>
-      <p class="lead eyebrow-less">El partido completo no pide cuenta. Lo que necesita cuenta es el Modo Pro.</p>
+      <h2>Modo partido, gratis. Modo torneo, con una solicitud.</h2>
+      <p class="lead eyebrow-less">Elegís el modo al entrar y lo cambiás cuando quieras desde el menú. El Modo Pro, que activa el modo torneo, es gratis: se pide con un formulario.</p>
       <div class="plans" style="margin-top:20px">
         <div class="plan">
-          <h3>Gratis</h3>
+          <h3>Modo partido</h3>
+          <p>Para un partido suelto, un amistoso o un entrenamiento. Es gratis y no pide cuenta.</p>
           <ul>
-            <li>Partido completo: reloj, goles, llamados y time outs</li>
-            <li>Planilla con PDF, CSV y JSON</li>
-            <li>Todo guardado en el navegador del dispositivo</li>
+            <li>Reloj, goles, llamados y time outs</li>
+            <li>Planilla que se exporta en PDF, CSV o JSON</li>
+            <li>Todo queda en ese dispositivo; exportá lo que quieras conservar</li>
             <li>Funciona sin internet y se instala</li>
           </ul>
-          <a class="btn btn-ghost" href="../">Usar gratis</a>
+          <a class="btn btn-ghost" href="../" style="justify-self:start">Usar el modo partido</a>
         </div>
         <div class="plan pro">
-          <h3>Modo Pro</h3>
+          <h3>Modo torneo (Modo Pro)</h3>
+          <p>Para un torneo o una liga con varios equipos. Gratis, pidiéndolo por solicitud.</p>
           <ul>
-            <li>Modo torneo con equipos, jugadores y fixture</li>
-            <li>Partido sincronizado entre varios dispositivos</li>
-            <li>Link en vivo para el público</li>
-            <li>Partido en curso guardado en el servidor</li>
+            <li>Equipos y jugadores cargados una vez, elegidos de una lista</li>
+            <li>Fixture, llaves y tabla de posiciones</li>
+            <li>Goleadores y pases por jugador</li>
+            <li>Varios dispositivos, partido sincronizado y link en vivo</li>
           </ul>
-          <a class="btn btn-accent" href="../solicitarpro">Solicitar el Modo Pro</a>
+          <a class="btn btn-accent" href="../solicitarpro" style="justify-self:start">Solicitar el Modo Pro</a>
+          <p style="font-size:13px">Completás un formulario con tu nombre, equipo, torneo y e-mail. Te respondemos con tu usuario y contraseña.</p>
         </div>
       </div>
     </div>
@@ -335,7 +356,7 @@
     { name: 'Goles', desc: 'Cada gol abre el cuadro para elegir quién anotó y quién dio el pase. Si te equivocás, se deshace.', img: 'img/es-07-gol.webp', bullets: ['Goleador y asistencia en un paso', 'Deshacer durante unos segundos', 'Corrección sin borrar el historial'] },
     { name: 'Llamados', desc: 'Ocho categorías para registrar el hecho y el equipo que lo llamó. Cada una explica qué registra.', img: 'img/es-08-llamado.webp', bullets: ['Falta, violación, pick, travel, stall y más', 'Queda en la planilla con su equipo', 'No aplica sanciones ni resuelve disputas'] },
     { name: 'Planilla', desc: 'El partido completo en una pantalla, con botones para exportar en PDF, CSV o JSON.', img: 'img/es-11-planilla.webp', bullets: ['PDF para imprimir o compartir', 'CSV para planillas de cálculo', 'JSON como respaldo completo'] },
-    { name: 'Torneo', desc: 'Equipos y jugadores cargados una vez. En cada partido los elegís de la lista, sin escribir.', img: 'img/es-22-tablero-torneo.webp', bullets: ['Equipos y jugadores en listas', 'Plantilla de Excel para importar', 'Goleadores y asistencias por partido'] },
+    { name: 'Torneo', desc: 'Equipos y jugadores cargados una vez. En cada partido los elegís de la lista. Se activa con el Modo Pro, que se pide con una solicitud gratuita.', img: 'img/es-22-tablero-torneo.webp', bullets: ['Equipos y jugadores en listas', 'Plantilla de Excel para importar', 'Goleadores y asistencias por partido'] },
     { name: 'Llaves', desc: 'Eliminación con cuadro de llaves, o todos contra todos con fechas y tabla cruzada.', img: 'img/es-18-llaves.webp', bullets: ['Cuadro de llaves automático', 'Todos contra todos con fechas', 'Tabla de posiciones con los resultados cargados'] },
     { name: 'En vivo', desc: 'Compartí un link para que el público siga marcador, eventos, goleadores y logos desde su teléfono.', img: 'img/es-25-vivo.webp', bullets: ['Marcador y eventos actualizados', 'Goleadores y asistencias visibles', 'Logos de cada equipo'] }
   ];
