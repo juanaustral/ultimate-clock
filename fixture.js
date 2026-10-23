@@ -69,7 +69,7 @@
     return { matchId: match.id, home: h, away: a, winner: h > a ? home : a > h ? away : null };
   }
 
-  /* Cruces con equipos resueltos y estado: 'pendiente', 'jugando' (si coincide activeFixtureId), 'terminado' o 'libre'. */
+  /* Cruces con equipos resueltos y estado: 'pendiente', 'jugando' (si coincide activeFixtureId, un id o un Set de ids), 'terminado' o 'libre'. */
   function view(fixture, saved, activeFixtureId) {
     if (!fixture) return [];
     const byId = new Map(), out = [];
@@ -79,7 +79,8 @@
       const bye = fixture.type === 'elim' && fm.round === 1 && ((home && !away) || (!home && away));
       const result = home && away ? resultOf(fm, home, away, saved) : null;
       const winner = bye ? (home || away) : result?.winner || null;
-      const state = bye ? 'libre' : result ? 'terminado' : fm.id === activeFixtureId ? 'jugando' : 'pendiente';
+      const active = activeFixtureId instanceof Set ? activeFixtureId.has(fm.id) : fm.id === activeFixtureId;
+      const state = bye ? 'libre' : result ? 'terminado' : active ? 'jugando' : 'pendiente';
       const row = { ...fm, home, away, state, result, winner };
       byId.set(fm.id, row);
       out.push(row);

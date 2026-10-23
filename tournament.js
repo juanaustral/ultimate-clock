@@ -28,6 +28,9 @@
   }
   /* Marcador de un partido recalculado desde sus eventos (goles menos correcciones); sin eventos, el marcador guardado. */
   function finalScore(match) {
+    /* Un resultado corregido a mano (desde el fixture) manda sobre los eventos. */
+    const fixed = match?.scoreOverride;
+    if (Array.isArray(fixed) && fixed.length === 2 && fixed.every(n => Number.isInteger(n) && n >= 0 && n <= 999)) return fixed.slice();
     const events = Array.isArray(match?.events) ? match.events : [];
     if (events.some(e => e.type === 'goal' || e.type === 'adjustment')) {
       const score = [0, 0];
@@ -79,6 +82,13 @@
     return { id: official || config ? id : 'wfdf', name: official ? '' : text(input?.name, LIMITS.name), config: official ? null : config };
   }
   /* Valida un torneo leído de un archivo o del almacenamiento. Devuelve una copia limpia o null. */
+  /* Link público del fixture: lo activa el usuario; el slug va en la URL junto al nombre de la cuenta. */
+  const slugify = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  function sanitizeShare(input) {
+    if (!input || typeof input !== 'object') return null;
+    const slug = slugify(input.slug);
+    return slug ? { on: input.on === true, slug } : null;
+  }
   function sanitize(input) {
     if (!input || typeof input !== 'object' || !Array.isArray(input.teams)) return null;
     const name = text(input.name, LIMITS.name);
@@ -97,7 +107,11 @@
       teams.push({ id: unique(team.id, 'team'), name: teamName, color: isHex(team.color) ? team.color : '#1b47e2', players });
     }
     const fixture = root.UCFixture ? root.UCFixture.sanitize(input.fixture, teams.map(t => t.id)) : (typeof require !== 'undefined' ? require('./fixture.js').sanitize(input.fixture, teams.map(t => t.id)) : null);
-    return { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), scoring: sanitizeScoring(input.scoring), fixture, teams };
+    const out = { id: typeof input.id === 'string' && input.id ? input.id : uid('tournament'), name, createdAt: typeof input.createdAt === 'string' ? input.createdAt : new Date().toISOString(), timing: sanitizeTiming(input.timing), scoring: sanitizeScoring(input.scoring), fixture, teams };
+    if (input.format === 'rr' || input.format === 'elim') out.format = input.format;
+    const share = sanitizeShare(input.share);
+    if (share) out.share = share;
+    return out;
   }
 
   /* Partidos guardados en los que juega algún equipo del torneo (los equipos se vinculan con `tid`). */
@@ -221,6 +235,6 @@
     return '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
 
-  const api = { FORMAT, LIMITS, TIEBREAKS, teamHistory, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
+  const api = { slugify, sanitizeShare, FORMAT, LIMITS, TIEBREAKS, teamHistory, sanitizeScoring, finalScore, cleanNumber, makePlayer, makeTeam, makeTournament, sanitizeTiming, parsePlayers, rosterToText, rosterFromText, playerLabel, sortPlayers, sanitize, tournamentMatches, stats, standings, results, exportPayload, parseFile, statsCSV };
   if (typeof module !== 'undefined') module.exports = api; else root.UCTournament = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

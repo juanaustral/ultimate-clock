@@ -25,7 +25,7 @@ const servidor = http.createServer((req, res) => {
     if (process.env.UC_LOG) res.on('finish', () => console.log(req.method, req.url, res.statusCode, (req.headers.authorization || '').slice(-6)));
     return api(req, res);
   }
-  const archivo = path.join(RAIZ, ruta === '/' ? 'index.html' : ruta);
+  const archivo = path.join(RAIZ, ruta.endsWith('/') ? ruta + 'index.html' : ruta); // como el file_server de producción
   if (!archivo.startsWith(RAIZ + path.sep) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end('no'); }
   res.writeHead(200, { 'Content-Type': TIPOS[path.extname(archivo)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
   fs.createReadStream(archivo).pipe(res);

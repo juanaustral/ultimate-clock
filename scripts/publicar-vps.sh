@@ -13,7 +13,7 @@ REPO="${REPO:-https://github.com/juanaustral/ultimate-clock}"
 DEST="${DEST:-/opt/iona-web/site/ultimateclock}"
 BACKUPS="${BACKUPS:-/opt/iona-web/backups}"
 URL="${URL:-https://iona.ar/ultimateclock}"
-FILES=(index.html ultimate-clock.html tokens.css ultimate-clock.css i18n.js clock-engine.js alerts.js sheet-export.js fixture.js tournament.js local-store.js session.js sync.js changelog.js ultimate-clock.js icon.svg manifest.webmanifest sw.js icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png favicon-32.png og-image.png screenshot-narrow.png screenshot-wide.png)
+FILES=(index.html ultimate-clock.html tokens.css ultimate-clock.css i18n.js clock-engine.js alerts.js sheet-export.js fixture.js tournament.js xlsx.js tournament-sheet.js fixture-view.js vivo.html vivo.js local-store.js session.js sync.js changelog.js ultimate-clock.js icon.svg manifest.webmanifest sw.js icon-192.png icon-512.png icon-maskable-512.png apple-touch-icon.png favicon-32.png og-image.png screenshot-narrow.png screenshot-wide.png)
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 WORK="$(mktemp -d)"
@@ -24,7 +24,7 @@ git clone --quiet "$REPO" "$WORK/repo"
 git -C "$WORK/repo" checkout --quiet "$REF"
 echo "    commit $(git -C "$WORK/repo" rev-parse --short HEAD)"
 # El manual y sus capturas (manual/img/*.webp) viajan con la app.
-FILES+=(manual.html)
+FILES+=(manual.html manual/index.html manual/manual.js)
 while IFS= read -r img; do FILES+=("$img"); done < <(cd "$WORK/repo" && ls manual/img/*.webp)
 for f in "${FILES[@]}"; do [ -f "$WORK/repo/$f" ] || { echo "Falta $f en el repositorio; no se publica nada."; exit 1; }; done
 

@@ -107,3 +107,23 @@ test('el partido en curso de cada dispositivo es un registro propio y otro dispo
   sync.subir(db, a, 'tel2', [{ cambio: 'd1', tabla: 'partidoActivo', id: 'tel1', op: 'delete', base: 2 }]);
   assert.strictEqual(sync.bajar(db, a, 0).cambios[0].borrado, true);
 });
+
+test('link público: solo el torneo compartido, sin jugadores ni otras cuentas', () => {
+  const publico = require('../server/publico');
+  const { db, a, b } = base();
+  const torneo = (on) => ({ tournament: { id: 't1', name: 'Copa', teams: [{ id: 'A', name: 'Pumas', color: '#c62525', players: [{ id: 'p', name: 'Ana', number: '7' }] }, { id: 'B', name: 'Toros', color: '#000000', players: [] }], fixture: { type: 'rr', matches: [{ id: 'rr-A-B', round: 1, pos: 0, home: 'A', away: 'B' }] }, share: { on, slug: 'copa' } } });
+  sync.subir(db, a, 'tel1', [put('c1', 't1', 0, torneo(false), 'torneos')]);
+  assert.strictEqual(publico.obtener(db, 'mendoza', 'copa'), null);
+  sync.subir(db, a, 'tel1', [put('c2', 't1', 1, torneo(true), 'torneos')]);
+  sync.subir(db, a, 'tel1', [put('c3', 'm1', 0, { match: { id: 'm1', status: 'saved', fixtureId: 'rr-A-B', teams: [{ tid: 'A', name: 'Pumas', score: 2 }, { tid: 'B', name: 'Toros', score: 1 }], events: [{ type: 'goal', team: 0, scorer: 'Ana', scorerId: 'p' }] } })]);
+  sync.subir(db, a, 'tel2', [put('c4', 'tel2', 0, { id: 'x', status: 'active', fixtureId: 'rr-A-B', teams: [{ tid: 'A', score: 3 }, { tid: 'B', score: 0 }], clock: { elapsed: 60 } }, 'partidoActivo')]);
+  const r = publico.obtener(db, 'Mendoza', 'copa');
+  assert.ok(r);
+  assert.deepStrictEqual(r.torneo.teams[0].players, []);
+  assert.deepStrictEqual(r.partidos[0].events, [{ type: 'goal', team: 0 }]);
+  assert.strictEqual(r.vivos[0].teams[0].score, 3);
+  assert.ok(!JSON.stringify(r).includes('Ana'));
+  assert.strictEqual(publico.obtener(db, 'Santafe', 'copa'), null);
+  assert.strictEqual(publico.obtener(db, 'Mendoza', '../x'), null);
+  void b;
+});

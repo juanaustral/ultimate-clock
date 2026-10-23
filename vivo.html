@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es" data-theme="light" class="vivo">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1b47e2">
+    <meta name="robots" content="noindex">
+    <title>Fixture en vivo · Ultimate Clock</title>
+    <meta property="og:title" content="Fixture en vivo · Ultimate Clock">
+    <meta property="og:description" content="Seguí el fixture, los resultados y la tabla del torneo en tiempo real.">
+    <meta property="og:image" content="https://iona.ar/ultimateclock/og-image.png">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="tokens.css">
+    <link rel="stylesheet" href="ultimate-clock.css">
+    <script src="i18n.js" defer></script>
+    <script src="fixture.js" defer></script>
+    <script src="tournament.js" defer></script>
+    <script src="fixture-view.js" defer></script>
+    <script src="vivo.js" defer></script>
+  </head>
+  <body>
+    <header class="vivo-bar">
+      <a class="brand" href="./" aria-label="Ultimate Clock"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect x="25" y="2" width="14" height="7" rx="2.5" fill="currentColor"/><rect x="29.5" y="8" width="5" height="6" fill="currentColor"/><circle cx="32" cy="38" r="23" fill="#1b47e2"/><circle cx="32" cy="38" r="21.5" fill="none" stroke="#0b2a9e" stroke-width="3"/><circle cx="32" cy="38" r="15.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.5"/><path d="M32 38V22.5A15.5 15.5 0 0 1 45.42 30.25Z" fill="#fff"/><circle cx="32" cy="38" r="3" fill="#fff"/></svg><strong>ULTIMATE CLOCK</strong></a>
+      <span class="vivo-live" id="vivoLive"><i aria-hidden="true"></i><span>EN VIVO</span></span>
+    </header>
+    <main class="vivo-main" id="vivo" aria-live="polite"><p class="vivo-msg">Cargando el fixture…</p></main>
+    <footer class="vivo-foot"><a href="./">Ultimate Clock</a> · <span id="vivoUpdated"></span></footer>
+  </body>
+</html>
