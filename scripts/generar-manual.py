@@ -4,8 +4,12 @@ Las capturas salen de `node qa/manual-capturas.cjs` (manual/img/<idioma>-<nn>-<n
 Uso: python3 scripts/generar-manual.py"""
 import html
 import os
+import re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# El manual lleva la versión de la app (changelog.js): tests/manual.test.cjs falla si no coincide, para no olvidarse de regenerarlo.
+_CL = open(os.path.join(ROOT, 'changelog.js'), encoding='utf-8').read()
+VERSION = re.search(r'VERSION = (\d+)', _CL).group(1)
 K = lambda s: f'<span class="k">{s}</span>'  # botón o texto de la app
 
 
@@ -20,6 +24,15 @@ def wide(img, alt, cap):
 def text(body):
     return ('text', body)
 
+
+COLORES = [('Azul', 'Blue', '#1b47e2'), ('Naranja', 'Orange', '#f59e0b'), ('Verde', 'Green', '#16a34a'), ('Rojo', 'Red', '#c62525'),
+           ('Negro', 'Black', '#16171b'), ('Blanco', 'White', '#ffffff'), ('Amarillo', 'Yellow', '#facc15'), ('Violeta', 'Purple', '#7c3aed'),
+           ('Rosa', 'Pink', '#ec4899'), ('Celeste', 'Light blue', '#38bdf8'), ('Gris', 'Grey', '#6b7280'), ('Bordó', 'Maroon', '#7f1d1d'),
+           ('Azul marino', 'Navy', '#1e3a8a'), ('Turquesa', 'Teal', '#14b8a6'), ('Verde oscuro', 'Dark green', '#14532d'), ('Verde lima', 'Lime', '#84cc16'),
+           ('Menta', 'Mint', '#86efac'), ('Dorado', 'Gold', '#ca8a04'), ('Marrón', 'Brown', '#78350f'), ('Beige', 'Beige', '#d6c7a1'),
+           ('Salmón', 'Salmon', '#fda4af'), ('Fucsia', 'Fuchsia', '#c026d3'), ('Lila', 'Lilac', '#a78bfa'), ('Gris claro', 'Light grey', '#d1d5db')]
+SWATCHES_ES = ' '.join(f'<span class="sw"><i style="background:{h}"></i>{es}</span>' for es, _, h in COLORES)
+SWATCHES_EN = ' '.join(f'<span class="sw"><i style="background:{h}"></i>{en}</span>' for _, en, h in COLORES)
 
 # Cada sección: (id, {es, en} título, [bloques]); cada texto es un par (es, en).
 SECTIONS = [
@@ -158,7 +171,7 @@ SECTIONS = [
 <dt>MODO CLARO / OSCURO · ESPAÑOL / ENGLISH</dt><dd>Claro para el sol, oscuro para la noche. Idioma de la app.</dd>
 <dt>＋ NUEVO PARTIDO · PLANILLA · GUARDAR</dt><dd>Empezar otro partido, ver la planilla y cerrar el partido.</dd>
 <dt>ENTRAR AL MODO TORNEO / VER TORNEO · SALIR DEL MODO TORNEO</dt><dd>Pasar de un modo al otro; en torneo, {K("VER TORNEO")} abre el fixture.</dd>
-<dt>Cuenta</dt><dd>{K("INICIAR SESIÓN")} o el estado de la sincronización: {K("✓ SINCRONIZADO")}, {K("SINCRONIZANDO…")} o, si no hay internet, {K("SIN CONEXIÓN · SINCRONIZAR AHORA")}. {K("CERRAR SESIÓN")}.</dd>
+<dt>Cuenta</dt><dd>{K("INICIAR SESIÓN")} o el estado de la sincronización: {K("✓ SINCRONIZADO")}, {K("SINCRONIZANDO…")} o, si no hay internet, {K("SIN CONEXIÓN · SINCRONIZAR AHORA")}. {K("SALIR DE ESTE USUARIO")} vuelve al modo sin usuario.</dd>
 <dt>Sonido y pantalla</dt><dd>Activar y probar el sonido, pantalla completa y {K("⚙ EDITAR TIEMPOS")}.</dd>
 <dt>Ayuda</dt><dd>{K("CÓMO USAR LA APP")} (recorrido guiado), {K("MANUAL DE USUARIO")} (este manual) e {K("INFO")}.</dd>
 <dt>REINICIAR CONTADORES</dt><dd>Pone el partido actual en cero (pide confirmar). No borra planillas guardadas.</dd>
@@ -167,7 +180,7 @@ SECTIONS = [
 <dt>LIGHT / DARK MODE · ESPAÑOL / ENGLISH</dt><dd>Light for sunshine, dark for night. App language.</dd>
 <dt>＋ NEW GAME · SCORESHEET · SAVE</dt><dd>Start another game, see the scoresheet and close the game.</dd>
 <dt>ENTER TOURNAMENT MODE / VIEW TOURNAMENT · EXIT TOURNAMENT MODE</dt><dd>Switch modes; in tournament mode, {K("VIEW TOURNAMENT")} opens the fixture.</dd>
-<dt>Account</dt><dd>{K("SIGN IN")} or the sync status: {K("✓ SYNCED")}, {K("SYNCING…")} or, with no internet, {K("OFFLINE · SYNC NOW")}. {K("SIGN OUT")}.</dd>
+<dt>Account</dt><dd>{K("SIGN IN")} or the sync status: {K("✓ SYNCED")}, {K("SYNCING…")} or, with no internet, {K("OFFLINE · SYNC NOW")}. {K("LOG OUT OF THIS USER")} goes back to no-user mode.</dd>
 <dt>Sound and screen</dt><dd>Turn on and test sound, full screen and {K("⚙ EDIT TIMES")}.</dd>
 <dt>Help</dt><dd>{K("HOW TO USE THE APP")} (guided tour), {K("USER MANUAL")} (this manual) and {K("INFO")}.</dd>
 <dt>RESET COUNTERS</dt><dd>Sets the current game to zero (asks to confirm). Saved scoresheets are kept.</dd>
@@ -187,6 +200,11 @@ SECTIONS = [
 <li><strong>No internet at the field?</strong> The app keeps working and uploads everything when signal returns. To force it, {K("MENU")} → {K("OFFLINE · SYNC NOW")}.</li>
 <li>If two phones changed the same thing, a notice lets you choose <strong>which one is official</strong>.</li>
 </ul>''')),
+        text((
+            f'''<h3>Salir de este usuario</h3>
+<p>Si prestaste el teléfono o te equivocaste de cuenta: {K("MENU")} → {K("SALIR DE ESTE USUARIO")}. La app se vacía de los datos de esa cuenta (siguen en el servidor) y vuelve al <strong>modo sin usuario</strong>, sin pedirte nada. Si había cambios sin subir, te avisa antes. Para volver: {K("MENU")} → {K("INICIAR SESIÓN")}.</p>''',
+            f'''<h3>Log out of this user</h3>
+<p>If you lent the phone or used the wrong account: {K("MENU")} → {K("LOG OUT OF THIS USER")}. The app clears that account's data from the device (it stays on the server) and goes back to <strong>no-user mode</strong> without asking for anything. If there were changes not uploaded yet, it warns you first. To come back: {K("MENU")} → {K("SIGN IN")}.</p>''')),
         shot('28-retomar', ('Aviso para retomar un partido en curso de otro dispositivo', 'Notice to resume a game in progress from another device'), ('Retomar en otro dispositivo', 'Resume on another device'), (
             f'''<h3>Si el teléfono falla</h3><p>Entrá con la misma cuenta en otro teléfono o tablet. La app avisa que hay un <strong>partido en curso en otro dispositivo</strong> y muestra el marcador. Tocá {K("RETOMAR AQUÍ")}: seguís desde el último evento, con el reloj pausado en ese momento. Revisalo antes de seguir.</p>''',
             f'''<h3>If the phone fails</h3><p>Sign in with the same account on another phone or tablet. The app says there is a <strong>game in progress on another device</strong> and shows the score. Tap {K("RESUME HERE")}: you continue from the last event, with the clock paused at that moment. Check it before going on.</p>''')),
@@ -226,11 +244,13 @@ SECTIONS = [
             '''<h3>Cómo es la plantilla</h3>
 <table class="xl"><thead><tr><th>Hoja</th><th>Qué se completa</th></tr></thead><tbody>
 <tr><td><b>INSTRUCCIONES</b></td><td>Nada: explica los pasos, los tipos de fixture y los colores.</td></tr>
+<tr><td><b>COLORES</b></td><td>Nada: muestra los 24 colores, cada uno con su muestra pintada.</td></tr>
 <tr><td><b>TORNEO</b></td><td><span class="cell">Nombre del torneo</span> y <span class="cell">Tipo de fixture</span> (lista: Todos contra todos / Eliminación simple).</td></tr>
 <tr><td><b>EQUIPO 1 … EQUIPO 8</b></td><td>Una hoja por equipo: <span class="cell">Equipo</span> (nombre), <span class="cell">Color</span> (lista o un código como #1B47E2) y debajo los jugadores, uno por fila: <span class="cell">N.º camiseta</span> (opcional) y <span class="cell">Nombre y apellido</span>.</td></tr>
 </tbody></table>
 <ul>
-<li>Completá solo las <strong>celdas amarillas</strong>; no cambies los títulos grises.</li>
+<li>Completá solo las <strong>celdas amarillas</strong>; no cambies los títulos grises. A la derecha de cada una hay una indicación con una flecha (←) que dice qué poner, y al tocar la celda aparece un recuadro con la misma ayuda.</li>
+<li><strong>El color se elige de una lista:</strong> tocá la celda <span class="cell">Color</span>, abrí la lista con la flecha ▼ y elegí. <strong>La celda se pinta del color elegido</strong>, así ves cuál es. También podés escribir un código como #1B47E2.</li>
 <li><strong>¿Más de 8 equipos?</strong> Copiá una hoja de equipo: clic derecho en la pestaña → Mover o copiar → Crear una copia. Las hojas de equipo vacías se ignoran.</li>
 <li>También sirve <strong>una sola hoja</strong> con columnas <span class="cell">Equipo</span> · <span class="cell">Número</span> · <span class="cell">Jugador</span> (por ejemplo, la que exporta un formulario).</li>
 <li>Hasta 64 equipos y 60 jugadores por equipo.</li>
@@ -238,15 +258,20 @@ SECTIONS = [
             '''<h3>What the template looks like</h3>
 <table class="xl"><thead><tr><th>Sheet</th><th>What you fill in</th></tr></thead><tbody>
 <tr><td><b>INSTRUCTIONS</b></td><td>Nothing: it explains the steps, fixture types and colors.</td></tr>
+<tr><td><b>COLORS</b></td><td>Nothing: it shows the 24 colors, each with a painted swatch.</td></tr>
 <tr><td><b>TOURNAMENT</b></td><td><span class="cell">Tournament name</span> and <span class="cell">Fixture type</span> (list: Round robin / Knockout).</td></tr>
 <tr><td><b>TEAM 1 … TEAM 8</b></td><td>One sheet per team: <span class="cell">Team</span> (name), <span class="cell">Color</span> (list or a code like #1B47E2) and below, the players, one per row: <span class="cell">Jersey number</span> (optional) and <span class="cell">Player full name</span>.</td></tr>
 </tbody></table>
 <ul>
-<li>Fill in only the <strong>yellow cells</strong>; do not change the grey titles.</li>
+<li>Fill in only the <strong>yellow cells</strong>; do not change the grey titles. To the right of each one there is a hint with an arrow (←) saying what to enter, and clicking the cell shows a small box with the same help.</li>
+<li><strong>Pick the color from a list:</strong> click the <span class="cell">Color</span> cell, open the list with the ▼ arrow and choose. <strong>The cell turns the color you chose</strong>, so you can see it. You can also type a code like #1B47E2.</li>
 <li><strong>More than 8 teams?</strong> Copy a team sheet: right-click the tab → Move or Copy → Create a copy. Empty team sheets are ignored.</li>
 <li><strong>A single sheet</strong> with columns <span class="cell">Team</span> · <span class="cell">Number</span> · <span class="cell">Player</span> also works (for example, a form export).</li>
 <li>Up to 64 teams and 60 players per team.</li>
 </ul>''')),
+        text((
+            f'''<h3>Los 24 colores</h3><p>{SWATCHES_ES}</p>''',
+            f'''<h3>The 24 colors</h3><p>{SWATCHES_EN}</p>''')),
         shot('14-importar-excel', ('Vista previa de la importación con la lista de equipos', 'Import preview with the list of teams'), ('Antes de importar', 'Before importing'), (
             f'''<h3>Revisar e importar</h3><p>Antes de cargar nada, la app muestra lo que encontró: equipos, cantidad de jugadores, el nombre y el tipo de fixture, y <strong>avisos</strong> si algo no cierra (un número sin nombre, un color desconocido, un equipo repetido).</p>
 <ul><li>{K("CREAR TORNEO")} / {K("CREAR TORNEO NUEVO")}: arma un torneo con esos equipos.</li>
@@ -351,6 +376,39 @@ SECTIONS = [
 <div class="warn">En eliminación no puede haber empate. Si un partido terminó empatado, aparece {K("JUGAR DESEMPATE")}, o corregí el resultado.</div>''',
             f'''<h3>Correcting a result</h3><p>Is a result wrong or did it not sync properly? Tap the match, change the numbers and {K("SAVE CORRECTION")}. The fixture, the winner moving on and the standings update by themselves, and the correction is logged in the game scoresheet ({K("VIEW SCORESHEET")}).</p>
 <div class="warn">Knockout matches cannot end in a draw. If one did, {K("PLAY TIEBREAK")} appears, or correct the result.</div>''')),
+    ]),
+    ('varios', ('Varios dispositivos a la vez', 'Several devices at once'), [
+        shot('34-pregunta-entrada', ('Pregunta al entrar: MODO PARTIDO o MODO TORNEO, con el torneo en marcha', 'Question on entering: MATCH MODE or TOURNAMENT MODE, with the tournament under way'), ('Al entrar con un torneo en marcha', 'Entering with a tournament under way'), (
+            f'''<p>En un torneo grande hay varias canchas y varias personas. <strong>Entrá con la misma cuenta en cada teléfono o tablet</strong>: cada dispositivo puede llevar <strong>su propio partido</strong> al mismo tiempo, y todos ven el avance de los demás.</p>
+<p>Si ya hay un torneo en marcha, al entrar la app pregunta cómo seguir:</p>
+<ul>
+<li>{K("MODO PARTIDO")}: un partido suelto, como siempre.</li>
+<li>{K("MODO TORNEO")}: vas al torneo y elegís uno de sus partidos.</li>
+</ul>''',
+            f'''<p>A big tournament has several fields and several people. <strong>Sign in with the same account on every phone or tablet</strong>: each device can run <strong>its own match</strong> at the same time, and everyone sees how the others are going.</p>
+<p>If a tournament is already under way, the app asks how to continue when you sign in:</p>
+<ul>
+<li>{K("MATCH MODE")}: a single match, as always.</li>
+<li>{K("TOURNAMENT MODE")}: you go to the tournament and pick one of its matches.</li>
+</ul>''')),
+        shot('35-elegir-torneo', ('Lista de torneos con equipos, partidos en juego y jugados', 'List of tournaments with teams, matches in play and played'), ('Elegir el torneo', 'Choosing the tournament'), (
+            f'''<p>Con {K("MODO TORNEO")} primero <strong>elegís el torneo</strong> (cada uno muestra cuántos equipos tiene, cuántos partidos se están jugando y cuántos terminaron). Después ves el fixture con todos los partidos y tocás el que querés controlar.</p>''',
+            f'''<p>With {K("TOURNAMENT MODE")} you first <strong>choose the tournament</strong> (each shows how many teams it has, how many matches are in play and how many are finished). Then you see the fixture with all the matches and tap the one you want to control.</p>''')),
+        shot('36-unirse-partido', ('Partido que se juega en otro dispositivo, con CONTROLAR TAMBIÉN DESDE ACÁ y TOMAR EL CONTROL', 'Match played on another device, with CONTROL IT FROM HERE TOO and TAKE CONTROL'), ('Un partido que ya se está controlando', 'A match that is already being controlled'), (
+            f'''<p>Si tocás un partido <span class="tag live">● EN JUEGO</span> que lleva otro dispositivo, elegís:</p>
+<ul>
+<li>{K("CONTROLAR TAMBIÉN DESDE ACÁ")}: <strong>los dos dispositivos operan el mismo partido</strong>. Por ejemplo, uno lleva el reloj y otro anota los goles. Los goles, llamados y time outs de ambos se <strong>juntan en pocos segundos</strong>, y el reloj queda como lo dejó <strong>quien lo tocó último</strong>. Arriba aparece <b>⇄</b> mientras el partido es compartido.</li>
+<li>{K("TOMAR EL CONTROL EN ESTE DISPOSITIVO")}: <strong>el control pasa a este dispositivo</strong> y el otro deja de controlar el partido (le avisa). Usalo si el otro se apagó o se quedó sin batería. El reloj queda pausado en el último evento: revisalo antes de seguir.</li>
+</ul>
+<div class="warn"><strong>Ojo:</strong> si dos personas anotan el mismo gol, se cuentan dos. Repártanse el trabajo; para sacar uno repetido usá {K("DESHACER GOL")} o el botón − del marcador.</div>
+<div class="tip"><strong>Sin internet:</strong> cada dispositivo sigue anotando y, cuando vuelve la señal, se juntan los datos de los dos sin perder nada. Cuando alguien guarda la planilla, el partido queda cerrado en todos.</div>''',
+            f'''<p>If you tap an <span class="tag live">● IN PLAY</span> match that another device is running, you choose:</p>
+<ul>
+<li>{K("CONTROL IT FROM HERE TOO")}: <strong>both devices run the same match</strong>. For example, one runs the clock and another records goals. The goals, calls and time outs from both are <strong>combined within seconds</strong>, and the clock stays as left by <strong>whoever touched it last</strong>. A <b>⇄</b> shows at the top while the match is shared.</li>
+<li>{K("TAKE CONTROL ON THIS DEVICE")}: <strong>control moves to this device</strong> and the other one stops controlling the match (it is told). Use it if the other one switched off or ran out of battery. The clock is paused at the last event: check it before going on.</li>
+</ul>
+<div class="warn"><strong>Careful:</strong> if two people record the same goal, it counts twice. Split the work; to remove a repeated one use {K("UNDO GOAL")} or the − button on the score.</div>
+<div class="tip"><strong>No internet:</strong> each device keeps recording and, when signal returns, the data from both is combined without losing anything. When someone saves the scoresheet, the match is closed on all devices.</div>''')),
     ]),
     ('tabla', ('Tabla y estadísticas', 'Standings and stats'), [
         shot('31-posiciones', ('Tabla de posiciones y resultados', 'Standings and results'), ('Pestaña TABLA', 'STANDINGS tab'), (
@@ -520,6 +578,9 @@ li{margin:4px 0}
 .tip{background:color-mix(in srgb,var(--signal) 12%,var(--panel));border-left:4px solid var(--signal)}
 .warn{background:color-mix(in srgb,var(--warning) 14%,var(--panel));border-left:4px solid var(--warning)}
 .k{display:inline-block;padding:0 6px;border-radius:6px;background:var(--bg-2);border:1px solid var(--line);font-weight:800;font-size:.84em;letter-spacing:.03em}
+.ver{margin:-6px 0 14px;font-size:.85em;opacity:.7}
+.sw{display:inline-flex;align-items:center;gap:6px;margin:3px 4px 3px 0;padding:2px 10px 2px 3px;border:1px solid var(--line,#c4c9d2);border-radius:999px;font-size:.9em;white-space:nowrap}
+.sw i{width:18px;height:18px;border-radius:50%;border:1px solid #0004;display:inline-block}
 .cell{display:inline-block;padding:0 6px;border-radius:4px;background:#fff7d6;color:#0f1115;border:1px solid #c4c9d2;font-size:.9em}
 .tag{display:inline-block;padding:1px 8px;border-radius:99px;font:800 12px/1.6 var(--font-body);letter-spacing:.05em}
 .tag.done{background:var(--ink);color:var(--panel)}.tag.live{background:var(--danger);color:#fff}
@@ -543,7 +604,7 @@ INTRO = {
 def article(lang):
     i = 0 if lang == 'es' else 1
     title, lead, toc_title, back = INTRO[lang]
-    out = [f'<article lang="{lang}" data-lang="{lang}">', f'  <h1 id="{lang}-top">{title}</h1>', f'  <p class="lead">{lead}</p>',
+    out = [f'<article lang="{lang}" data-lang="{lang}">', f'  <h1 id="{lang}-top">{title}</h1>', f'  <p class="lead">{lead}</p>', f'  <p class="ver" data-version="{VERSION}">{"Manual de la versión" if lang == "es" else "Manual for version"} v{VERSION}</p>',
            f'  <section aria-labelledby="{lang}-indice">', f'    <h2 id="{lang}-indice">{toc_title}</h2>', '    <ol class="toc">']
     for sid, names, _ in SECTIONS:
         out.append(f'      <li><a href="#{lang}-{sid}">{names[i]}</a></li>')

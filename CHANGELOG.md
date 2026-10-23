@@ -1,5 +1,15 @@
 # Historial de cambios
 
+## 2026-10-23 · v47 · Torneo con varios dispositivos
+
+- Entrada con cuenta: si hay un torneo en marcha, la app pregunta MODO PARTIDO o MODO TORNEO. En torneo se elige el torneo (`pick-tournament`, con equipos, partidos en juego y jugados) y después se ve el fixture. Con una cuenta, ENTRAR AL MODO TORNEO también pasa primero por el selector.
+- Partido compartido en vivo (`live-merge.js`): al tocar un partido que ya lleva otro dispositivo se elige CONTROLAR TAMBIÉN DESDE ACÁ (las dos copias se juntan: goles, ajustes y eventos por id, goles deshechos con lápida, reloj y cuentas del último que los tocó; consulta cada 3 s mientras es compartido; cartel ⇄) o TOMAR EL CONTROL EN ESTE DISPOSITIVO (el otro dispositivo deja el partido; reloj pausado en el último evento). Si otro dispositivo guarda la planilla, el partido queda cerrado en todos.
+- RETOMAR AQUÍ usa la misma lógica de tomar el control. Un dispositivo que dejó un partido no vuelve a recibir la oferta de retomarlo. Los partidos del fixture se ligan a su torneo (`tournamentId`) para no confundir dos torneos con los mismos cruces.
+- MENU → SALIR DE ESTE USUARIO (antes CERRAR SESIÓN): vuelve directo al modo sin usuario y deja el partido en blanco.
+- Plantilla de Excel: 24 colores (antes 12), hoja COLORES con muestra pintada, lista de colores desde esa hoja, la celda Color toma el color elegido (formato condicional), indicaciones «←» al lado de cada casilero y recuadros de ayuda al tocar cada celda.
+- Manual: sección nueva «Varios dispositivos a la vez», «Salir de este usuario», colores de Excel y versión del manual (`data-version`); `tests/manual.test.cjs` falla si el manual no es de la versión actual.
+- Pruebas: `tests/live.test.cjs` (juntar copias), recorrido `qa/navegador/multidispositivo.cjs` con tres dispositivos.
+
 ## 2026-10-16 · v44 · Manual de usuario
 
 - `manual.html`: manual en español e inglés con capturas (`manual/img/`, 18 por idioma). Explica cómo empezar, el tablero, el menú, la planilla, el modo torneo y la exportación e importación de torneos, incluido cómo juntar los partidos de varias canchas.

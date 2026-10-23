@@ -211,7 +211,12 @@ async function recorrer(browser, lang, guardar) {
   await otro.waitForSelector('.login-gate');
   await otro.fill('#lg-user', 'Mendoza'); await otro.fill('#lg-pass', 'clave-de-prueba-1');
   await otro.click('.login-card [type=submit]');
-  await otro.waitForSelector('[data-action="resume-match"],[data-action="resume"]', { timeout: 15000 }).catch(() => {});
+  // Con un torneo en marcha, al entrar pregunta cómo seguir; en MODO PARTIDO ofrece retomar el partido en curso
+  await otro.waitForSelector('.entry-choice', { timeout: 15000 });
+  await esperar(500);
+  await guardar(lang, '34-pregunta-entrada', await otro.screenshot());
+  await otro.click('.entry-choice [data-action="choose-mode"][data-mode="match"]');
+  await otro.waitForSelector('[data-action="resume-match"]', { timeout: 15000 }).catch(() => {});
   await esperar(800);
   await guardar(lang, '28-retomar', await otro.screenshot());
 
@@ -235,6 +240,24 @@ async function recorrer(browser, lang, guardar) {
   await shot('32-ajustes');
   await page.evaluate(() => document.querySelector('.tournament-danger').scrollIntoView({ block: 'center' }));
   await shot('33-archivo');
+
+  // Varios dispositivos: un tercero elige el torneo y se une al partido que se está jugando
+  const tercero = await (await browser.newContext({ viewport: { width: 390, height: 844 }, locale, deviceScaleFactor: 2 })).newPage();
+  await tercero.goto(BASE + 'index.html');
+  await tercero.waitForSelector('.login-gate');
+  await tercero.fill('#lg-user', 'Mendoza'); await tercero.fill('#lg-pass', 'clave-de-prueba-1');
+  await tercero.click('.login-card [type=submit]');
+  await tercero.waitForSelector('.entry-choice', { timeout: 15000 });
+  await tercero.click('.entry-choice [data-action="choose-mode"][data-mode="tournament"]');
+  await tercero.waitForSelector('[data-action="pick-tournament"]');
+  await esperar(500);
+  await guardar(lang, '35-elegir-torneo', await tercero.screenshot());
+  await tercero.evaluate(() => [...document.querySelectorAll('[data-action="pick-tournament"]')].find((b) => /Primavera/.test(b.textContent)).click());
+  await tercero.waitForSelector('.fx-match.is-jugando', { timeout: 15000 });
+  await tercero.evaluate(() => document.querySelector('.fx-match.is-jugando [data-action="t-fx-open"], .fx-match.is-jugando').click());
+  await tercero.waitForSelector('#modalRoot [data-action="t-fx-join"]', { timeout: 15000 });
+  await esperar(500);
+  await guardar(lang, '36-unirse-partido', await tercero.screenshot());
   if (errores.length) console.log('ERRORES', errores);
   await ctx.close();
 }
