@@ -1509,7 +1509,13 @@
       if(!r.ok)showToast(t(r.reason==='started'?'Ya hay cruces jugados o en juego: no se puede volver a armar este tipo de fixture.':'Agregá al menos dos equipos para generar el fixture.'));
       else{tour.fixture=r.fixture;saveState();renderTournament();showToast(t('Fixture actualizado.'));}
     }
-    else if(action==='t-tab'){tournamentTab=el.dataset.tab;renderTournament();document.getElementById('tab-'+tournamentTab)?.focus({preventScroll:true});}
+    else if(action==='t-tab'){
+      tournamentTab=el.dataset.tab;renderTournament();
+      /* La pestaña nueva arranca arriba: si se había bajado, se vuelve justo debajo del título. */
+      const head=app.querySelector('.tournament-screen .screen-head');
+      if(head){const top=head.getBoundingClientRect().bottom-app.getBoundingClientRect().top+app.scrollTop;if(app.scrollTop>top)app.scrollTop=top;}
+      document.getElementById('tab-'+tournamentTab)?.focus({preventScroll:true});
+    }
     else if(action==='t-template')downloadTemplate();
     else if(action==='t-xlsx-apply')applyExcel(el.dataset.target);
     else if(action==='t-fx-mode'&&tour)setFixtureMode(tour,el.dataset.type);

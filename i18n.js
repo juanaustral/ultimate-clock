@@ -119,7 +119,7 @@
     'Liga: cada equipo juega con todos. Gana el que suma más puntos.':'League: every team plays all the others. Most points wins.',
     'Llaves: el que pierde queda afuera, hasta la final.':'Bracket: the loser is out, all the way to the final.',
     'Eliminación':'Knockout',
-    'FIXTURE':'FIXTURE',
+    'FIXTURE':'FIXTURE','EQUIPOS':'TEAMS',
     'TABLA':'STANDINGS',
     'AJUSTES':'SETTINGS',
     'Fixture cambiado a eliminación.':'Fixture changed to knockout.',
