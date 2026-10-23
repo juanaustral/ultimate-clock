@@ -4,7 +4,7 @@
 const { chromium } = require(process.env.PW_CORE || '/home/hermes/ultimate-clock/node_modules/playwright-core');
 const BASE = 'http://localhost:8766/';
 const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALLA') + ' ' + m); if (!c) process.exitCode = 1; };
-const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVR4nGP4z8Dwn+E/A8N/AAcEAv8gG1D5AAAAAElFTkSuQmCC';
+const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAA6UlEQVR42u2Z0Q3CMAxEW6tTAD+dBokdGIMpGIMdWAcJVczRCYpix3Zs+fIb6Xwvdmornc/X75R50ZR8AQAA1QEWC9HteT/aujxeurFmxc/oH992JAoALN/qJDTWfb+CPAP91lVSQUHcizUpiHuxMsVxL9OnUO4FUSqNEj7Hz42VPgOtfYB1/Kfb52jr9151OwPG6RQAnteXGxclBAAAACABgPpTAjpxwWHOvx831m2lEvK8yu2xil1inySwopCpurV7YQnZMQiUyS2SkWbv87pKc+g5DhoYW0UBf2iYJKH/kWEaBQAABqwddR1VAX7FeaEAAAAASUVORK5CYII=';
 const api = async (ruta, token, cuerpo) => { const r = await fetch(BASE + 'api/' + ruta, { method: cuerpo ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined }); return r.json(); };
 let n = 0;
 const put = (tabla, id, data, base = 0) => ({ cambio: 'c' + (++n) + '-' + Date.now(), tabla, id, op: 'put', base, data });

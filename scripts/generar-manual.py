@@ -50,19 +50,19 @@ SECTIONS = [
 <li><strong>Install it as an app.</strong> iPhone: Share button → {K('Add to Home Screen')}. Android: ⋮ menu → {K('Install app')}.</li>
 <li><strong>Works offline.</strong> Open it once with signal; after that it works at the field without internet.</li>
 </ul>''')),
-        shot('01-entrada', ('Pantalla de entrada con USAR GRATIS e INGRESAR CON USUARIO', 'Start screen with USE FREE and SIGN IN WITH USER'), ('Entrar o usar sin cuenta', 'Sign in or use without an account'), (
+        shot('01-entrada', ('Pantalla de bienvenida con UTILIZAR MODO GRATIS y UTILIZAR MODO PRO', 'Welcome screen with USE FREE MODE and USE PRO MODE'), ('Entrar o usar sin cuenta', 'Sign in or use without an account'), (
             f'''<h3>¿Con cuenta o sin cuenta?</h3>
 <p>Al abrir la app elegís:</p>
 <ul>
-<li>{K('INGRESAR CON USUARIO')} (Modo Pro): todo se guarda <strong>en el servidor</strong> al instante. Podés usar varios teléfonos a la vez, seguir un partido en otro dispositivo si el tuyo falla y <strong>compartir el fixture en vivo</strong>.</li>
-<li>{K('USAR GRATIS')}: solo <strong>MODO PARTIDO</strong>, sin torneo ni sincronización; todo queda <strong>solo en ese teléfono</strong>. Para conservarlo o pasarlo a otro, exportalo.</li>
+<li>{K('UTILIZAR MODO PRO')} → {K('INGRESAR CON MI USUARIO')} (Modo Pro): todo se guarda <strong>en el servidor</strong> al instante. Podés usar varios teléfonos a la vez, seguir un partido en otro dispositivo si el tuyo falla y <strong>compartir el fixture en vivo</strong>.</li>
+<li>{K('UTILIZAR MODO GRATIS')}: solo <strong>MODO PARTIDO</strong>, sin torneo ni sincronización; todo queda <strong>solo en ese teléfono</strong>. Para conservarlo o pasarlo a otro, exportalo.</li>
 </ul>
 <p>Las cuentas las da la organización (por ahora Ultimate Frisbee Mendoza). Si no tenés una, usá la app gratis: el modo partido funciona igual.</p>''',
             f'''<h3>With or without an account?</h3>
 <p>When the app opens you choose:</p>
 <ul>
-<li>{K('SIGN IN WITH USER')} with username and password: everything is saved <strong>on the server</strong> instantly. You can use several phones at once, continue a game on another device if yours fails and <strong>share the fixture live</strong>.</li>
-<li>{K('USE FREE')}: everything stays <strong>only on that phone</strong>. Export it to keep it or move it to another device.</li>
+<li>{K('USE PRO MODE')} → {K('SIGN IN WITH MY USER')} with username and password: everything is saved <strong>on the server</strong> instantly. You can use several phones at once, continue a game on another device if yours fails and <strong>share the fixture live</strong>.</li>
+<li>{K('USE FREE MODE')}: everything stays <strong>only on that phone</strong>. Export it to keep it or move it to another device.</li>
 </ul>
 <p>Accounts are given by the organizers (currently Ultimate Frisbee Mendoza). If you do not have one, use the app without an account: it works the same.</p>''')),
         text((f'<div class="tip"><strong>Consejo:</strong> antes del partido subí el volumen y tocá {K("MENU")} → {K("PROBAR SONIDO")}.</div>',
@@ -435,7 +435,8 @@ SECTIONS = [
 </ol>
 <p>El link tiene este formato: <code>iona.ar/ultimateclock/vivo.html?u=<b>usuario</b>&amp;t=<b>torneo</b></code>.</p>
 <ul>
-<li>Muestra el fixture, los resultados, los partidos en juego con su marcador y la tabla. <strong>No muestra jugadores</strong> y <strong>nadie puede cambiar nada</strong>.</li>
+<li>Muestra los partidos en juego con reloj y marcador, el fixture con los logos, la tabla y un <strong>feed en vivo</strong> que va contando los goles (con quién hizo el gol y quién dio el pase), el medio tiempo, los time outs y las incidencias.</li>
+<li>Al tocar un partido o un equipo se abren sus <strong>estadísticas</strong>: goles, goleadores, asistencias, time outs y llamados. <strong>Se publican los nombres de goleadores y asistentes</strong>, pero no la lista completa de jugadores, y <strong>nadie puede cambiar nada</strong>.</li>
 <li>Se actualiza solo cada pocos segundos; no hace falta recargar.</li>
 <li>{K("DEJAR DE COMPARTIR")} apaga el link. Si lo volvés a compartir, es el mismo link.</li>
 </ul>''',
@@ -447,13 +448,16 @@ SECTIONS = [
 </ol>
 <p>The link looks like this: <code>iona.ar/ultimateclock/vivo.html?u=<b>username</b>&amp;t=<b>tournament</b></code>.</p>
 <ul>
-<li>It shows the fixture, results, matches in play with their score and the standings. <strong>It does not show players</strong> and <strong>nobody can change anything</strong>.</li>
+<li>It shows matches in play with clock and score, the fixture with logos, the standings and a <strong>live feed</strong> that tells goals (with who scored and who assisted), half time, time outs and incidents.</li>
+<li>Tapping a match or a team opens its <strong>stats</strong>: goals, scorers, assists, time outs and calls. <strong>Scorer and assist names are published</strong>, but not the full player list, and <strong>nobody can change anything</strong>.</li>
 <li>It updates by itself every few seconds; no need to reload.</li>
 <li>{K("STOP SHARING")} turns the link off. If you share again, it is the same link.</li>
 </ul>''')),
         shot('25-vivo', ('Página pública en vivo en el teléfono', 'Public live page on the phone'), ('Lo que ve quien abre el link', 'What people see when they open the link'), (
-            '''<p>Quien abre el link ve el nombre del torneo, la etiqueta <span class="tag live">● EN VIVO</span>, el fixture y, en ligas, la tabla de posiciones. Abajo dice hace cuánto se actualizó.</p>''',
-            '''<p>Whoever opens the link sees the tournament name, the <span class="tag live">● LIVE</span> label, the fixture and, in leagues, the standings. At the bottom it says how long ago it was updated.</p>''')),
+            '''<p>Quien abre el link ve el nombre del torneo, la etiqueta <span class="tag live">● EN VIVO</span>, los partidos en juego, el fixture, el feed y, en ligas, la tabla de posiciones. Abajo dice hace cuánto se actualizó.</p>
+<p><strong>Logo del equipo:</strong> en la ficha del equipo, {K("SUBIR LOGO")}. También se puede insertar una imagen en la celda LOGO de la hoja de cada equipo de la plantilla de Excel y, al importar, el logo se carga solo. Se achica a 128 px y aparece en el tablero, el fixture y este link.</p>''',
+            '''<p>Whoever opens the link sees the tournament name, the <span class="tag live">● LIVE</span> label, the matches in play, the fixture, the feed and, in leagues, the standings. At the bottom it says how long ago it was updated.</p>
+<p><strong>Team logo:</strong> in the team sheet, {K("UPLOAD LOGO")}. You can also insert an image in the LOGO cell of each team sheet in the Excel template and the logo loads by itself on import. It is resized to 128 px and shows on the board, the fixture and this link.</p>''')),
         wide('26-vivo-ancho', ('Página en vivo en una pantalla grande', 'Live page on a large screen'), ('En una computadora o un televisor se ve el cuadro completo: ideal para proyectarlo en la sede.', 'On a computer or a TV the whole bracket fits: great to project at the venue.')),
     ]),
     ('ajustes', ('Ajustes, archivo y varias canchas', 'Settings, file and several fields'), [

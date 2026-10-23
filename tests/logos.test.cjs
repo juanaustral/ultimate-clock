@@ -5,7 +5,7 @@ const S = require('../tournament-sheet.js');
 const TN = require('../tournament.js');
 
 /* PNG de 2×2 píxeles. */
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVR4nGP4z8Dwn+E/A8N/AAcEAv8gG1D5AAAAAElFTkSuQmCC', 'base64');
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAA6UlEQVR42u2Z0Q3CMAxEW6tTAD+dBokdGIMpGIMdWAcJVczRCYpix3Zs+fIb6Xwvdmornc/X75R50ZR8AQAA1QEWC9HteT/aujxeurFmxc/oH992JAoALN/qJDTWfb+CPAP91lVSQUHcizUpiHuxMsVxL9OnUO4FUSqNEj7Hz42VPgOtfYB1/Kfb52jr9151OwPG6RQAnteXGxclBAAAACABgPpTAjpxwWHOvx831m2lEvK8yu2xil1inySwopCpurV7YQnZMQiUyS2SkWbv87pKc+g5DhoYW0UBf2iYJKH/kWEaBQAABqwddR1VAX7FeaEAAAAASUVORK5CYII=', 'base64');
 const tour = () => ({ name: 'Copa', format: 'rr', teams: [
   { id: 'a', name: 'Pumas', color: '#1b47e2', players: [{ id: 'p1', name: 'Ana', number: '7' }] },
   { id: 'b', name: 'Toros', color: '#d4282c', players: [] }] });
