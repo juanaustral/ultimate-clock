@@ -1763,6 +1763,7 @@
     if(action==='resume-match'){resumeMatch(element.dataset.id);return true;}
     if(action==='resume-later'){const m=liveElsewhere.get(element.dataset.id);if(m)resumeAsked.add(element.dataset.id+':'+(m.events?.length||0));closeModal();return true;}
     if(['account-login','account-logout','account-logout-confirm','sync-now','sync-badge','sync-resolve'].includes(action)){accountAction(action,element);return true;}
+    if(action==='reload-app'){location.reload();return true;}
     if(action==='pro-locked'){openProModal();return true;}
     if(action==='changelog')openChangelog();
     else if(action==='sheet'){renderLiveSheet();}
@@ -2045,5 +2046,14 @@
   /* Ask the browser not to evict saved games under storage pressure; silently ignored where unsupported. */
   navigator.storage?.persist?.().catch(()=>{});
   if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>showToast(t('La instalación sin conexión no está disponible en este navegador.')));
+  /* Versión nueva: el service worker nuevo toma el control. Sin partido en curso se recarga solo; con partido, se avisa y se recarga al tocar. */
+  if('serviceWorker' in navigator&&location.protocol!=='file:'&&navigator.serviceWorker.controller){
+    let reloading=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(reloading)return;
+      if(!hasStarted()||isLocked()){reloading=true;location.reload();return;}
+      showToast(t('Hay una versión nueva de la app.'),[{label:t('RECARGAR'),action:'reload-app'}]);
+    });
+  }
 
 })();
